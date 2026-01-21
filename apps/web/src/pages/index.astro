@@ -1,28 +1,73 @@
 ---
 import Layout from "../layouts/Layout.astro";
-
-const TITLE_TEXT = `
- ██████╗ ███████╗████████╗████████╗███████╗██████╗
- ██╔══██╗██╔════╝╚══██╔══╝╚══██╔══╝██╔════╝██╔══██╗
- ██████╔╝█████╗     ██║      ██║   █████╗  ██████╔╝
- ██╔══██╗██╔══╝     ██║      ██║   ██╔══╝  ██╔══██╗
- ██████╔╝███████╗   ██║      ██║   ███████╗██║  ██║
- ╚═════╝ ╚══════╝   ╚═╝      ╚═╝   ╚══════╝╚═╝  ╚═╝
-
- ████████╗    ███████╗████████╗ █████╗  ██████╗██╗  ██╗
- ╚══██╔══╝    ██╔════╝╚══██╔══╝██╔══██╗██╔════╝██║ ██╔╝
-    ██║       ███████╗   ██║   ███████║██║     █████╔╝
-    ██║       ╚════██║   ██║   ██╔══██║██║     ██╔═██╗
-    ██║       ███████║   ██║   ██║  ██║╚██████╗██║  ██╗
-    ╚═╝       ╚══════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝
- `;
+import HeroZoom from "../components/HeroZoom.astro";
 ---
 
-<Layout title="wedding-website">
-  <div class="container mx-auto max-w-3xl px-4 py-2">
-    <pre class="overflow-x-auto font-mono text-sm text-white">{TITLE_TEXT}</pre>
-    <div class="grid gap-6">
+<Layout title="Save the Date | Sarah & James">
+  <main class="relative bg-neutral-950">
+    <!-- Scroll-driven Zoom Hero -->
+    <HeroZoom />
+    
+    <!-- Content starts scrolling over the sticky hero background if we wanted overlapping, 
+         but here we want it to flow naturally after the scroll space.
+         
+         The HeroZoom component has h-[250vh]. The image sticks for h-screen.
+         So for the first 150vh-250vh (depending on logic), we are "in" the hero.
+         
+         Actually, with h-[250vh] container and sticky top-0 h-screen inner:
+         - The inner sticks for 150vh of scroll.
+         - At 150vh scroll (plus viewport), it unsticks and scrolls up.
+         
+         We want the content to appear smoothly below it.
+    -->
+    
+    <div class="relative z-10 bg-neutral-950 px-6 py-24 md:py-32">
+      <div class="mx-auto max-w-2xl text-center space-y-12">
+        
+        <div class="space-y-4 animate-fade-up">
+          <p class="text-sm md:text-base tracking-[0.3em] text-neutral-400 uppercase">Save the Date</p>
+          <h1 class="text-5xl md:text-7xl font-serif text-white tracking-tight">
+            Sarah <span class="text-neutral-500 font-light">&</span> James
+          </h1>
+        </div>
+
+        <div class="h-px w-24 bg-neutral-800 mx-auto"></div>
+
+        <div class="space-y-6 text-neutral-300 font-light">
+          <p class="text-xl md:text-2xl tracking-wide">
+            September 24, 2026
+          </p>
+          <p class="text-lg text-neutral-400">
+            The Grand Estate<br/>
+            San Francisco, California
+          </p>
+        </div>
+
+        <div class="pt-12">
+          <button class="px-8 py-3 border border-white/20 hover:bg-white hover:text-black transition-colors duration-300 tracking-widest text-sm uppercase">
+            RSVP Coming Soon
+          </button>
+        </div>
+        
+        <div class="pt-32 pb-12 opacity-50 text-xs tracking-widest text-neutral-600">
+          <p>Formal Invitation to Follow</p>
+        </div>
+      </div>
     </div>
-  </div>
+  </main>
 </Layout>
 
+<style>
+  .animate-fade-up {
+    animation: fade-up 1s ease-out forwards;
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  @keyframes fade-up {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+</style>

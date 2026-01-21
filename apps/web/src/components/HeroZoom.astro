@@ -1,0 +1,88 @@
+---
+---
+
+<section class="relative h-[300vh]" id="hero-container">
+  <div class="sticky top-0 h-screen w-full overflow-hidden">
+    <div class="absolute inset-0 bg-neutral-900/10 z-10 pointer-events-none"></div>
+    <img 
+      src="/wedding_photo.png" 
+      alt="Wedding Couple" 
+      class="h-full w-full object-cover animate-zoom-out"
+      style="transform-origin: center 40%;"
+    />
+    
+    <!-- Optional Overlay Text that fades out -->
+    <div class="absolute inset-0 flex items-center justify-center z-20 opacity-0 animate-fade-in-out pointer-events-none">
+       <h1 class="text-4xl md:text-6xl font-serif text-white/90 tracking-widest uppercase">Forever</h1>
+    </div>
+  </div>
+</section>
+
+<style>
+  /* 
+   * Scroll Driven Animation 
+   * Chrome 115+, Safari 18+
+   */
+  @keyframes zoom-out {
+    0% {
+      transform: scale(2.8);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  @keyframes fade-in-out {
+    0% { opacity: 0; transform: translateY(20px); }
+    15% { opacity: 1; transform: translateY(0); }
+    85% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  /* Default state: Start zoomed in */
+  .animate-zoom-out {
+    transform-origin: center 40%;
+    will-change: transform;
+    transform: scale(2.8);
+  }
+
+  /* Only apply CSS Scroll Animation if supported */
+  @supports (animation-timeline: scroll()) {
+    .animate-zoom-out {
+      animation-name: zoom-out;
+      animation-fill-mode: both;
+      animation-timing-function: linear;
+      animation-timeline: scroll(root); /* Explicitly bind to root scroller */
+      animation-range: 0vh 100vh;
+    }
+  }
+</style>
+
+<script>
+  // Fallback script for browsers that don't support scroll-driven animations
+  if (!CSS.supports("animation-timeline: scroll()")) {
+    const img = document.querySelector('.animate-zoom-out') as HTMLElement;
+    
+    if (img) {
+      window.addEventListener('scroll', () => {
+        const scrolled = window.scrollY;
+        const viewportHeight = window.innerHeight;
+        const range = viewportHeight * 1.5; // 150vh matches CSS range
+        
+        // Calculate progress 0 to 1
+        let progress = Math.min(scrolled / range, 1);
+        
+        // Inverse of animation: 2.8 -> 1
+        // scale = 2.8 - (progress * (2.8 - 1))
+        const scale = 2.8 - (progress * 1.8);
+        
+        requestAnimationFrame(() => {
+          img.style.transform = `scale(${scale})`;
+        });
+      });
+      
+      // Set initial state
+      img.style.transform = 'scale(2.8)';
+    }
+  }
+</script>
