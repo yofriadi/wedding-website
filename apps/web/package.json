@@ -1,0 +1,30 @@
+{
+  "name": "web",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro",
+    "dev:bare": "astro dev"
+  },
+  "dependencies": {
+    "@astrojs/node": "^9.5.2",
+    "@libsql/client": "catalog:",
+    "@wedding-website/env": "workspace:*",
+    "astro": "^5.16.11",
+    "dotenv": "catalog:",
+    "libsql": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@astrojs/cloudflare": "^12.6.12",
+    "@cloudflare/workers-types": "catalog:",
+    "@tailwindcss/vite": "^4.1.18",
+    "@wedding-website/config": "workspace:*",
+    "alchemy": "catalog:",
+    "tailwindcss": "^4.1.18",
+    "typescript": "catalog:"
+  }
+}
