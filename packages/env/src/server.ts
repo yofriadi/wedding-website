@@ -7,6 +7,8 @@ export const env = createEnv({
     DATABASE_URL: z.string().min(1),
     DATABASE_AUTH_TOKEN: z.string().min(1),
     CORS_ORIGIN: z.url(),
+    INVITE_ADMIN_TOKEN: z.string().min(32).optional(),
+    INVITE_COOKIE_DAYS: z.coerce.number().int().positive().default(30),
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   },
   runtimeEnv: process.env,

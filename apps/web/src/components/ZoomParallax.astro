@@ -1,0 +1,236 @@
+---
+/**
+ * ZoomParallax Component - Tunnel Vision Edition
+ * 
+ * Concept: "Parent Scaling"
+ * - Each item is wrapped in a full-screen absolute container (The "Wrapper").
+ * - The wrapper is centered in the viewport.
+ * - The image is positioned absolutely inside the wrapper to match its grid slot.
+ * - Animation: We scale the *Wrapper* up. 
+ * - Result: The image (offset from center) moves radially outward and scales up, creating a 3D tunnel effect.
+ */
+
+const pictures = [
+  // 1. Top Right Portrait (single right column)
+  { 
+    src: "/10.jpg", 
+    alt: "Portrait Top Right",
+    grid: { col: 2, row: 0, w: 1, h: 2 },
+    scale: 9 // Fast (Outer edge)
+  },
+  // 2. Top Left Landscape (two columns on left)
+  { 
+    src: "/3.jpg", 
+    alt: "Landscape Top Left",
+    grid: { col: 0, row: 0, w: 2, h: 1 },
+    scale: 7 // Medium-Fast (Top edge)
+  },
+  // 3. Mid Left Landscape (two columns on left)
+  { 
+    src: "/4.jpg", 
+    alt: "Landscape Mid Left",
+    grid: { col: 0, row: 1, w: 2, h: 1 },
+    scale: 5 // Slow (Inner ring)
+  },
+  // 4. Mid Left Square
+  { 
+    src: "/14.jpg", 
+    alt: "Square Mid Left",
+    grid: { col: 0, row: 2, w: 1, h: 1 },
+    scale: 8 // Fast (Side edge)
+  },
+  // 5. CENTER HERO - The Focus (keeps 9:16 portrait aspect)
+  { 
+    src: "/1.JPG", 
+    alt: "CENTER FOCUS",
+    isCenter: true,
+    grid: { col: 1, row: 2, w: 1, h: 1 }, 
+    scale: 4
+  },
+  // 6. Mid Right Square
+  { 
+    src: "/6.jpg", 
+    alt: "Square Mid Right",
+    grid: { col: 2, row: 2, w: 1, h: 1 },
+    scale: 8 // Fast (Side edge)
+  },
+  // 7. Bottom Left Portrait
+  { 
+    src: "/15.jpg", 
+    alt: "Portrait Bottom Left",
+    grid: { col: 0, row: 3, w: 1, h: 2 },
+    scale: 9 // Fast (Corner)
+  },
+  // 8. Mid Bottom Landscape
+  { 
+    src: "/18.jpg", 
+    alt: "Landscape Mid Bottom",
+    grid: { col: 1, row: 3, w: 2, h: 1 },
+    scale: 5 // Slow (Inner ring)
+  },
+  // 9. Bottom Right Landscape
+  { 
+    src: "/7.jpg", 
+    alt: "Landscape Bottom Right",
+    grid: { col: 1, row: 4, w: 2, h: 1 },
+    scale: 7 // Medium-Fast (Bottom edge)
+  }
+];
+
+const COL_W = 33.333; // 33.333vw
+const ROW_H = 20;     // 20vh
+---
+
+<div id="zoom-parallax-container" class="relative h-[400vh] w-full">
+  <div class="sticky top-0 h-screen w-full overflow-hidden bg-neutral-950">
+    
+    <!-- Items Wrapper -->
+    {pictures.map((picture) => (
+      <div 
+        class="zoom-wrapper absolute inset-0 w-full h-full pointer-events-none flex items-center justify-center will-change-transform"
+        data-is-center={picture.isCenter}
+        data-scale-target={picture.scale}
+        style={{ zIndex: picture.isCenter ? 50 : 10 }}
+      >
+        <!-- Inner Image Container (Positioned absolutely relative to grid) -->
+        <div 
+          class="zoom-inner absolute overflow-hidden shadow-2xl"
+          style={`
+            top: ${picture.grid.row * ROW_H}vh; 
+            left: ${picture.grid.col * COL_W}vw; 
+            width: ${picture.grid.w * COL_W}vw; 
+            height: ${picture.grid.h * ROW_H}vh;
+          `}
+        >
+          <img
+            src={picture.src}
+            alt={picture.alt}
+            class="zoom-image"
+            loading="eager"
+          />
+        </div>
+      </div>
+    ))}
+    
+  </div>
+</div>
+
+<script>
+  import { animate, scroll } from "motion";
+
+  // Cleanup storage
+  let cleanupFns: Array<() => void> = [];
+  let resizeTimeout: number | undefined;
+
+  function initZoomParallax() {
+    const container = document.getElementById("zoom-parallax-container");
+    const wrappers = document.querySelectorAll(".zoom-wrapper");
+    
+    if (!container || wrappers.length === 0) return;
+
+    // Cleanup previous scroll bindings
+    cleanupFns.forEach(fn => fn());
+    cleanupFns = [];
+
+    // Reset all transforms to baseline before measuring/animating
+    wrappers.forEach(w => {
+      (w as HTMLElement).style.transform = "scale(1)";
+    });
+
+    // Force layout flush
+    container.getBoundingClientRect();
+
+    // Center Logic
+    const centerWrapper = document.querySelector('[data-is-center="true"]') as HTMLElement;
+    let centerScaleFactor = 4;
+    
+    if (centerWrapper) {
+      const inner = centerWrapper.querySelector('.zoom-inner') as HTMLElement;
+      if (inner) {
+        // Calculate scale needed to cover the viewport
+        // The wrapper is full screen (100x100). The inner is smaller.
+        // If we scale the wrapper, the inner scales with it.
+        // We want inner to fill screen.
+        // Scale = ScreenDim / InnerDim
+        const rect = inner.getBoundingClientRect();
+        const scaleX = window.innerWidth / rect.width;
+        const scaleY = window.innerHeight / rect.height;
+        centerScaleFactor = Math.max(scaleX, scaleY) * 1.01; // No gaps
+      }
+    }
+
+    wrappers.forEach((wrapper) => {
+      const el = wrapper as HTMLElement;
+      const isCenter = el.dataset.isCenter === "true";
+      const scaleTarget = parseFloat(el.dataset.scaleTarget || "1");
+
+      if (isCenter) {
+        // CENTER: Hold at entry, then scale to fill, then hold at end
+        const animation = animate(
+          el,
+          { transform: [`scale(1)`, `scale(1)`, `scale(${centerScaleFactor})`, `scale(${centerScaleFactor})`] },
+          { ease: "linear" }
+        );
+
+        const cleanup = scroll(animation, {
+          target: container,
+          // 0-10%: Hold (appreciate the grid)
+          // 10-80%: Scale up
+          // 80-100%: Hold (full image)
+          offset: ["start start", "10% start", "80% end", "end end"] 
+        });
+        
+        cleanupFns.push(cleanup);
+      } else {
+        // OTHERS: Hold at entry, then race forward
+        const animation = animate(
+          el,
+          { transform: [`scale(1)`, `scale(1)`, `scale(${scaleTarget})`] },
+          { ease: "linear" }
+        );
+
+        const cleanup = scroll(animation, {
+          target: container,
+          // 0-10%: Hold (appreciate the grid)
+          // 10-100%: Scale up
+          offset: ["start start", "10% start", "end end"]
+        });
+        
+        cleanupFns.push(cleanup);
+      }
+    });
+  }
+
+  function handleResize() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(initZoomParallax, 150) as unknown as number;
+  }
+
+  // Lifecycle hooks - use astro:page-load as primary entry
+  document.addEventListener("astro:page-load", initZoomParallax);
+  window.addEventListener('resize', handleResize);
+  
+  // Fallback for non-Astro navigation
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initZoomParallax);
+  } else {
+    initZoomParallax();
+  }
+</script>
+
+<style>
+  .zoom-inner {
+    /* Subtle border for separation in bento state */
+    outline: 1px solid rgba(0,0,0,0.2); 
+    background: #050505;
+  }
+
+  .zoom-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: translateZ(0);
+    will-change: transform;
+  }
+
+</style>

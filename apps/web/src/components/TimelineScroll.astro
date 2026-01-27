@@ -1,0 +1,376 @@
+---
+---
+
+<section id="timeline-section" class="relative h-[520vh] w-full bg-white">
+  <div class="sticky top-0 h-screen w-full overflow-hidden">
+    
+    <!-- 1. Bottom Layer: Title (Black text on White bg) -->
+    <!-- Visible outside the shrinking circle. Fades out when timeline starts moving. -->
+    <div 
+      id="title-layer-bottom"
+      class="absolute inset-0 z-0 pointer-events-none"
+    >
+      <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        <div class="relative h-4 w-4">
+          <div class="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 whitespace-nowrap text-center">
+            <h2 class="max-w-[18ch] text-center font-serif tracking-wide text-neutral-950 text-4xl md:text-6xl px-6">
+              Permulaan
+            </h2>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Track Layer: The scrolling timeline -->
+    <!-- z-10: Above bottom title, below top circle overlay -->
+    <div
+      id="timeline-track"
+      class="relative z-10 h-full w-[320vw] will-change-transform"
+      style="transform: translateX(0vw); width: 320vw;"
+    >
+      <!-- SVG connectors live INSIDE the track -->
+      <svg class="absolute inset-0 h-full w-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
+        <path id="line-1" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0" />
+        <path id="line-2" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0" />
+      </svg>
+
+      <!-- Node 1 (left) -->
+      <!-- Adjusted to 50vw/50% to match shrinking circle center -->
+      <div
+        id="node-1"
+        class="absolute opacity-0"
+        style="left: 50vw; top: 50%; transform: translate(-50%, -50%);"
+      >
+        <div
+          id="dot-1"
+          class="relative h-4 w-4 rounded-full bg-neutral-950"
+        >
+          <div
+            id="node-1-label"
+            class="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 whitespace-nowrap text-center text-neutral-950"
+          >
+            <h2 class="max-w-[18ch] text-center font-serif tracking-wide text-inherit text-4xl md:text-6xl px-6">Permulaan</h2>
+          </div>
+        </div>
+      </div>
+
+      <!-- Node 2 (middle) -->
+      <div
+        id="node-2"
+        class="absolute opacity-0"
+        style="left: 165vw; top: 60%; transform: translate(-50%, -50%);"
+      >
+        <div id="dot-2" class="h-5 w-5 rounded-full bg-neutral-950"></div>
+
+        <!-- Photo above the node -->
+        <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)]">
+          <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-neutral-200 shadow-xl">
+            <img src="/13.jpg" alt="Februari 2025" class="h-full w-full object-cover" loading="eager" />
+          </div>
+        </div>
+
+        <!-- Text below the node -->
+        <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+22px)] w-[320px]">
+          <div class="font-serif text-2xl text-neutral-950">Februari 2025</div>
+          <p class="mt-2 text-sm leading-relaxed text-neutral-600">
+            Menjadi bulan pertama kami bertemu dan berkenalan. Sebatas teman, dikenalkan oleh Rahadian,
+            kakak Aci. Tidak dekat, tidak berlebihan.
+          </p>
+        </div>
+      </div>
+
+      <!-- Node 3 (right, end) -->
+      <!-- Adjusted left to 250vw so it ends up centered (250 - 200 = 50vw) -->
+      <div
+        id="node-3"
+        class="absolute opacity-0"
+        style="left: 250vw; top: 45%; transform: translate(-50%, -50%);"
+      >
+        <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+14px)] whitespace-nowrap font-serif text-2xl md:text-3xl text-neutral-950">
+          Oktober Menikah
+        </div>
+        <div id="dot-3" class="h-5 w-5 rounded-full bg-neutral-950" style="transform-origin: center;"></div>
+      </div>
+    </div>
+
+    <!-- 3. Top Layer: Overlay (Black BG + White Title) -->
+    <!-- z-30: Topmost. Shrinks via clip-path. Visible inside the circle. -->
+    <div
+      id="timeline-circle-overlay"
+      class="absolute inset-0 z-30 pointer-events-none bg-neutral-950"
+      style="clip-path: circle(150% at 50% 50%);"
+    >
+      <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        <div class="relative h-4 w-4">
+          <div class="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 whitespace-nowrap text-center">
+            <h2 class="max-w-[18ch] text-center font-serif tracking-wide text-white text-4xl md:text-6xl px-6">
+              Permulaan
+            </h2>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Expansion Overlay (End) -->
+    <!-- z-40: Above everything. Expands from dot-3 to fill screen. -->
+    <div
+      id="timeline-circle-expansion"
+      class="absolute z-40 pointer-events-none"
+      style="width: 200vmax; height: 200vmax; left: 50%; top: 45%; transform: translate(-50%, -50%);"
+    >
+      <div
+        id="timeline-circle-expansion-fill"
+        class="h-full w-full rounded-full bg-neutral-950"
+        style="transform: scale(0);"
+      ></div>
+    </div>
+
+  </div>
+</section>
+
+<script>
+  import { animate, scroll } from "motion";
+
+  let cleanupFns: Array<() => void> = [];
+  let resizeTimeout: ReturnType<typeof setTimeout> | undefined;
+  let initRaf: number | undefined;
+  let settleTimeout: ReturnType<typeof setTimeout> | undefined;
+  let scrollRaf: number | undefined;
+
+  function initTimeline() {
+    if (initRaf) cancelAnimationFrame(initRaf);
+    if (scrollRaf) cancelAnimationFrame(scrollRaf);
+    cleanupFns.forEach((fn) => fn());
+    cleanupFns = [];
+    clearTimeout(resizeTimeout);
+    clearTimeout(settleTimeout);
+
+    const section = document.getElementById("timeline-section");
+    const titleLayerBottom = document.getElementById("title-layer-bottom");
+    const circleOverlay = document.getElementById("timeline-circle-overlay");
+    const circleExpansionFill = document.getElementById("timeline-circle-expansion-fill");
+    const track = document.getElementById("timeline-track");
+
+    const node1 = document.getElementById("node-1");
+    const node2 = document.getElementById("node-2");
+    const node3 = document.getElementById("node-3");
+
+    const dot1 = document.getElementById("dot-1");
+    const dot2 = document.getElementById("dot-2");
+    const dot3 = document.getElementById("dot-3");
+
+    const line1 = document.getElementById("line-1");
+    const line2 = document.getElementById("line-2");
+
+    if (
+      !section ||
+      !titleLayerBottom ||
+      !circleOverlay ||
+      !circleExpansionFill ||
+      !track ||
+      !node1 ||
+      !node2 ||
+      !node3 ||
+      !dot1 ||
+      !dot2 ||
+      !dot3 ||
+      !(line1 instanceof SVGPathElement) ||
+      !(line2 instanceof SVGPathElement)
+    ) {
+      return;
+    }
+
+    // Accurate path calculation using getBoundingClientRect to handle all transforms/nesting
+    const updatePaths = () => {
+      const trackRect = track.getBoundingClientRect();
+
+      const getCenter = (el: HTMLElement) => {
+        const r = el.getBoundingClientRect();
+        return {
+          x: (r.left - trackRect.left) + r.width / 2,
+          y: (r.top - trackRect.top) + r.height / 2
+        };
+      };
+
+      const p1 = getCenter(dot1);
+      const p2 = getCenter(dot2);
+      const p3 = getCenter(dot3);
+
+      // Line 1: Elbow connector
+      const mid1X = p1.x + (p2.x - p1.x) * 0.42;
+      const d1 = `M ${p1.x} ${p1.y} H ${mid1X} V ${p2.y} H ${p2.x}`;
+      line1.setAttribute("d", d1);
+      line1.setAttribute("pathLength", "1");
+      const len1 = line1.getTotalLength();
+
+      // Line 2: Elbow connector
+      const mid2X = p2.x + (p3.x - p2.x) * 0.6;
+      const d2 = `M ${p2.x} ${p2.y} H ${mid2X} V ${p3.y} H ${p3.x}`;
+      line2.setAttribute("d", d2);
+      line2.setAttribute("pathLength", "1");
+      const len2 = line2.getTotalLength();
+
+      return { len1, len2 };
+    };
+
+    initRaf = requestAnimationFrame(() => {
+      let { len1, len2 } = updatePaths();
+
+      if (len1 === 0 || len2 === 0) {
+        const retry = updatePaths();
+        len1 = retry.len1;
+        len2 = retry.len2;
+      }
+
+      const onResize = () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(() => {
+          updatePaths();
+        }, 120);
+      };
+      window.addEventListener("resize", onResize);
+      cleanupFns.push(() => window.removeEventListener("resize", onResize));
+
+      const onScroll = () => {
+        if (scrollRaf) return;
+        scrollRaf = requestAnimationFrame(() => {
+          scrollRaf = undefined;
+          updatePaths();
+        });
+      };
+      window.addEventListener("scroll", onScroll, { passive: true });
+      cleanupFns.push(() => {
+        window.removeEventListener("scroll", onScroll);
+        if (scrollRaf) cancelAnimationFrame(scrollRaf);
+        scrollRaf = undefined;
+      });
+
+      settleTimeout = setTimeout(() => {
+        updatePaths();
+      }, 220);
+
+      // ANIMATIONS
+
+      // 1. Circle Shrink (Top Layer)
+      // Shrinks from full screen to a small dot (12px radius)
+      // 1a. Circle Shrink (Clip Path)
+      const bgClipAnim = animate(
+        circleOverlay,
+        { clipPath: ["circle(150% at 50% 50%)", "circle(100px at 50% 50%)", "circle(8px at 50% 50%)", "circle(8px at 50% 50%)"] },
+        { ease: "linear", times: [0, 0.18, 0.2, 1] }
+      );
+      cleanupFns.push(scroll(bgClipAnim, { target: section, offset: ["start start", "end end"] }));
+
+      // 1b. Circle Opacity (Hold then Cut)
+      // Stays fully opaque until 0.2 (when track appears), then vanishes instantly.
+      const bgOpacityAnim = animate(
+        circleOverlay,
+        { opacity: [1, 1, 0, 0] },
+        { ease: "linear", times: [0, 0.2, 0.201, 1] }
+      );
+      cleanupFns.push(scroll(bgOpacityAnim, { target: section, offset: ["start start", "end end"] }));
+
+      // 2. Fade out title layers AFTER the circle has shrunk
+      // Only fade the bottom layer (black text on white) - the overlay already shrinks via clip-path
+      const titleBottomFadeAnim = animate(
+        titleLayerBottom,
+        { opacity: [1, 1, 0, 0] },
+        { ease: "linear", times: [0, 0.2, 0.201, 1] }
+      );
+      cleanupFns.push(scroll(titleBottomFadeAnim, { target: section, offset: ["start start", "end end"] }));
+
+      // 3. Horizontal Pan
+      // Keep still until 20%, then translate left.
+      // Ends at -200vw. Node 3 is at 250vw, so 250 - 200 = 50vw (Centered).
+      const trackAnim = animate(
+        track,
+        { transform: ["translateX(0vw)", "translateX(0vw)", "translateX(-200vw)", "translateX(-200vw)"] },
+        { ease: "linear", times: [0, 0.2, 0.86, 1] }
+      );
+      cleanupFns.push(scroll(trackAnim, { target: section, offset: ["start start", "end end"] }));
+
+      // 4. Node 1 Reveal
+      // Appears as the circle finishes shrinking
+      const node1Anim = animate(
+        node1,
+        {
+          opacity: [0, 0, 1, 1],
+          transform: ["translate(-50%, -50%)", "translate(-50%, -50%)", "translate(-50%, -50%)", "translate(-50%, -50%)"]
+        },
+        { ease: "linear", times: [0, 0.19, 0.2, 1] }
+      );
+      cleanupFns.push(scroll(node1Anim, { target: section, offset: ["start start", "end end"] }));
+
+      // 5. Line 1 Animation
+      const line1Anim = animate(
+        line1,
+        {
+          opacity: [0, 0, 1, 1, 1],
+          pathLength: [0, 0, 0, 1, 1]
+        },
+        { ease: "linear", times: [0, 0.19, 0.2, 0.48, 1] }
+      );
+      cleanupFns.push(scroll(line1Anim, { target: section, offset: ["start start", "end end"] }));
+
+      // 6. Node 2 Reveal
+      const node2Anim = animate(
+        node2,
+        {
+          opacity: [0, 0, 1, 1],
+          transform: ["translate(-50%, -50%) translateY(18px)", "translate(-50%, -50%) translateY(18px)", "translate(-50%, -50%) translateY(0px)", "translate(-50%, -50%) translateY(0px)"]
+        },
+        { ease: "linear", times: [0, 0.35, 0.5, 1] }
+      );
+      cleanupFns.push(scroll(node2Anim, { target: section, offset: ["start start", "end end"] }));
+
+      // 7. Line 2 Animation
+      const line2Anim = animate(
+        line2,
+        {
+          opacity: [0, 0, 1, 1, 1],
+          pathLength: [0, 0, 0, 1, 1]
+        },
+        { ease: "linear", times: [0, 0.52, 0.55, 0.86, 1] }
+      );
+      cleanupFns.push(scroll(line2Anim, { target: section, offset: ["start start", "end end"] }));
+
+      // 8. Node 3 Reveal
+      const node3Anim = animate(
+        node3,
+        {
+          opacity: [0, 0, 1, 1],
+          transform: ["translate(-50%, -50%) translateY(18px)", "translate(-50%, -50%) translateY(18px)", "translate(-50%, -50%) translateY(0px)", "translate(-50%, -50%) translateY(0px)"]
+        },
+        { ease: "linear", times: [0, 0.72, 0.86, 1] }
+      );
+      cleanupFns.push(scroll(node3Anim, { target: section, offset: ["start start", "end end"] }));
+
+      // 9. Dot 3 Scale (Expansion)
+      // Overshoot animation: 0 -> 1.35 (pop) -> 1 (settle)
+      const dot3ScaleAnim = animate(
+        dot3,
+        { transform: ["scale(0)", "scale(0)", "scale(1.35)", "scale(1)", "scale(1)"] },
+        { ease: "linear", times: [0, 0.72, 0.81, 0.86, 1] }
+      );
+      cleanupFns.push(scroll(dot3ScaleAnim, { target: section, offset: ["start start", "end end"] }));
+
+      // 10. Circle Expansion (End)
+      // Expands from 0% (at dot 3 position) to full screen
+      const expansionAnim = animate(
+        circleExpansionFill,
+        {
+          transform: ["scale(0)", "scale(0)", "scale(1)"]
+        },
+        { ease: "linear", times: [0, 0.92, 1] }
+      );
+      cleanupFns.push(scroll(expansionAnim, { target: section, offset: ["start start", "end end"] }));
+    });
+  }
+
+  document.addEventListener("astro:page-load", initTimeline);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initTimeline);
+  } else {
+    initTimeline();
+  }
+</script>

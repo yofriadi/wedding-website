@@ -31,7 +31,8 @@
       "cache": false
     },
     "db:local": {
-      "cache": false
+      "cache": false,
+      "persistent": true
     },
     "deploy": {
       "cache": false

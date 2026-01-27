@@ -7,15 +7,19 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
+    "dev": "astro dev --host",
     "dev:bare": "astro dev"
   },
   "dependencies": {
     "@astrojs/node": "^9.5.2",
     "@libsql/client": "catalog:",
+    "@wedding-website/db": "workspace:*",
     "@wedding-website/env": "workspace:*",
-    "astro": "^5.16.11",
+    "astro": "^5.16.15",
     "dotenv": "catalog:",
+    "drizzle-orm": "^0.45.1",
     "libsql": "catalog:",
+    "motion": "^12.29.0",
     "zod": "catalog:"
   },
   "devDependencies": {
@@ -24,6 +28,7 @@
     "@tailwindcss/vite": "^4.1.18",
     "@wedding-website/config": "workspace:*",
     "alchemy": "catalog:",
+    "playwright": "^1.58.0",
     "tailwindcss": "^4.1.18",
     "typescript": "catalog:"
   }

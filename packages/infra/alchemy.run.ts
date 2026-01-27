@@ -13,6 +13,8 @@ export const web = await Astro("web", {
     DATABASE_URL: alchemy.secret.env.DATABASE_URL!,
     CORS_ORIGIN: alchemy.env.CORS_ORIGIN!,
     DATABASE_AUTH_TOKEN: alchemy.secret.env.DATABASE_AUTH_TOKEN!,
+    INVITE_ADMIN_TOKEN: alchemy.secret.env.INVITE_ADMIN_TOKEN ?? "",
+    INVITE_COOKIE_DAYS: alchemy.env.INVITE_COOKIE_DAYS ?? "30",
   },
 });
 

@@ -1,19 +1,29 @@
 ---
 ---
 
-<section class="relative h-[300vh]" id="hero-container">
+<section class="relative h-[400vh]" id="hero-container">
   <div class="sticky top-0 h-screen w-full overflow-hidden">
-    <div class="absolute inset-0 bg-neutral-900/10 z-10 pointer-events-none"></div>
+    <div class="absolute inset-0 bg-black/20 z-10 pointer-events-none"></div>
+    
+    <!-- Image with Zoom and Blur animations -->
     <img 
       src="/wedding_photo.png" 
       alt="Wedding Couple" 
-      class="h-full w-full object-cover animate-zoom-out"
+      class="h-full w-full object-cover animate-image"
       style="transform-origin: center 40%;"
     />
     
-    <!-- Optional Overlay Text that fades out -->
-    <div class="absolute inset-0 flex items-center justify-center z-20 opacity-0 animate-fade-in-out pointer-events-none">
-       <h1 class="text-4xl md:text-6xl font-serif text-white/90 tracking-widest uppercase">Forever</h1>
+    <!-- Overlay Content (Names & Date) -->
+    <div class="absolute inset-0 flex flex-col items-center justify-center z-20 pointer-events-none">
+       <div class="text-center space-y-6 animate-text opacity-0 transform translate-y-8">
+         <p class="text-sm md:text-lg tracking-[0.4em] text-white/90 uppercase font-light">Save the Date</p>
+         <h1 class="text-5xl md:text-8xl font-serif text-white tracking-tight drop-shadow-lg">
+           Yofri <span class="text-white/80 font-light italic">&</span> Aisha
+         </h1>
+         <p class="text-xl md:text-2xl font-light text-white/90 tracking-widest font-serif">
+           September 24, 2026
+         </p>
+       </div>
     </div>
   </div>
 </section>
@@ -21,39 +31,66 @@
 <style>
   /* 
    * Scroll Driven Animation 
-   * Chrome 115+, Safari 18+
+   * Timeline: 
+   * 0vh   -> 100vh : Zoom Out (Text hidden)
+   * 100vh -> 125vh : Short Pause (Text hidden)
+   * 125vh -> 200vh : Fast Reveal (Blur Image + Reveal Text)
+   * 200vh -> 400vh : Long Hold (Text fully visible)
    */
-  @keyframes zoom-out {
+
+  @keyframes image-scroll-effect {
     0% {
       transform: scale(2.8);
+      filter: blur(0px);
     }
-    100% {
+    25% { /* 100vh (100/400) */
       transform: scale(1);
+      filter: blur(0px);
+    }
+    31.25% { /* 125vh (125/400) - Short pause */
+      transform: scale(1);
+      filter: blur(0px);
+    }
+    50%, 100% { /* 200vh to 400vh - Reveal done & Hold */
+      transform: scale(1);
+      filter: blur(8px) brightness(0.7);
     }
   }
 
-  @keyframes fade-in-out {
-    0% { opacity: 0; transform: translateY(20px); }
-    15% { opacity: 1; transform: translateY(0); }
-    85% { opacity: 1; }
-    100% { opacity: 0; }
-  }
-
-  /* Default state: Start zoomed in */
-  .animate-zoom-out {
-    transform-origin: center 40%;
-    will-change: transform;
-    transform: scale(2.8);
+  @keyframes text-reveal {
+    0%, 31.25% { /* Hidden until 125vh */
+      opacity: 0;
+      transform: translateY(40px);
+    }
+    50%, 100% { /* Fully visible by 200vh and held until 400vh */
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   /* Only apply CSS Scroll Animation if supported */
   @supports (animation-timeline: scroll()) {
-    .animate-zoom-out {
-      animation-name: zoom-out;
-      animation-fill-mode: both;
-      animation-timing-function: linear;
-      animation-timeline: scroll(root); /* Explicitly bind to root scroller */
-      animation-range: 0vh 100vh;
+    .animate-image {
+      animation: image-scroll-effect linear both;
+      animation-timeline: scroll(root); 
+      animation-range: 0vh 400vh;
+    }
+
+    .animate-text {
+      animation: text-reveal linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0vh 400vh;
+    }
+  }
+
+  /* Fallback for JS (Simplified) */
+  @supports not (animation-timeline: scroll()) {
+    .animate-image {
+      transform: scale(2.8);
+    }
+    .animate-text {
+      opacity: 0;
+      transform: translateY(40px);
     }
   }
 </style>
@@ -61,28 +98,72 @@
 <script>
   // Fallback script for browsers that don't support scroll-driven animations
   if (!CSS.supports("animation-timeline: scroll()")) {
-    const img = document.querySelector('.animate-zoom-out') as HTMLElement;
+    const section = document.querySelector('#hero-container') as HTMLElement;
+    const img = document.querySelector('.animate-image') as HTMLElement;
+    const text = document.querySelector('.animate-text') as HTMLElement;
     
-    if (img) {
+    if (section && img && text) {
+      // Initial state setup
+      img.style.transform = 'scale(2.8)';
+      text.style.opacity = '0';
+      text.style.transform = 'translateY(40px)';
+
       window.addEventListener('scroll', () => {
         const scrolled = window.scrollY;
         const viewportHeight = window.innerHeight;
-        const range = viewportHeight * 1.5; // 150vh matches CSS range
         
-        // Calculate progress 0 to 1
-        let progress = Math.min(scrolled / range, 1);
+        // Keyframes based on vh
+        const zoomEnd = viewportHeight * 1;      // 100vh
+        const pauseEnd = viewportHeight * 1.25;  // 125vh (Shortened from 1.5)
+        const blurEnd = viewportHeight * 2.0;    // 200vh (Shortened from 2.5)
+        // Section height is 400vh, so hold phase is now 200vh -> 400vh (Longer)
         
-        // Inverse of animation: 2.8 -> 1
-        // scale = 2.8 - (progress * (2.8 - 1))
-        const scale = 2.8 - (progress * 1.8);
-        
-        requestAnimationFrame(() => {
+        // 1. Zoom Logic (0 -> 100vh)
+        if (scrolled <= zoomEnd) {
+          const progress = Math.min(scrolled / zoomEnd, 1);
+          const scale = 2.8 - (progress * 1.8);
           img.style.transform = `scale(${scale})`;
-        });
+          img.style.filter = 'blur(0px) brightness(1)';
+          
+          // Text hidden
+          text.style.opacity = '0';
+          text.style.transform = 'translateY(40px)';
+        } 
+        // 2. Pause Logic (100vh -> 150vh)
+        else if (scrolled <= pauseEnd) {
+          img.style.transform = 'scale(1)';
+          img.style.filter = 'blur(0px) brightness(1)';
+          text.style.opacity = '0';
+          text.style.transform = 'translateY(40px)';
+        }
+        // 3. Blur & Text Logic (150vh -> 250vh)
+        else if (scrolled <= blurEnd) {
+          img.style.transform = 'scale(1)';
+          
+          const progress = (scrolled - pauseEnd) / (blurEnd - pauseEnd); // 0 to 1
+          
+          // Blur 0 -> 8px, Brightness 1 -> 0.7
+          const blur = progress * 8;
+          const brightness = 1 - (progress * 0.3);
+          img.style.filter = `blur(${blur}px) brightness(${brightness})`;
+          
+          // Text Opacity 0 -> 1, Translate 40px -> 0
+          text.style.opacity = `${progress}`;
+          text.style.transform = `translateY(${40 * (1 - progress)}px)`;
+        } 
+        // 4. Held State (> 250vh)
+        else {
+          img.style.transform = 'scale(1)';
+          img.style.filter = 'blur(8px) brightness(0.7)';
+          text.style.opacity = '1';
+          text.style.transform = 'translateY(0)';
+        }
       });
       
-      // Set initial state
+      // Init
       img.style.transform = 'scale(2.8)';
+      text.style.opacity = '0';
+      text.style.transform = 'translateY(40px)';
     }
   }
 </script>

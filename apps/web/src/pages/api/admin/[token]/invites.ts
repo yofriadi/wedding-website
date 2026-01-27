@@ -1,0 +1,95 @@
+import type { APIRoute } from "astro";
+import { db } from "@wedding-website/db";
+import { invites } from "@wedding-website/db/schema";
+import { env } from "@wedding-website/env/server";
+
+const INVITE_ID_LENGTH = 12;
+const INVITE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+
+function generateInviteId() {
+  const cryptoObj = globalThis.crypto;
+  if (!cryptoObj?.getRandomValues) {
+    throw new Error("crypto.getRandomValues is not available");
+  }
+
+  const bytes = new Uint8Array(INVITE_ID_LENGTH);
+  cryptoObj.getRandomValues(bytes);
+
+  let out = "";
+  for (let i = 0; i < bytes.length; i++) {
+    out += INVITE_ALPHABET[bytes[i] & 63];
+  }
+  return out;
+}
+
+function json(status: number, body: unknown) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      "content-type": "application/json; charset=utf-8",
+    },
+  });
+}
+
+export const POST: APIRoute = async ({ params, request }) => {
+  const expectedToken = env.INVITE_ADMIN_TOKEN;
+  const token = params.token;
+
+  if (!expectedToken || token !== expectedToken) {
+    return new Response(null, { status: 404 });
+  }
+
+  let payload: unknown;
+  try {
+    payload = await request.json();
+  } catch {
+    return json(400, { error: "invalid_json" });
+  }
+
+  const displayName =
+    typeof (payload as { displayName?: unknown })?.displayName === "string"
+      ? (payload as { displayName: string }).displayName.trim()
+      : "";
+
+  if (!displayName) {
+    return json(400, { error: "display_name_required" });
+  }
+  if (displayName.length > 120) {
+    return json(400, { error: "display_name_too_long" });
+  }
+
+  const now = Date.now();
+
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const id = generateInviteId();
+
+    try {
+      await db.insert(invites).values({
+        id,
+        displayName,
+        createdAt: now,
+        seenAt: null,
+        seenCount: 0,
+      });
+
+      return json(201, {
+        id,
+        sharePath: `/i/${id}`,
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+
+      const looksLikeCollision =
+        message.includes("UNIQUE") ||
+        message.includes("constraint") ||
+        message.includes("PRIMARYKEY") ||
+        message.includes("SQLITE_CONSTRAINT");
+
+      if (!looksLikeCollision || attempt === 4) {
+        return json(500, { error: "invite_create_failed" });
+      }
+    }
+  }
+
+  return json(500, { error: "invite_create_failed" });
+};
