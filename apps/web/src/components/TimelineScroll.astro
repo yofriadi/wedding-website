@@ -1,7 +1,7 @@
 ---
 ---
 
-<section id="timeline-section" class="relative h-[520vh] w-full bg-white">
+<section id="timeline-section" class="relative h-[1200vh] w-full bg-white">
   <div class="sticky top-0 h-screen w-full overflow-hidden">
     
     <!-- 1. Bottom Layer: Title (Black text on White bg) -->
@@ -25,13 +25,19 @@
     <!-- z-10: Above bottom title, below top circle overlay -->
     <div
       id="timeline-track"
-      class="relative z-10 h-full w-[320vw] will-change-transform"
-      style="transform: translateX(0vw); width: 320vw;"
+      class="relative z-10 h-[250vh] w-[1100vw] will-change-transform"
+      style="transform: translate(0vw, 0vh); width: 1100vw;"
     >
       <!-- SVG connectors live INSIDE the track -->
       <svg class="absolute inset-0 h-full w-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
         <path id="line-1" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0" />
         <path id="line-2" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0" />
+        <path id="line-3" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0" />
+        <path id="line-4" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0" />
+        <path id="line-5" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0" />
+        <path id="line-6" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0" />
+        <path id="line-7" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0" />
+        <path id="line-8" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0" />
       </svg>
 
       <!-- Node 1 (left) -->
@@ -39,7 +45,7 @@
       <div
         id="node-1"
         class="absolute opacity-0"
-        style="left: 50vw; top: 50%; transform: translate(-50%, -50%);"
+        style="left: 50vw; top: 50vh; transform: translate(-50%, -50%);"
       >
         <div
           id="dot-1"
@@ -57,40 +63,220 @@
       <!-- Node 2 (middle) -->
       <div
         id="node-2"
-        class="absolute opacity-0"
-        style="left: 165vw; top: 60%; transform: translate(-50%, -50%);"
+        class="absolute"
+        style="left: 150vw; top: 30vh; transform: translate(-50%, -50%);"
       >
-        <div id="dot-2" class="h-5 w-5 rounded-full bg-neutral-950"></div>
+        <div
+          id="dot-2"
+          class="h-5 w-5 rounded-full bg-neutral-950"
+          style="transform: scale(0.6); transform-origin: center;"
+        ></div>
 
-        <!-- Photo above the node -->
-        <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)]">
-          <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-neutral-200 shadow-xl">
-            <img src="/13.jpg" alt="Februari 2025" class="h-full w-full object-cover" loading="eager" />
+        <!-- Date above the node -->
+        <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+16px)] whitespace-nowrap">
+          <div data-node2-date style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
+            <div class="font-serif text-2xl text-neutral-950">Februari 2025</div>
           </div>
         </div>
 
-        <!-- Text below the node -->
-        <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+22px)] w-[320px]">
-          <div class="font-serif text-2xl text-neutral-950">Februari 2025</div>
-          <p class="mt-2 text-sm leading-relaxed text-neutral-600">
-            Menjadi bulan pertama kami bertemu dan berkenalan. Sebatas teman, dikenalkan oleh Rahadian,
-            kakak Aci. Tidak dekat, tidak berlebihan.
-          </p>
+        <!-- Photo and Text below the node -->
+        <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+24px)] flex flex-col items-center">
+          <div data-node2-photo style="opacity: 0; transform: translateY(18px);">
+            <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-neutral-200 shadow-xl">
+              <img src="/13.jpg" alt="Februari 2025" class="h-full w-full object-cover" loading="eager" />
+            </div>
+          </div>
+
+          <div data-node2-desc class="mt-4 w-[320px]" style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
+            <p class="text-sm leading-relaxed text-neutral-600">
+              Menjadi bulan pertama kami bertemu dan berkenalan. Sebatas teman, dikenalkan oleh Rahadian,
+              kakak Aci. Tidak dekat, tidak berlebihan.
+            </p>
+          </div>
         </div>
       </div>
 
       <!-- Node 3 (right, end) -->
-      <!-- Adjusted left to 250vw so it ends up centered (250 - 200 = 50vw) -->
+      <!-- Adjusted left to 275vw to be further from Node 2 and connect at 80% viewport width -->
       <div
         id="node-3"
-        class="absolute opacity-0"
-        style="left: 250vw; top: 45%; transform: translate(-50%, -50%);"
+        class="absolute"
+        style="left: 275vw; top: 70vh; transform: translate(-50%, -50%);"
       >
-        <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+14px)] whitespace-nowrap font-serif text-2xl md:text-3xl text-neutral-950">
-          Oktober Menikah
+        <!-- Photo and Date above the node -->
+        <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)] flex flex-col items-center">
+          <div data-node3-photo style="opacity: 0; transform: translateY(18px);">
+            <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-neutral-200 shadow-xl mb-4">
+              <img src="/13.jpg" alt="5 April 2025" class="h-full w-full object-cover" loading="eager" />
+            </div>
+          </div>
+          <div data-node3-date style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
+            <div class="whitespace-nowrap font-serif text-2xl text-neutral-950">
+              5 April 2025
+            </div>
+          </div>
         </div>
-        <div id="dot-3" class="h-5 w-5 rounded-full bg-neutral-950" style="transform-origin: center;"></div>
+
+        <div id="dot-3" class="h-5 w-5 rounded-full bg-neutral-950" style="transform: scale(0.6); transform-origin: center;"></div>
+
+        <!-- Text below the node -->
+        <div data-node3-desc class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+24px)] w-[320px]" style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
+          <p class="text-sm leading-relaxed text-neutral-600 text-center">
+            Menjadi bulan pertama kami bertemu dan berkenalan. Sebatas teman, dikenalkan oleh Rahadian, kakak Aci. Tidak dekat, tidak berlebihan.
+          </p>
+        </div>
       </div>
+
+      <!-- Node 4 -->
+      <div
+        id="node-4"
+        class="absolute"
+        style="left: 379vw; top: 60vh; transform: translate(-50%, -50%);"
+      >
+        <div id="dot-4" class="h-5 w-5 rounded-full bg-neutral-950" style="transform: scale(0.6); transform-origin: center;"></div>
+
+        <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)]">
+          <div data-node4-photo style="opacity: 0; transform: translateY(18px);">
+            <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-neutral-200 shadow-xl">
+              <img src="/0.jpg" alt="28 Juni 2025" class="h-full w-full object-cover" loading="eager" />
+            </div>
+          </div>
+        </div>
+
+        <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+22px)] w-[320px] flex flex-col items-center">
+          <div data-node4-date style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
+            <div class="font-serif text-2xl text-neutral-950">28 Juni 2025</div>
+          </div>
+          <div data-node4-desc style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
+            <p class="mt-2 text-sm leading-relaxed text-neutral-600 text-center">
+              Kali pertama kami jalan berdua saja. Aci pikir, perbedaan hobi dan interest akan menjadi hambatan dari merasa nyaman.
+              Namun ternyata, candaan dan obrolan mengalir dengan baik. Bahkan diamnya saja menyenangkan.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Node 5 -->
+      <div
+        id="node-5"
+        class="absolute"
+        style="left: 488vw; top: 60vh; transform: translate(-50%, -50%);"
+      >
+        <div id="dot-5" class="h-5 w-5 rounded-full bg-neutral-950" style="transform: scale(0.6); transform-origin: center;"></div>
+
+        <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)]">
+          <div data-node5-photo style="opacity: 0; transform: translateY(18px);">
+            <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-neutral-200 shadow-xl">
+              <img src="/0.jpg" alt="26 Oktober 2025" class="h-full w-full object-cover" loading="eager" />
+            </div>
+          </div>
+        </div>
+
+        <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+22px)] w-[320px] flex flex-col items-center">
+          <div data-node5-date style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
+            <div class="font-serif text-2xl text-neutral-950">26 Oktober 2025</div>
+          </div>
+          <div data-node5-desc style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
+            <p class="mt-2 text-sm leading-relaxed text-neutral-600 text-center">
+              Pertama kali kami saling mengungkapkan rasa ketertarikan. Sepulangnya dari kafe, Adi langsung mengajak Aci bertemu Mama Nur.
+              Salah satu bentuk yang menunjukkan keseriusan untuk melanjutkan ke jenjang berikutnya.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Node 6 -->
+      <div
+        id="node-6"
+        class="absolute"
+        style="left: 597vw; top: 50vh; transform: translate(-50%, -50%);"
+      >
+        <div id="dot-6" class="h-5 w-5 rounded-full bg-neutral-950" style="transform: scale(0.6); transform-origin: center;"></div>
+
+        <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)]">
+          <div data-node6-photo style="opacity: 0; transform: translateY(18px);">
+            <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-neutral-200 shadow-xl">
+              <img src="/0.jpg" alt="1 November 2025" class="h-full w-full object-cover" loading="eager" />
+            </div>
+          </div>
+        </div>
+
+        <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+22px)] w-[320px] text-center">
+          <div data-node6-date style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
+            <div class="font-serif text-2xl text-neutral-950">1 November 2025</div>
+          </div>
+          <div data-node6-desc style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
+            <p class="mt-2 text-sm leading-relaxed text-neutral-600">
+              Foto berdua kami yang pertama. Kami mulai sore di hari hujan itu dengan bercerita. Tentang diri, tentang pertemanan kami,
+              tentang kisah yang lalu, dan rencana-rencana masa depan kami.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Node 7 -->
+      <div
+        id="node-7"
+        class="absolute"
+        style="left: 706vw; top: 30vh; transform: translate(-50%, -50%);"
+      >
+        <div id="dot-7" class="h-5 w-5 rounded-full bg-neutral-950" style="transform: scale(0.6); transform-origin: center;"></div>
+
+        <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)]">
+          <div data-node7-photo style="opacity: 0; transform: translateY(18px);">
+            <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-neutral-200 shadow-xl">
+              <img src="/0.jpg" alt="29-30 November 2025" class="h-full w-full object-cover" loading="eager" />
+            </div>
+          </div>
+        </div>
+
+        <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+22px)] w-[320px] text-center">
+          <div data-node7-date style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
+            <div class="font-serif text-2xl text-neutral-950">29-30 November 2025</div>
+          </div>
+          <div data-node7-desc style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
+            <p class="mt-2 text-sm leading-relaxed text-neutral-600">
+              Aci membawa Adi ke rumah Solo. Mengenalkan kepada orang tua Aci, saudara Aci, keluarga besar. Go public!
+              Ditandai dengan unggahan story media sosial. Tanpa penjelasan, cukup foto kami berdua.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Node 8 -->
+      <div
+        id="node-8"
+        class="absolute"
+        style="left: 815vw; top: 20vh; transform: translate(-50%, -50%);"
+      >
+        <div class="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 whitespace-nowrap text-center">
+            <div data-node8-date style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
+              <div class="font-serif text-2xl text-neutral-950">11 April 2026</div>
+            </div>
+        </div>
+        <div id="dot-8" class="h-5 w-5 rounded-full bg-neutral-950" style="transform: scale(0.6); transform-origin: center;"></div>
+        
+        <!-- Photo and Text on the right side of the node -->
+        <div class="absolute left-[50vw] -translate-x-1/2 top-4 flex flex-col items-center w-[260px]">
+          <div data-node8-photo style="opacity: 0; transform: translateY(18px);">
+            <div class="h-45 w-full overflow-hidden rounded-xl bg-neutral-200 shadow-xl mb-4">
+              <img src="/0.jpg" alt="Lamaran" class="h-full w-full object-cover" loading="eager" />
+            </div>
+          </div>
+          <div data-node8-desc style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
+            <p class="text-sm leading-relaxed text-neutral-600 text-center">
+              Momentum besar bagi kami sebagai langkah awal dalam menjalin hubungan yang lebih serius. Lamaran.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Node 9 Anchor (for path calc) -->
+      <div
+        id="dot-9-anchor"
+        class="absolute"
+        style="left: 965vw; top: 200vh; width: 20px; height: 20px; transform: translate(-50%, -50%); visibility: hidden;"
+      ></div>
     </div>
 
     <!-- 3. Top Layer: Overlay (Black BG + White Title) -->
@@ -112,17 +298,35 @@
     </div>
 
     <!-- 4. Expansion Overlay (End) -->
-    <!-- z-40: Above everything. Expands from dot-3 to fill screen. -->
+    <!-- z-40: Above everything. Expands from dot-9 to fill screen. -->
     <div
       id="timeline-circle-expansion"
       class="absolute z-40 pointer-events-none"
-      style="width: 200vmax; height: 200vmax; left: 50%; top: 45%; transform: translate(-50%, -50%);"
+      style="width: 200vmax; height: 200vmax; left: 50%; top: 50vh; transform: translate(-50%, -50%);"
     >
       <div
         id="timeline-circle-expansion-fill"
         class="h-full w-full rounded-full bg-neutral-950"
         style="transform: scale(0);"
       ></div>
+    </div>
+
+    <!-- 5. Final Node Overlay -->
+    <!-- z-50: Above the expansion fill. -->
+    <div
+      id="node-9"
+      class="absolute z-50 pointer-events-none"
+      style="left: 0; top: 0; width: 100%; height: 100%; transform: translate(0vw, 0vh); will-change-transform;"
+    >
+      <div style="position: absolute; left: 965vw; top: 200vh; transform: translate(-50%, -50%);">
+        <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+14px)] whitespace-nowrap text-center">
+          <div data-node9-date style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
+            <div class="font-serif text-2xl md:text-3xl text-white">24 September 2026</div>
+            <div class="font-serif text-2xl md:text-3xl text-white">Menikah</div>
+          </div>
+        </div>
+        <div id="dot-9" class="h-5 w-5 rounded-full bg-neutral-950" style="transform: scale(0.6); transform-origin: center;"></div>
+      </div>
     </div>
 
   </div>
@@ -154,13 +358,39 @@
     const node1 = document.getElementById("node-1");
     const node2 = document.getElementById("node-2");
     const node3 = document.getElementById("node-3");
+    const node4 = document.getElementById("node-4");
+    const node5 = document.getElementById("node-5");
+    const node6 = document.getElementById("node-6");
+    const node7 = document.getElementById("node-7");
+    const node8 = document.getElementById("node-8");
+    const node9 = document.getElementById("node-9");
 
     const dot1 = document.getElementById("dot-1");
     const dot2 = document.getElementById("dot-2");
     const dot3 = document.getElementById("dot-3");
+    const dot4 = document.getElementById("dot-4");
+    const dot5 = document.getElementById("dot-5");
+    const dot6 = document.getElementById("dot-6");
+    const dot7 = document.getElementById("dot-7");
+    const dot8 = document.getElementById("dot-8");
+    const dot9 = document.getElementById("dot-9");
+    const dot9Anchor = document.getElementById("dot-9-anchor");
+    const node2Photo = document.querySelector("[data-node2-photo]");
+    const node2Date = document.querySelector("[data-node2-date]");
+    const node2Desc = document.querySelector("[data-node2-desc]");
+    const node2Details = [node2Photo, node2Date, node2Desc].filter(
+      (el): el is HTMLElement => el instanceof HTMLElement
+    );
+
 
     const line1 = document.getElementById("line-1");
     const line2 = document.getElementById("line-2");
+    const line3 = document.getElementById("line-3");
+    const line4 = document.getElementById("line-4");
+    const line5 = document.getElementById("line-5");
+    const line6 = document.getElementById("line-6");
+    const line7 = document.getElementById("line-7");
+    const line8 = document.getElementById("line-8");
 
     if (
       !section ||
@@ -171,11 +401,29 @@
       !node1 ||
       !node2 ||
       !node3 ||
+      !node4 ||
+      !node5 ||
+      !node6 ||
+      !node7 ||
+      !node8 ||
+      !node9 ||
       !dot1 ||
       !dot2 ||
       !dot3 ||
+      !dot4 ||
+      !dot5 ||
+      !dot6 ||
+      !dot7 ||
+      !dot8 ||
+      !dot9 ||
       !(line1 instanceof SVGPathElement) ||
-      !(line2 instanceof SVGPathElement)
+      !(line2 instanceof SVGPathElement) ||
+      !(line3 instanceof SVGPathElement) ||
+      !(line4 instanceof SVGPathElement) ||
+      !(line5 instanceof SVGPathElement) ||
+      !(line6 instanceof SVGPathElement) ||
+      !(line7 instanceof SVGPathElement) ||
+      !(line8 instanceof SVGPathElement)
     ) {
       return;
     }
@@ -192,34 +440,63 @@
         };
       };
 
-      const p1 = getCenter(dot1);
-      const p2 = getCenter(dot2);
-      const p3 = getCenter(dot3);
+      const points = [
+        getCenter(dot1),
+        getCenter(dot2),
+        getCenter(dot3),
+        getCenter(dot4),
+        getCenter(dot5),
+        getCenter(dot6),
+        getCenter(dot7),
+        getCenter(dot8),
+        getCenter(dot9Anchor!)
+      ];
 
-      // Line 1: Elbow connector
-      const mid1X = p1.x + (p2.x - p1.x) * 0.42;
-      const d1 = `M ${p1.x} ${p1.y} H ${mid1X} V ${p2.y} H ${p2.x}`;
-      line1.setAttribute("d", d1);
-      line1.setAttribute("pathLength", "1");
-      const len1 = line1.getTotalLength();
+      const setElbow = (line: SVGPathElement, a: { x: number; y: number }, b: { x: number; y: number }, t: number) => {
+        const midX = a.x + (b.x - a.x) * t;
+        const d = `M ${a.x} ${a.y} H ${midX} V ${b.y} H ${b.x}`;
+        line.setAttribute("d", d);
+        line.setAttribute("pathLength", "1");
+        return line.getTotalLength();
+      };
 
-      // Line 2: Elbow connector
-      const mid2X = p2.x + (p3.x - p2.x) * 0.6;
-      const d2 = `M ${p2.x} ${p2.y} H ${mid2X} V ${p3.y} H ${p3.x}`;
-      line2.setAttribute("d", d2);
-      line2.setAttribute("pathLength", "1");
-      const len2 = line2.getTotalLength();
+      const setElbowVerticalFirst = (line: SVGPathElement, a: { x: number; y: number }, b: { x: number; y: number }) => {
+        const d = `M ${a.x} ${a.y} V ${b.y} H ${b.x}`;
+        line.setAttribute("d", d);
+        line.setAttribute("pathLength", "1");
+        return line.getTotalLength();
+      };
 
-      return { len1, len2 };
+      const setVHV = (line: SVGPathElement, a: { x: number; y: number }, b: { x: number; y: number }, t: number) => {
+        const midY = a.y + (b.y - a.y) * t;
+        const d = `M ${a.x} ${a.y} V ${midY} H ${b.x} V ${b.y}`;
+        line.setAttribute("d", d);
+        line.setAttribute("pathLength", "1");
+        return line.getTotalLength();
+      };
+
+      const tA = 0.42;
+      const tB = 0.6;
+      const tMid = 0.5;
+
+      const lens = [
+        setElbow(line1, points[0], points[1], tA),
+        setElbow(line2, points[1], points[2], tMid),
+        setElbow(line3, points[2], points[3], tMid),
+        setElbow(line4, points[3], points[4], tMid),
+        setElbow(line5, points[4], points[5], tMid),
+        setElbow(line6, points[5], points[6], tMid),
+        setElbow(line7, points[6], points[7], tMid),
+        setVHV(line8, points[7], points[8], 0.25)
+      ];
+
+      return lens;
     };
 
     initRaf = requestAnimationFrame(() => {
-      let { len1, len2 } = updatePaths();
-
-      if (len1 === 0 || len2 === 0) {
-        const retry = updatePaths();
-        len1 = retry.len1;
-        len2 = retry.len2;
+      let lens = updatePaths();
+      if (lens.some((l) => l === 0)) {
+        lens = updatePaths();
       }
 
       const onResize = () => {
@@ -257,16 +534,16 @@
       const bgClipAnim = animate(
         circleOverlay,
         { clipPath: ["circle(150% at 50% 50%)", "circle(100px at 50% 50%)", "circle(8px at 50% 50%)", "circle(8px at 50% 50%)"] },
-        { ease: "linear", times: [0, 0.18, 0.2, 1] }
+        { ease: "linear", times: [0, 0.04, 0.06, 1] }
       );
       cleanupFns.push(scroll(bgClipAnim, { target: section, offset: ["start start", "end end"] }));
 
       // 1b. Circle Opacity (Hold then Cut)
-      // Stays fully opaque until 0.2 (when track appears), then vanishes instantly.
+      // Stays fully opaque until 0.06 (when track appears), then vanishes instantly.
       const bgOpacityAnim = animate(
         circleOverlay,
         { opacity: [1, 1, 0, 0] },
-        { ease: "linear", times: [0, 0.2, 0.201, 1] }
+        { ease: "linear", times: [0, 0.06, 0.061, 1] }
       );
       cleanupFns.push(scroll(bgOpacityAnim, { target: section, offset: ["start start", "end end"] }));
 
@@ -275,96 +552,229 @@
       const titleBottomFadeAnim = animate(
         titleLayerBottom,
         { opacity: [1, 1, 0, 0] },
-        { ease: "linear", times: [0, 0.2, 0.201, 1] }
+        { ease: "linear", times: [0, 0.06, 0.061, 1] }
       );
       cleanupFns.push(scroll(titleBottomFadeAnim, { target: section, offset: ["start start", "end end"] }));
 
-      // 3. Horizontal Pan
-      // Keep still until 20%, then translate left.
-      // Ends at -200vw. Node 3 is at 250vw, so 250 - 200 = 50vw (Centered).
-      const trackAnim = animate(
-        track,
-        { transform: ["translateX(0vw)", "translateX(0vw)", "translateX(-200vw)", "translateX(-200vw)"] },
-        { ease: "linear", times: [0, 0.2, 0.86, 1] }
-      );
-      cleanupFns.push(scroll(trackAnim, { target: section, offset: ["start start", "end end"] }));
-
-      // 4. Node 1 Reveal
-      // Appears as the circle finishes shrinking
-      const node1Anim = animate(
-        node1,
-        {
-          opacity: [0, 0, 1, 1],
-          transform: ["translate(-50%, -50%)", "translate(-50%, -50%)", "translate(-50%, -50%)", "translate(-50%, -50%)"]
-        },
-        { ease: "linear", times: [0, 0.19, 0.2, 1] }
-      );
-      cleanupFns.push(scroll(node1Anim, { target: section, offset: ["start start", "end end"] }));
-
-      // 5. Line 1 Animation
-      const line1Anim = animate(
-        line1,
-        {
-          opacity: [0, 0, 1, 1, 1],
-          pathLength: [0, 0, 0, 1, 1]
-        },
-        { ease: "linear", times: [0, 0.19, 0.2, 0.48, 1] }
-      );
-      cleanupFns.push(scroll(line1Anim, { target: section, offset: ["start start", "end end"] }));
-
-      // 6. Node 2 Reveal
-      const node2Anim = animate(
-        node2,
-        {
-          opacity: [0, 0, 1, 1],
-          transform: ["translate(-50%, -50%) translateY(18px)", "translate(-50%, -50%) translateY(18px)", "translate(-50%, -50%) translateY(0px)", "translate(-50%, -50%) translateY(0px)"]
-        },
-        { ease: "linear", times: [0, 0.35, 0.5, 1] }
-      );
-      cleanupFns.push(scroll(node2Anim, { target: section, offset: ["start start", "end end"] }));
-
-      // 7. Line 2 Animation
-      const line2Anim = animate(
-        line2,
-        {
-          opacity: [0, 0, 1, 1, 1],
-          pathLength: [0, 0, 0, 1, 1]
-        },
-        { ease: "linear", times: [0, 0.52, 0.55, 0.86, 1] }
-      );
-      cleanupFns.push(scroll(line2Anim, { target: section, offset: ["start start", "end end"] }));
-
-      // 8. Node 3 Reveal
-      const node3Anim = animate(
-        node3,
-        {
-          opacity: [0, 0, 1, 1],
-          transform: ["translate(-50%, -50%) translateY(18px)", "translate(-50%, -50%) translateY(18px)", "translate(-50%, -50%) translateY(0px)", "translate(-50%, -50%) translateY(0px)"]
-        },
-        { ease: "linear", times: [0, 0.72, 0.86, 1] }
-      );
-      cleanupFns.push(scroll(node3Anim, { target: section, offset: ["start start", "end end"] }));
-
-      // 9. Dot 3 Scale (Expansion)
-      // Overshoot animation: 0 -> 1.35 (pop) -> 1 (settle)
-      const dot3ScaleAnim = animate(
-        dot3,
-        { transform: ["scale(0)", "scale(0)", "scale(1.35)", "scale(1)", "scale(1)"] },
-        { ease: "linear", times: [0, 0.72, 0.81, 0.86, 1] }
-      );
-      cleanupFns.push(scroll(dot3ScaleAnim, { target: section, offset: ["start start", "end end"] }));
-
-      // 10. Circle Expansion (End)
-      // Expands from 0% (at dot 3 position) to full screen
-      const expansionAnim = animate(
-        circleExpansionFill,
-        {
-          transform: ["scale(0)", "scale(0)", "scale(1)"]
-        },
-        { ease: "linear", times: [0, 0.92, 1] }
-      );
-      cleanupFns.push(scroll(expansionAnim, { target: section, offset: ["start start", "end end"] }));
-    });
+      // 3. Horizontal Pan + Vertical Scroll at end
+      // Keep still until 15%, then translate left.
+      // At the end, translate up to reveal more vertical line.
+            const trackTransformValues = [
+                  "translate(0vw, 0vh)", 
+                  "translate(0vw, 0vh)", 
+                  "translate(-765vw, 0vh)", 
+                  "translate(-815vw, 0vh)", 
+                  "translate(-915vw, 0vh)",
+                  "translate(-915vw, -150vh)",
+                  "translate(-915vw, -150vh)"
+                ];
+            const trackTimes = [0, 0.06, 0.62, 0.66, 0.72, 0.94, 1];
+      
+            const trackAnim = animate(
+              track,
+              { transform: trackTransformValues },
+              { ease: "linear", times: trackTimes }
+            );
+            cleanupFns.push(scroll(trackAnim, { target: section, offset: ["start start", "end end"] }));
+      
+            const node9TransformAnim = animate(
+              node9,
+              { transform: trackTransformValues },
+              { ease: "linear", times: trackTimes }
+            );
+            cleanupFns.push(scroll(node9TransformAnim, { target: section, offset: ["start start", "end end"] }));
+      
+            // 4. Node 1 Reveal
+            // Appears as the circle finishes shrinking
+            const node1Anim = animate(
+              node1,
+              {
+                opacity: [0, 0, 1, 1],
+                transform: ["translate(-50%, -50%)", "translate(-50%, -50%)", "translate(-50%, -50%)", "translate(-50%, -50%)"]
+              },
+              { ease: "linear", times: [0, 0.05, 0.06, 1] }
+            );
+            cleanupFns.push(scroll(node1Anim, { target: section, offset: ["start start", "end end"] }));
+      
+            // 5. Line 1 Animation
+            const line1Anim = animate(
+              line1,
+              {
+                opacity: [0, 1, 1, 1],
+                pathLength: [0, 0, 1, 1]
+              },
+              { ease: "linear", times: [0, 0.06, 0.12, 1] }
+            );
+            cleanupFns.push(scroll(line1Anim, { target: section, offset: ["start start", "end end"] }));
+      
+            // Reusable Node Animation Helper
+            function setupNodeAnimation(nodeNum: number, connectAt: number) {
+              const dot = document.getElementById(`dot-${nodeNum}`);
+              const photo = document.querySelector(`[data-node${nodeNum}-photo]`);
+              const date = document.querySelector(`[data-node${nodeNum}-date]`);
+              const desc = document.querySelector(`[data-node${nodeNum}-desc]`);
+      
+              if (!dot) return;
+      
+              let connected = false;
+              const disconnectAt = connectAt - 0.01;
+      
+              const setHidden = () => {
+                dot.style.transform = "scale(0.6)";
+                if (date instanceof HTMLElement) {
+                  date.style.opacity = "0";
+                  date.style.transform = "translateY(12px) scale(0.98)";
+                }
+                if (desc instanceof HTMLElement) {
+                  desc.style.opacity = "0";
+                  desc.style.transform = "translateY(12px) scale(0.98)";
+                }
+              };
+      
+              const showDetails = () => {
+                animate(
+                  dot,
+                  { transform: ["scale(0.6)", "scale(1.35)", "scale(1)"] },
+                  { duration: 0.6, ease: [0.16, 1, 0.3, 1] }
+                );
+                if (date instanceof HTMLElement) {
+                  animate(
+                    date,
+                    { opacity: [0, 1, 1], transform: ["translateY(12px) scale(0.98)", "translateY(0px) scale(1.04)", "translateY(0px) scale(1)"] },
+                    { duration: 0.45, delay: 0.08, ease: [0.16, 1, 0.3, 1] }
+                  );
+                }
+                if (desc instanceof HTMLElement) {
+                  animate(
+                    desc,
+                    { opacity: [0, 1, 1], transform: ["translateY(12px) scale(0.98)", "translateY(0px) scale(1.03)", "translateY(0px) scale(1)"] },
+                    { duration: 0.45, delay: 0.16, ease: [0.16, 1, 0.3, 1] }
+                  );
+                }
+              };
+      
+              const hideDetails = () => {
+                animate(dot, { transform: ["scale(1)", "scale(0.6)"] }, { duration: 0.25, ease: "easeInOut" });
+                if (date instanceof HTMLElement) {
+                  animate(
+                    date,
+                    { opacity: [1, 0], transform: ["translateY(0px) scale(1)", "translateY(12px) scale(0.98)"] },
+                    { duration: 0.18, delay: 0.04, ease: "easeInOut" }
+                  );
+                }
+                if (desc instanceof HTMLElement) {
+                  animate(
+                    desc,
+                    { opacity: [1, 0], transform: ["translateY(0px) scale(1)", "translateY(12px) scale(0.98)"] },
+                    { duration: 0.18, delay: 0, ease: "easeInOut" }
+                  );
+                }
+              };
+      
+              setHidden();
+              cleanupFns.push(
+                scroll(
+                  (progress) => {
+                    if (!connected && progress >= connectAt) {
+                      connected = true;
+                      showDetails();
+                    } else if (connected && progress <= disconnectAt) {
+                      connected = false;
+                      hideDetails();
+                    }
+                  },
+                  { target: section!, offset: ["start start", "end end"] }
+                )
+              );
+      
+              if (photo instanceof HTMLElement) {
+                const photoAnim = animate(
+                  photo,
+                  {
+                    opacity: [0, 0, 1, 1],
+                    transform: ["translateY(18px)", "translateY(18px)", "translateY(0px)", "translateY(0px)"]
+                  },
+                  { ease: "linear", times: [0, connectAt - 0.015, connectAt + 0.005, 1] }
+                );
+                cleanupFns.push(scroll(photoAnim, { target: section!, offset: ["start start", "end end"] }));
+              }
+            }
+      
+            // Initialize animations for Nodes 2-9
+            setupNodeAnimation(2, 0.12);
+            setupNodeAnimation(3, 0.20);
+            setupNodeAnimation(4, 0.28);
+            setupNodeAnimation(5, 0.36);
+            setupNodeAnimation(6, 0.44);
+            setupNodeAnimation(7, 0.53);
+            setupNodeAnimation(8, 0.62);
+            setupNodeAnimation(9, 0.94);
+      
+            // Line animations (continued)
+            const line2Anim = animate(
+              line2,
+              { opacity: [0, 0, 1, 1, 1], pathLength: [0, 0, 0, 1, 1] },
+              { ease: "linear", times: [0, 0.14, 0.15, 0.20, 1] }
+            );
+            cleanupFns.push(scroll(line2Anim, { target: section, offset: ["start start", "end end"] }));
+      
+            const line3Anim = animate(
+              line3,
+              { opacity: [0, 0, 1, 1, 1], pathLength: [0, 0, 0, 1, 1] },
+              { ease: "linear", times: [0, 0.22, 0.23, 0.28, 1] }
+            );
+            cleanupFns.push(scroll(line3Anim, { target: section, offset: ["start start", "end end"] }));
+      
+            const line4Anim = animate(
+              line4,
+              { opacity: [0, 0, 1, 1, 1], pathLength: [0, 0, 0, 1, 1] },
+              { ease: "linear", times: [0, 0.30, 0.31, 0.36, 1] }
+            );
+            cleanupFns.push(scroll(line4Anim, { target: section, offset: ["start start", "end end"] }));
+      
+            const line5Anim = animate(
+              line5,
+              { opacity: [0, 0, 1, 1, 1], pathLength: [0, 0, 0, 1, 1] },
+              { ease: "linear", times: [0, 0.38, 0.39, 0.44, 1] }
+            );
+            cleanupFns.push(scroll(line5Anim, { target: section, offset: ["start start", "end end"] }));
+      
+            const line6Anim = animate(
+              line6,
+              { opacity: [0, 0, 1, 1, 1], pathLength: [0, 0, 0, 1, 1] },
+              { ease: "linear", times: [0, 0.46, 0.47, 0.53, 1] }
+            );
+            cleanupFns.push(scroll(line6Anim, { target: section, offset: ["start start", "end end"] }));
+      
+            const line7Anim = animate(
+              line7,
+              { opacity: [0, 0, 1, 1, 1], pathLength: [0, 0, 0, 1, 1] },
+              { ease: "linear", times: [0, 0.55, 0.56, 0.62, 1] }
+            );
+            cleanupFns.push(scroll(line7Anim, { target: section, offset: ["start start", "end end"] }));
+      
+            const line8Anim = animate(
+              line8,
+              { 
+                opacity: [0, 0, 1, 1, 1, 1], 
+                pathLength: [0, 0, 0, 0.54, 1, 1] 
+              },
+              { 
+                ease: "linear", 
+                times: [0, 0.62, 0.63, 0.72, 0.94, 1] 
+              }
+            );
+            cleanupFns.push(scroll(line8Anim, { target: section, offset: ["start start", "end end"] }));
+      
+            // 10. Circle Expansion (End)
+            // Expands from 0% (at dot 3 position) to full screen
+            const expansionAnim = animate(
+              circleExpansionFill,
+              {
+                transform: ["scale(0)", "scale(0)", "scale(1)"]
+              },
+              { ease: "linear", times: [0, 0.94, 1] }
+            );            cleanupFns.push(scroll(expansionAnim, { target: section, offset: ["start start", "end end"] }));    });
   }
 
   document.addEventListener("astro:page-load", initTimeline);
