@@ -275,7 +275,7 @@
       <div
         id="dot-9-anchor"
         class="absolute"
-        style="left: 965vw; top: 200vh; width: 20px; height: 20px; transform: translate(-50%, -50%); visibility: hidden;"
+        style="left: 965vw; top: 133vh; width: 20px; height: 20px; transform: translate(-50%, -50%); visibility: hidden;"
       ></div>
     </div>
 
@@ -318,7 +318,7 @@
       class="absolute z-50 pointer-events-none"
       style="left: 0; top: 0; width: 100%; height: 100%; transform: translate(0vw, 0vh); will-change-transform;"
     >
-      <div style="position: absolute; left: 965vw; top: 200vh; transform: translate(-50%, -50%);">
+      <div style="position: absolute; left: 965vw; top: 133vh; transform: translate(-50%, -50%);">
         <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+14px)] whitespace-nowrap text-center">
           <div data-node9-date style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
             <div class="font-serif text-2xl md:text-3xl text-white">24 September 2026</div>
@@ -487,7 +487,7 @@
         setElbow(line5, points[4], points[5], tMid),
         setElbow(line6, points[5], points[6], tMid),
         setElbow(line7, points[6], points[7], tMid),
-        setVHV(line8, points[7], points[8], 0.25)
+        setVHV(line8, points[7], points[8], 0.4)
       ];
 
       return lens;
@@ -565,8 +565,8 @@
                   "translate(-765vw, 0vh)", 
                   "translate(-815vw, 0vh)", 
                   "translate(-915vw, 0vh)",
-                  "translate(-915vw, -150vh)",
-                  "translate(-915vw, -150vh)"
+                  "translate(-915vw, -83vh)",
+                  "translate(-915vw, -83vh)"
                 ];
             const trackTimes = [0, 0.06, 0.62, 0.66, 0.72, 0.94, 1];
       
@@ -756,12 +756,12 @@
             const line8Anim = animate(
               line8,
               { 
-                opacity: [0, 0, 1, 1, 1, 1], 
-                pathLength: [0, 0, 0, 0.54, 1, 1] 
+                opacity: [0, 0, 1, 1, 1, 1, 1], 
+                pathLength: [0, 0, 0, 0.22, 0.54, 1, 1] 
               },
               { 
                 ease: "linear", 
-                times: [0, 0.62, 0.63, 0.72, 0.94, 1] 
+                times: [0, 0.62, 0.625, 0.64, 0.72, 0.94, 1] 
               }
             );
             cleanupFns.push(scroll(line8Anim, { target: section, offset: ["start start", "end end"] }));
