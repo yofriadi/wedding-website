@@ -1,0 +1,628 @@
+---
+export interface Story {
+  id: string;
+  type: "image";
+  src: string;
+  duration?: number;
+}
+
+export interface StoryViewerProps {
+  stories: Story[];
+  username: string;
+  avatar: string;
+  timestamp?: string;
+  className?: string;
+}
+
+const { stories, username, avatar, timestamp, className = "" } = Astro.props as StoryViewerProps;
+
+const segmentCount = stories.length;
+const gapDegrees = segmentCount > 1 ? 12 : 0;
+const segmentDegrees = segmentCount > 0
+  ? (360 - gapDegrees * segmentCount) / segmentCount
+  : 360;
+
+const segments = stories.map((_, index) => {
+  const startAngle = -90 + index * (segmentDegrees + gapDegrees);
+  const endAngle = startAngle + segmentDegrees;
+  const startRad = (startAngle * Math.PI) / 180;
+  const endRad = (endAngle * Math.PI) / 180;
+  const radius = 46;
+  const x1 = 50 + radius * Math.cos(startRad);
+  const y1 = 50 + radius * Math.sin(startRad);
+  const x2 = 50 + radius * Math.cos(endRad);
+  const y2 = 50 + radius * Math.sin(endRad);
+  const largeArc = segmentDegrees > 180 ? 1 : 0;
+
+  return {
+    index,
+    d: `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`,
+  };
+});
+
+const thumbnailImage = (() => {
+  for (let i = stories.length - 1; i >= 0; i -= 1) {
+    return stories[i].src;
+  }
+  return "";
+})();
+
+const lastStory = stories[stories.length - 1];
+---
+
+<div class={`story-viewer ${className}`} data-story-viewer>
+  <script type="application/json" data-stories set:html={JSON.stringify(stories)}></script>
+
+  <button
+    type="button"
+    data-open
+    class="relative flex flex-col items-center gap-2 group cursor-pointer bg-transparent border-none outline-none"
+    aria-label={`View ${username}'s stories`}
+  >
+    <div class="relative w-[90px] h-[90px]">
+      <svg class="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
+        {segments.map((segment) => (
+          <path
+            d={segment.d}
+            data-segment
+            data-index={segment.index}
+            fill="none"
+            stroke-width="5"
+            stroke-linecap="round"
+            class="story-segment transition-colors duration-300"
+          />
+        ))}
+      </svg>
+
+      <div class="absolute inset-[5px] rounded-full bg-white p-[2px]">
+        <div class="w-full h-full rounded-full overflow-hidden bg-slate-200">
+            <img
+              src={lastStory?.src}
+              alt={`${username}'s story`}
+              class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+            />
+        </div>
+      </div>
+    </div>
+
+    <span class="text-xs text-slate-500 truncate max-w-[80px]">{username}</span>
+  </button>
+
+  <div
+    data-modal
+    class="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center opacity-0 pointer-events-none"
+    aria-hidden="true"
+  >
+    <div
+      data-panel
+      class="relative w-full h-full max-w-lg mx-auto flex flex-col overflow-hidden bg-black/90"
+    >
+      <div class="absolute top-0 left-0 right-0 z-20 pt-2 pb-4 bg-gradient-to-b from-black/70 to-transparent">
+        <div class="flex gap-1 w-full px-2">
+          {stories.map((_, index) => (
+            <div
+              class="flex-1 h-0.5 bg-white/30 rounded-full overflow-hidden"
+              data-progress-item
+              data-index={index}
+            >
+              <div class="h-full bg-white rounded-full w-0" data-progress-bar></div>
+            </div>
+          ))}
+        </div>
+
+        <div class="flex items-center justify-between px-4 mt-3">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full overflow-hidden bg-white/10">
+              <img
+                src={avatar}
+                alt={username}
+                class="w-full h-full object-cover"
+                data-avatar
+              />
+            </div>
+            <div class="flex flex-col">
+              <span class="text-white text-sm font-medium" data-username>{username}</span>
+              <span
+                class="text-white/60 text-xs"
+                data-timestamp
+                data-value={timestamp}
+              ></span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              data-close
+              class="inline-flex items-center justify-center rounded-md h-8 w-8 text-white hover:bg-white/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+              aria-label="Close"
+            >
+              <svg viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true">
+                <path
+                  fill="currentColor"
+                  d="m6 6 12 12m0-12-12 12"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="flex-1 flex items-center justify-center overflow-hidden select-none relative w-full h-full"
+        data-stage
+      >
+        <div class="absolute inset-0 flex items-center justify-center z-10 hidden" data-spinner>
+          <svg class="android-spinner" viewBox="0 0 50 50" aria-hidden="true">
+            <circle
+              class="path"
+              cx="25"
+              cy="25"
+              r="20"
+              fill="none"
+              stroke-width="4"
+            />
+          </svg>
+        </div>
+        <!-- Slides will be injected here -->
+      </div>
+
+        <!-- Slides will be injected here -->
+      </div>
+
+      <div class="hidden md:flex absolute inset-y-0 left-0 right-0 items-center justify-between pointer-events-none px-4 z-20">
+        <button
+          type="button"
+          data-prev
+          class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors pointer-events-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+          aria-label="Previous story"
+        >
+          <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
+            <path
+              fill="currentColor"
+              d="m15 6-6 6 6 6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+
+        <button
+          type="button"
+          data-next
+          class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors pointer-events-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+          aria-label="Next story"
+        >
+          <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
+            <path
+              fill="currentColor"
+              d="m9 6 6 6-6 6"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .story-segment {
+    stroke: rgb(251 191 36);
+  }
+
+  .story-segment[data-viewed="true"],
+  .story-segment[data-viewed="all"] {
+    stroke: rgb(148 163 184 / 0.4);
+  }
+
+  .android-spinner {
+    animation: rotate 2s linear infinite;
+    height: 50px;
+    width: 50px;
+  }
+
+  .android-spinner .path {
+    stroke: white;
+    stroke-linecap: round;
+    animation: dash 1.5s ease-in-out infinite;
+  }
+
+  @keyframes rotate {
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  @keyframes dash {
+    0% {
+      stroke-dasharray: 1, 150;
+      stroke-dashoffset: 0;
+    }
+    50% {
+      stroke-dasharray: 90, 150;
+      stroke-dashoffset: -35;
+    }
+    100% {
+      stroke-dasharray: 90, 150;
+      stroke-dashoffset: -124;
+    }
+  }
+</style>
+
+<script>
+  import { animate } from "motion";
+
+  const DEFAULT_IMAGE_DURATION = 5000;
+
+  const viewers = document.querySelectorAll("[data-story-viewer]");
+
+  function formatTimestamp(value: string) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    if (diffHours < 1) {
+      const diffMinutes = Math.floor(diffMs / (1000 * 60));
+      return diffMinutes <= 1 ? "Just now" : `${diffMinutes}m ago`;
+    }
+    if (diffHours < 24) return `${diffHours}h ago`;
+    return `${Math.floor(diffHours / 24)}d ago`;
+  }
+
+  viewers.forEach((viewer) => {
+    const storiesScript = viewer.querySelector("[data-stories]");
+    if (!storiesScript) return;
+
+    let stories: any[] = [];
+    try {
+      const content = storiesScript.textContent?.trim() || "[]";
+      stories = JSON.parse(content);
+    } catch (e) {
+      console.error("StoryViewer JSON parse error:", e, storiesScript.textContent);
+      return;
+    }
+
+    if (!Array.isArray(stories) || stories.length === 0) return;
+
+    const modal = viewer.querySelector("[data-modal]") as HTMLElement;
+    const panel = viewer.querySelector("[data-panel]") as HTMLElement;
+    const openButton = viewer.querySelector("[data-open]") as HTMLButtonElement;
+    const closeButton = viewer.querySelector("[data-close]") as HTMLButtonElement;
+    const nextButton = viewer.querySelector("[data-next]") as HTMLButtonElement;
+    const prevButton = viewer.querySelector("[data-prev]") as HTMLButtonElement;
+    const spinner = viewer.querySelector("[data-spinner]") as HTMLElement;
+    const stage = viewer.querySelector("[data-stage]") as HTMLElement;
+    const usernameEl = viewer.querySelector("[data-username]");
+    const timestampEl = viewer.querySelector("[data-timestamp]");
+    const segments = Array.from(viewer.querySelectorAll("[data-segment]"));
+    const progressBars = Array.from(viewer.querySelectorAll("[data-progress-bar]")) as HTMLElement[];
+
+    if (!modal || !panel || !openButton || !closeButton || !stage) return;
+
+    // Portal modal to body
+    if (modal.parentElement !== document.body) {
+      document.body.appendChild(modal);
+    }
+
+    let currentIndex = 0;
+    let isOpen = false;
+    let isPaused = false;
+    let progressTimer: number | null = null;
+    let pauseOffset = 0;
+    let pauseStarted = 0;
+    let startTime = 0;
+    
+    // Slide management
+    let currentSlideEl: HTMLElement | null = null;
+
+    const viewedIndices = new Set<number>();
+
+    function updateTimestamp() {
+      if (!timestampEl) return;
+      const raw = timestampEl.getAttribute("data-value");
+      if (!raw) {
+        timestampEl.textContent = "";
+        return;
+      }
+      timestampEl.textContent = formatTimestamp(raw);
+    }
+
+    function setSegmentsViewed() {
+      const allViewed = viewedIndices.size === stories.length;
+      segments.forEach((segment) => {
+        const index = Number(segment.getAttribute("data-index"));
+        if (allViewed) {
+          segment.setAttribute("data-viewed", "all");
+          return;
+        }
+        segment.setAttribute("data-viewed", viewedIndices.has(index) ? "true" : "false");
+      });
+    }
+
+    function setProgress(value: number) {
+      progressBars.forEach((bar, index) => {
+        if (!bar) return;
+        if (index < currentIndex) {
+          bar.style.width = "100%";
+        } else if (index === currentIndex) {
+          bar.style.width = `${value}%`;
+        } else {
+          bar.style.width = "0%";
+        }
+      });
+    }
+
+    function clearProgress() {
+      if (progressTimer) {
+        window.clearInterval(progressTimer);
+        progressTimer = null;
+      }
+    }
+
+    function showSpinner() {
+      spinner?.classList.remove("hidden");
+    }
+
+    function hideSpinner() {
+      spinner?.classList.add("hidden");
+    }
+
+    function pause() {
+      if (isPaused) return;
+      isPaused = true;
+      pauseStarted = performance.now();
+      // Paused badge removed
+    }
+
+    function resume() {
+      if (!isPaused) return;
+      isPaused = false;
+      pauseOffset += performance.now() - pauseStarted;
+      // Paused badge removed
+    }
+
+    function startImageProgress(duration: number) {
+      clearProgress();
+      pauseOffset = 0;
+      startTime = performance.now();
+      setProgress(0);
+      progressTimer = window.setInterval(() => {
+        if (isPaused) return;
+        const elapsed = performance.now() - startTime - pauseOffset;
+        const nextProgress = Math.min((elapsed / duration) * 100, 100);
+        setProgress(nextProgress);
+        if (nextProgress >= 100) {
+          goToNext();
+        }
+      }, 50);
+    }
+
+    function handleVideoTimeUpdate(e: Event) {
+      const video = e.target as HTMLVideoElement;
+      if (!video.duration || Number.isNaN(video.duration)) return;
+      const nextProgress = (video.currentTime / video.duration) * 100;
+      setProgress(nextProgress);
+    }
+
+    function updateNav() {
+      if (prevButton instanceof HTMLButtonElement) {
+        prevButton.disabled = currentIndex === 0;
+        prevButton.style.opacity = currentIndex === 0 ? "0.5" : "1";
+        prevButton.style.cursor = currentIndex === 0 ? "not-allowed" : "pointer";
+      }
+    }
+
+    function createSlideElement(story: any) {
+      const img = document.createElement("img");
+      img.src = story.src;
+      img.className = "absolute inset-0 w-full h-full object-contain opacity-0";
+      img.onload = () => {
+        hideSpinner();
+        img.classList.remove("opacity-0");
+        const duration = story.duration || DEFAULT_IMAGE_DURATION;
+        startImageProgress(duration);
+      };
+      return img;
+    }
+
+    function setStory(index: number, direction: number = 0) {
+      clearProgress();
+      const prevIndex = currentIndex;
+      currentIndex = index;
+      
+      const story = stories[currentIndex];
+      viewedIndices.add(currentIndex);
+      setSegmentsViewed();
+      setProgress(0);
+      updateNav();
+
+      if (usernameEl) {
+        usernameEl.textContent = viewer.querySelector("[data-username]")?.textContent || "";
+      }
+
+      showSpinner();
+
+      // Create new slide
+      const newSlide = createSlideElement(story);
+
+      if (direction !== 0) {
+         stage.appendChild(newSlide);
+         
+         // Animate in
+         animate(newSlide, { x: [direction > 0 ? "100%" : "-100%", "0%"] } as any, { duration: 0.3, ease: "ease-out" } as any);
+         
+         // Animate out old slide
+         if (currentSlideEl) {
+           const oldSlide = currentSlideEl;
+           animate(oldSlide, { x: direction > 0 ? "-100%" : "100%" } as any, { duration: 0.3, ease: "ease-out" } as any)
+             .finished.then(() => {
+               oldSlide.remove();
+             });
+         }
+      } else {
+         // Immediate / Fade (first load)
+         stage.appendChild(newSlide);
+         if (currentSlideEl) currentSlideEl.remove();
+      }
+
+      currentSlideEl = newSlide;
+    }
+
+    function goToNext() {
+      if (currentIndex < stories.length - 1) {
+        setStory(currentIndex + 1, 1);
+      } else {
+        const event = new CustomEvent("story-viewer-end", { bubbles: true, cancelable: true });
+        const allowed = viewer.dispatchEvent(event);
+        if (allowed) {
+          close();
+        }
+      }
+    }
+
+    function goToPrev() {
+      if (currentIndex > 0) {
+        setStory(currentIndex - 1, -1);
+      } else {
+        setProgress(0);
+      }
+    }
+
+    function open(options = { animate: true }) {
+      if (isOpen) return;
+      isOpen = true;
+      modal.classList.remove("pointer-events-none");
+      modal.setAttribute("aria-hidden", "false");
+      document.body.style.overflow = "hidden";
+      
+      if (options.animate) {
+        animate(modal, { opacity: [0, 1] }, { duration: 0.2 });
+        animate(panel, { opacity: [0, 1], scale: [0.95, 1] }, { duration: 0.25 });
+      } else {
+        modal.style.opacity = "1";
+        panel.style.opacity = "1";
+        panel.style.transform = "scale(1)";
+      }
+      
+      // Find first unviewed
+      let startIdx = stories.findIndex((_: any, i: number) => !viewedIndices.has(i));
+      if (startIdx === -1) startIdx = 0;
+      
+      setStory(startIdx, 0); // 0 direction = no slide
+    }
+
+    function close(options = { animate: true }) {
+      if (!isOpen) return;
+      isOpen = false;
+      clearProgress();
+      if (currentSlideEl instanceof HTMLVideoElement) {
+        currentSlideEl.pause();
+      }
+      
+      const onComplete = () => {
+        modal.classList.add("pointer-events-none");
+        modal.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
+        if (currentSlideEl) {
+            currentSlideEl.remove();
+            currentSlideEl = null;
+        }
+      };
+
+      if (options.animate) {
+        animate(modal, { opacity: [1, 0] }, { duration: 0.2 }).finished.then(onComplete);
+      } else {
+        modal.style.opacity = "0";
+        onComplete();
+      }
+    }
+
+    // Expose methods for external orchestration
+    (viewer as any).openStory = open;
+    (viewer as any).closeStory = close;
+
+    // Event Listeners
+    openButton.addEventListener("click", () => {
+      updateTimestamp();
+      open();
+    });
+
+    closeButton.addEventListener("click", (e) => {
+      e.stopPropagation();
+      close();
+    });
+
+    nextButton?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      goToNext();
+    });
+
+    prevButton?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      goToPrev();
+    });
+
+    // Gestures
+    let isPressed = false;
+    let pressStartTime = 0;
+
+    stage.addEventListener("pointerdown", (e) => {
+      isPressed = true;
+      pressStartTime = Date.now();
+      pause();
+    });
+
+    stage.addEventListener("pointerup", (e) => {
+       if (!isPressed) return;
+       isPressed = false;
+       resume();
+       
+       const duration = Date.now() - pressStartTime;
+       if (duration < 250) {
+          // Tap
+          const rect = stage.getBoundingClientRect();
+          const clickX = e.clientX - rect.left;
+          if (clickX < rect.width / 2) {
+             goToPrev();
+          } else {
+             goToNext();
+          }
+       }
+    });
+
+    stage.addEventListener("pointerleave", (e) => {
+        if (isPressed) {
+           isPressed = false;
+           resume();
+        }
+    });
+
+    window.addEventListener("keydown", (e) => {
+      if (!isOpen) return;
+      switch(e.key) {
+        case "ArrowLeft": goToPrev(); break;
+        case "ArrowRight": goToNext(); break;
+        case "Escape": close(); break;
+        case " ": 
+           e.preventDefault();
+           isPaused ? resume() : pause();
+           break;
+      }
+    });
+
+    setSegmentsViewed();
+    updateTimestamp();
+  });
+</script>
+
