@@ -19,7 +19,7 @@
     "dotenv": "catalog:",
     "drizzle-orm": "^0.45.1",
     "libsql": "catalog:",
-    "motion": "^12.29.2",
+    "motion": "^12.32.0",
     "zod": "catalog:"
   },
   "devDependencies": {

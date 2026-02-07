@@ -1,0 +1,207 @@
+---
+interface Props {
+  className?: string;
+  initialWishes?: string[];
+}
+
+const { 
+  className = "",
+  initialWishes = [
+    "Congratulations! 🎉",
+    "Wishing you a lifetime of love ❤️",
+    "So happy for you both!",
+    "Can't wait for the big day! 💍",
+    "Love is in the air ✨",
+    "Cheers to the happy couple 🥂",
+    "Best wishes for the future",
+    "Here's to forever! 👰🤵",
+    "Beautiful couple! 😍",
+    "Let the celebration begin! 🎊"
+  ] 
+} = Astro.props;
+---
+
+<div class={`relative flex flex-col items-center justify-center gap-8 py-12 overflow-hidden w-full max-w-4xl mx-auto ${className}`}>
+  
+  <div class="relative w-full overflow-hidden mask-linear-gradient">
+    {/* Marquee Track 1 (Left) */}
+    <div class="marquee-container flex gap-8 whitespace-nowrap py-4" data-direction="left" data-speed="40">
+      <div class="marquee-content flex gap-8 items-center">
+        {initialWishes.map((wish) => (
+          <span class="text-xl md:text-2xl font-serif px-6 py-3 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm text-primary-foreground shadow-sm">
+            {wish}
+          </span>
+        ))}
+      </div>
+      {/* Duplicate for seamless loop */}
+      <div class="marquee-content flex gap-8 items-center" aria-hidden="true">
+        {initialWishes.map((wish) => (
+          <span class="text-xl md:text-2xl font-serif px-6 py-3 rounded-full bg-white/5 border border-white/10 backdrop-blur-sm text-primary-foreground shadow-sm">
+            {wish}
+          </span>
+        ))}
+      </div>
+    </div>
+
+    {/* Marquee Track 2 (Right) - Slower */}
+    <div class="marquee-container flex gap-8 whitespace-nowrap py-4" data-direction="right" data-speed="50">
+      <div class="marquee-content flex gap-8 items-center">
+        {[...initialWishes].reverse().map((wish) => (
+          <span class="text-lg md:text-xl font-serif italic px-6 py-3 rounded-full bg-primary/5 border border-primary/10 text-primary-foreground/80">
+            {wish}
+          </span>
+        ))}
+      </div>
+      <div class="marquee-content flex gap-8 items-center" aria-hidden="true">
+        {[...initialWishes].reverse().map((wish) => (
+          <span class="text-lg md:text-xl font-serif italic px-6 py-3 rounded-full bg-primary/5 border border-primary/10 text-primary-foreground/80">
+            {wish}
+          </span>
+        ))}
+      </div>
+    </div>
+    
+    {/* Gradient Masks */}
+    <div class="absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none"></div>
+    <div class="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none"></div>
+  </div>
+
+  {/* Input Section */}
+  <form id="wish-form" class="relative z-20 w-full max-w-md px-4 flex gap-2 items-center">
+    <input 
+      type="text" 
+      name="wish" 
+      placeholder="Send a wish..." 
+      required
+      class="flex-1 bg-white/5 border border-white/10 rounded-full px-6 py-3 text-base outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all placeholder:text-white/30"
+    />
+    <button 
+      type="submit"
+      class="bg-white text-black px-6 py-3 rounded-full font-medium hover:bg-white/90 active:scale-95 transition-all cursor-pointer"
+    >
+      Send
+    </button>
+  </form>
+
+  {/* Floating container for animations */}
+  <div id="animation-container" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+</div>
+
+<style>
+  .mask-linear-gradient {
+    mask-image: linear-gradient(to right, transparent, black 10%, black 90%, transparent);
+  }
+</style>
+
+<script>
+  import { animate } from "motion";
+
+  // Marquee Logic
+  const marquees = document.querySelectorAll('.marquee-container');
+  
+  marquees.forEach((marquee) => {
+    const container = marquee as HTMLElement;
+    const content = container.querySelector('.marquee-content') as HTMLElement;
+    const direction = container.dataset.direction === 'right' ? 1 : -1;
+    const speed = parseInt(container.dataset.speed || '30');
+    
+    // We can use standard CSS animation for smoother infinite scroll without JS overhead, 
+    // but Motion provides better control if we want to pause/interact later.
+    
+    // Calculate duration based on width to maintain consistent speed
+    const width = content.offsetWidth + 32; // + gap
+    const duration = width / speed;
+
+    const keyframes = direction === 1 
+      ? [`translateX(0px)`, `translateX(${-width}px)`]
+      : [`translateX(${-width}px)`, `translateX(0px)`];
+
+    animate(
+      container as any,
+      { transform: keyframes },
+      { 
+        duration: duration,
+        repeat: Infinity,
+        ease: "linear"
+      }
+    );
+  });
+
+  // Form Logic
+  const form = document.getElementById('wish-form') as HTMLFormElement;
+  const input = form.querySelector('input') as HTMLInputElement;
+  const animContainer = document.getElementById('animation-container');
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const text = input.value.trim();
+    if (!text) return;
+
+    // 1. Create the floating element
+    const floatingWish = document.createElement('div');
+    floatingWish.textContent = text;
+    floatingWish.className = "absolute text-2xl font-serif text-white whitespace-nowrap pointer-events-none";
+    
+    // Position it at the input
+    const inputRect = input.getBoundingClientRect();
+    const containerRect = form.closest('.relative')?.getBoundingClientRect();
+    
+    if (containerRect) {
+      // Center horizontally relative to input, start at input vertical position
+      const startX = (inputRect.left - containerRect.left) + (inputRect.width / 2);
+      const startY = (inputRect.top - containerRect.top);
+      
+      floatingWish.style.left = `${startX}px`;
+      floatingWish.style.top = `${startY}px`;
+      // Center the element itself
+      floatingWish.style.transform = 'translate(-50%, -50%)';
+    }
+
+    animContainer?.appendChild(floatingWish);
+
+    // 2. Animate it floating up and fading out
+    animate(
+      floatingWish as any,
+      { 
+        transform: ['translate(-50%, -50%) translateY(0px) rotate(-5deg) scale(1)', 'translate(-50%, -50%) translateY(-300px) rotate(5deg) scale(0.8)'],
+        opacity: [1, 0]
+      },
+      { 
+        duration: 2.5,
+        ease: "easeOut" 
+      }
+    ).finished.then(() => {
+      floatingWish.remove();
+    });
+
+    // 3. Clear input
+    input.value = '';
+    
+    // 4. Add "Confetti" or "Sparkle" effect (Simplified)
+    for (let i = 0; i < 8; i++) {
+      const particle = document.createElement('div');
+      particle.className = "absolute w-2 h-2 rounded-full bg-white pointer-events-none";
+      if (containerRect) {
+         const startX = (inputRect.left - containerRect.left) + (inputRect.width / 2);
+         const startY = (inputRect.top - containerRect.top);
+         particle.style.left = `${startX}px`;
+         particle.style.top = `${startY}px`;
+      }
+      animContainer?.appendChild(particle);
+      
+      const angle = (Math.PI * 2 * i) / 8;
+      const velocity = 100;
+      const tx = Math.cos(angle) * velocity;
+      const ty = Math.sin(angle) * velocity;
+
+      animate(
+        particle as any,
+        { 
+          transform: [`translate(0,0) scale(1)`, `translate(${tx}px, ${ty}px) scale(0)`],
+          opacity: [1, 0]
+        },
+        { duration: 0.8, ease: "easeOut" }
+      ).finished.then(() => particle.remove());
+    }
+  });
+</script>

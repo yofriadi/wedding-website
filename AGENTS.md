@@ -37,7 +37,7 @@
 
 - No automated test runner is configured yet.
 - If you add tests, document the runner and add scripts in `package.json`.
-- If using Playwright to inspect or test UI in a browser, use the `agent-browser` skill.
+- For inspecting or testing UI in a browser, always use the `agent-browser` skill instead of Playwright.
 
 ## Commit & Pull Request Guidelines
 

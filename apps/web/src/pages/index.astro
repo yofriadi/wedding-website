@@ -4,9 +4,11 @@ import HeroZoom from "../components/HeroZoom.astro";
 import ZoomParallax from "../components/ZoomParallax.astro";
 import QuranVerse from "../components/QuranVerse.astro";
 import TimelineScroll from "../components/TimelineScroll.astro";
+import WishMarquee from '../components/WishMarquee.astro';
 import TestimonialMarquee from '../components/TestimonialMarquee.astro';
 import PromptInput from '../components/PromptInput.astro';
 import StoryViewer from "../components/StoryViewer.astro";
+import WeddingFAQ from '../components/WeddingFAQ.astro';
 
 const storyUsers = [
   {
@@ -98,48 +100,59 @@ const storyUsers = [
     <HeroZoom />
     <QuranVerse />
     <ZoomParallax />
-    <section class="relative py-16 overflow-hidden">
-      <div class="mx-auto max-w-7xl px-6">
-        <h2 class="text-2xl font-light text-center mb-10 text-neutral-300">Moments & Memories</h2>
-        <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar snap-x">
-          <div class="snap-center flex-shrink-0 flex flex-col items-center gap-2">
-            <button class="relative w-[90px] h-[90px] rounded-full border-2 border-dashed border-white/20 flex items-center justify-center hover:bg-white/5 transition-colors cursor-pointer group">
-              <div class="absolute inset-0 rounded-full border border-neutral-900/50"></div>
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                width="32" 
-                height="32" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                stroke-width="1.5" 
-                stroke-linecap="round" 
-                stroke-linejoin="round" 
-                class="text-neutral-400 group-hover:text-white transition-colors"
-              >
-                <path d="M5 12h14" />
-                <path d="M12 5v14" />
-              </svg>
-            </button>
-            <span class="text-xs text-slate-500">Add Story</span>
-          </div>
+    <TimelineScroll />
 
-          {storyUsers.map((user) => (
-            <div class="snap-center flex-shrink-0">
-              <StoryViewer
-                stories={user.stories}
-                username={user.username}
-                avatar={user.avatar}
-                timestamp="2026-02-03T16:45:00Z"
-              />
-            </div>
-          ))}
+    <section class="relative overflow-hidden">
+      <div class="mx-auto max-w-7xl px-6">
+        <h2 class="text-xl font-light text-center mb-4 text-neutral-300">Show Our Memories Together</h2>
+      </div>
+      <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar snap-x">
+        <div class="snap-center flex-shrink-0 flex flex-col items-center gap-2 pl-6">
+          <label class="relative w-[112px] h-[200px] rounded-[12px] border-2 border-dashed border-white/20 flex flex-col items-center justify-center hover:bg-white/5 transition-colors cursor-pointer group">
+            <input 
+              type="file" 
+              accept="image/*" 
+              multiple 
+              class="hidden" 
+              onchange="if(this.files.length > 5) { alert('Maximum 5 images allowed.'); this.value = ''; } else if(this.files.length > 0) { alert('Selected ' + this.files.length + ' images. Upload logic to be implemented.'); }"
+            />
+            <div class="absolute inset-0 rounded-[12px] border border-neutral-900/50"></div>
+            <svg 
+              xmlns="http://www.w3.org/2000/svg" 
+              width="40" 
+              height="40" 
+              viewBox="0 0 24 24" 
+              fill="none" 
+              stroke="currentColor" 
+              stroke-width="1.5" 
+              stroke-linecap="round" 
+              stroke-linejoin="round" 
+              class="text-neutral-400 group-hover:text-white transition-colors mb-2"
+            >
+              <path d="M5 12h14" />
+              <path d="M12 5v14" />
+            </svg>
+            <span class="text-[10px] text-neutral-500 text-center leading-tight px-2 group-hover:text-neutral-400 transition-colors">Up to 5<br/>images</span>
+          </label>
+          <span class="text-xs text-slate-500">Add Story</span>
         </div>
+
+
+        {storyUsers.map((user, index) => (
+          <div class={`snap-center flex-shrink-0 ${index === storyUsers.length - 1 ? 'pr-6' : ''}`}>
+            <StoryViewer
+              stories={user.stories}
+              username={user.username}
+              avatar={user.avatar}
+              timestamp="2026-02-03T16:45:00Z"
+            />
+          </div>
+        ))}
       </div>
     </section>
-    <TimelineScroll />
-    <section class="relative py-20 overflow-hidden space-y-12">
+    <section class="relative py-4 overflow-hidden space-y-12">
       <TestimonialMarquee />
+      <!-- <WishMarquee /> -->
     </section>
 
     <!-- Event Details -->
@@ -165,6 +178,8 @@ const storyUsers = [
       </div>
     </div>
 
+    <WeddingFAQ />
+
 <script>
   document.addEventListener('story-viewer-end', (e) => {
     const currentViewer = e.target as HTMLElement;
@@ -179,6 +194,31 @@ const storyUsers = [
       if (nextViewer && typeof nextViewer.openStory === 'function') {
         // Open the next viewer immediately with animation (fade in over current)
         nextViewer.openStory({ animate: true });
+        
+        // Close the current viewer without animation after the next one has likely covered it
+        setTimeout(() => {
+          if (typeof currentViewerInstance.closeStory === 'function') {
+            currentViewerInstance.closeStory({ animate: false });
+          }
+        }, 300);
+      }
+    }
+  });
+
+  document.addEventListener('story-viewer-prev', (e) => {
+    const currentViewer = e.target as HTMLElement;
+    const viewers = Array.from(document.querySelectorAll('[data-story-viewer]'));
+    const currentIndex = viewers.indexOf(currentViewer);
+    
+    if (currentIndex > 0) {
+      e.preventDefault(); // Don't reset current viewer progress automatically
+      const prevViewer = viewers[currentIndex - 1] as any;
+      const currentViewerInstance = currentViewer as any;
+      
+      if (prevViewer && typeof prevViewer.openStory === 'function') {
+        // Open the prev viewer immediately with animation (fade in over current)
+        // Start at the last story of the previous user
+        prevViewer.openStory({ animate: true, startIndex: 'last' });
         
         // Close the current viewer without animation after the next one has likely covered it
         setTimeout(() => {

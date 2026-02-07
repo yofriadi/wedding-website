@@ -33,11 +33,11 @@
     "@types/node": "catalog:",
     "@wedding-website/config": "workspace:*",
     "husky": "^9.1.7",
-    "lefthook": "^2.0.16",
+    "lefthook": "^2.1.0",
     "lint-staged": "^16.2.7",
-    "oxfmt": "^0.27.0",
-    "oxlint": "^1.42.0",
-    "turbo": "^2.8.1",
+    "oxfmt": "^0.28.0",
+    "oxlint": "^1.43.0",
+    "turbo": "^2.8.3",
     "typescript": "catalog:"
   },
   "lint-staged": {

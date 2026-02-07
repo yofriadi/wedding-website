@@ -16,29 +16,9 @@ export interface StoryViewerProps {
 
 const { stories, username, avatar, timestamp, className = "" } = Astro.props as StoryViewerProps;
 
-const segmentCount = stories.length;
-const gapDegrees = segmentCount > 1 ? 12 : 0;
-const segmentDegrees = segmentCount > 0
-  ? (360 - gapDegrees * segmentCount) / segmentCount
-  : 360;
-
-const segments = stories.map((_, index) => {
-  const startAngle = -90 + index * (segmentDegrees + gapDegrees);
-  const endAngle = startAngle + segmentDegrees;
-  const startRad = (startAngle * Math.PI) / 180;
-  const endRad = (endAngle * Math.PI) / 180;
-  const radius = 46;
-  const x1 = 50 + radius * Math.cos(startRad);
-  const y1 = 50 + radius * Math.sin(startRad);
-  const x2 = 50 + radius * Math.cos(endRad);
-  const y2 = 50 + radius * Math.sin(endRad);
-  const largeArc = segmentDegrees > 180 ? 1 : 0;
-
-  return {
-    index,
-    d: `M ${x1} ${y1} A ${radius} ${radius} 0 ${largeArc} 1 ${x2} ${y2}`,
-  };
-});
+// Dimensions for 9:16 aspect ratio (minimized)
+const WIDTH = 112;
+const HEIGHT = 200;
 
 const thumbnailImage = (() => {
   for (let i = stories.length - 1; i >= 0; i -= 1) {
@@ -59,34 +39,19 @@ const lastStory = stories[stories.length - 1];
     class="relative flex flex-col items-center gap-2 group cursor-pointer bg-transparent border-none outline-none"
     aria-label={`View ${username}'s stories`}
   >
-    <div class="relative w-[90px] h-[90px]">
-      <svg class="absolute inset-0 w-full h-full" viewBox="0 0 100 100">
-        {segments.map((segment) => (
-          <path
-            d={segment.d}
-            data-segment
-            data-index={segment.index}
-            fill="none"
-            stroke-width="5"
-            stroke-linecap="round"
-            class="story-segment transition-colors duration-300"
+    <div class={`relative`} style={`width: ${WIDTH}px; height: ${HEIGHT}px;`}>
+      <div class="absolute inset-0 rounded-md overflow-hidden bg-slate-200">
+          <img
+            src={lastStory?.src}
+            alt={`${username}'s story`}
+            class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
           />
-        ))}
-      </svg>
-
-      <div class="absolute inset-[5px] rounded-full bg-white p-[2px]">
-        <div class="w-full h-full rounded-full overflow-hidden bg-slate-200">
-            <img
-              src={lastStory?.src}
-              alt={`${username}'s story`}
-              class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-            />
-        </div>
       </div>
     </div>
 
-    <span class="text-xs text-slate-500 truncate max-w-[80px]">{username}</span>
+    <span class="text-xs text-neutral-500 truncate max-w-[80px]">{username}</span>
   </button>
+
 
   <div
     data-modal
@@ -216,7 +181,8 @@ const lastStory = stories[stories.length - 1];
 
 <style>
   .story-segment {
-    stroke: rgb(251 191 36);
+    stroke: #ffffff;
+    filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5));
   }
 
   .story-segment[data-viewed="true"],
@@ -305,7 +271,6 @@ const lastStory = stories[stories.length - 1];
     const stage = viewer.querySelector("[data-stage]") as HTMLElement;
     const usernameEl = viewer.querySelector("[data-username]");
     const timestampEl = viewer.querySelector("[data-timestamp]");
-    const segments = Array.from(viewer.querySelectorAll("[data-segment]"));
     const progressBars = Array.from(viewer.querySelectorAll("[data-progress-bar]")) as HTMLElement[];
 
     if (!modal || !panel || !openButton || !closeButton || !stage) return;
@@ -339,15 +304,7 @@ const lastStory = stories[stories.length - 1];
     }
 
     function setSegmentsViewed() {
-      const allViewed = viewedIndices.size === stories.length;
-      segments.forEach((segment) => {
-        const index = Number(segment.getAttribute("data-index"));
-        if (allViewed) {
-          segment.setAttribute("data-viewed", "all");
-          return;
-        }
-        segment.setAttribute("data-viewed", viewedIndices.has(index) ? "true" : "false");
-      });
+      // Logic for viewed segments removed as requested
     }
 
     function setProgress(value: number) {

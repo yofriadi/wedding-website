@@ -60,6 +60,20 @@ const repeatedWishes = Array(4).fill(wishes).flat();
       ))}
     </div>
   </div>
+
+  <!-- Row 4 -->
+  <div class="marquee-track track-4">
+    <div class="marquee-content">
+      {repeatedWishes.map((text) => (
+        <span class="marquee-item">{text}</span>
+      ))}
+    </div>
+    <div class="marquee-content" aria-hidden="true">
+      {repeatedWishes.map((text) => (
+        <span class="marquee-item">{text}</span>
+      ))}
+    </div>
+  </div>
 </div>
 
 <style>
@@ -102,14 +116,22 @@ const repeatedWishes = Array(4).fill(wishes).flat();
   /* Different start offsets (negative delay) for each row */
   .track-1 .marquee-content {
     animation-delay: 0s;
+    animation-duration: 145s;
   }
   
   .track-2 .marquee-content {
     animation-delay: -20s;
+    animation-duration: 200s;
   }
   
   .track-3 .marquee-content {
     animation-delay: -40s;
+    animation-duration: 165s;
+  }
+
+  .track-4 .marquee-content {
+    animation-delay: -60s;
+    animation-duration: 185s;
   }
 
   .marquee-item {

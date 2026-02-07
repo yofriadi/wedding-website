@@ -1,0 +1,213 @@
+---
+const items = [
+  {
+    id: "rsvp",
+    number: "01",
+    title: "When is the RSVP deadline?",
+    content: "Please RSVP by August 1st, 2026. We need to get the final headcount to our caterers, so we won't be able to accept late RSVPs."
+  },
+  {
+    id: "dress-code",
+    number: "02",
+    title: "What is the dress code?",
+    content: "The dress code is Black Tie Optional. We ask that men wear a tuxedo or a dark suit and tie, and women wear an evening gown or midi-length cocktail dress."
+  },
+  {
+    id: "plus-one",
+    number: "03",
+    title: "Can I bring a plus one?",
+    content: "Due to limited venue capacity, we are unable to accommodate plus ones unless specifically indicated on your invitation. When you RSVP, you will see exactly who is invited."
+  },
+  {
+    id: "children",
+    number: "04",
+    title: "Are children welcome?",
+    content: "We love your little ones, but this will be an adults-only celebration. We hope you take this opportunity to let your hair down and enjoy the night off!"
+  },
+  {
+    id: "transport",
+    number: "05",
+    title: "Will there be transportation?",
+    content: "Yes, we will provide shuttle service from the main hotel to the venue and back. Shuttles depart at 4:30 PM."
+  },
+  {
+    id: "parking",
+    number: "06",
+    title: "Where should I park?",
+    content: "Valet parking will be provided at the venue entrance. There is also a public parking garage one block east on Main St."
+  }
+];
+---
+
+<div class="w-full max-w-3xl mx-auto p-4" id="wedding-faq">
+  <div class="space-y-0">
+    {items.map((item) => (
+      <div class="accordion-item group border-b border-[color:var(--faq-border)]" data-id={item.id}>
+        <button class="w-full py-4 relative flex items-center gap-4 text-left focus:outline-none cursor-pointer">
+           <!-- Number with animated circle -->
+           <div class="relative flex items-center justify-center w-10 h-10 shrink-0">
+             <div class="number-bg absolute inset-0 rounded-full bg-[color:var(--faq-badge)] ring-1 ring-[color:var(--faq-badge-ring)] origin-center"></div>
+             <span class="number-text relative z-10 text-sm font-medium tracking-wide text-[color:var(--faq-muted-foreground)] transition-colors duration-200">
+               {item.number}
+             </span>
+           </div>
+
+           <!-- Title -->
+           <h3 class="title-text text-lg md:text-xl font-serif tracking-tight text-[color:var(--faq-muted-foreground)] transition-all duration-300">
+             {item.title}
+           </h3>
+
+           <!-- Animated indicator -->
+            <div class="ml-auto flex items-center justify-center w-8 h-8 shrink-0">
+              <div class="icon-plus transition-transform duration-300 text-[color:var(--faq-muted-foreground)]">
+               <svg width="20" height="20" viewBox="0 0 16 16" fill="none" class="transition-colors">
+                 <path d="M8 1V15M1 8H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+               </svg>
+             </div>
+           </div>
+           
+           <!-- Active Underline -->
+            <div class="absolute bottom-0 left-0 h-[1px] bg-[color:var(--faq-foreground)] origin-left scale-x-0 active-line w-full"></div>
+        </button>
+
+        <!-- Content -->
+         <div class="accordion-content h-0 overflow-hidden opacity-0">
+           <p class="pl-14 pr-4 md:pr-10 pb-5 pt-1 text-[color:var(--faq-muted-foreground)] leading-relaxed font-light text-sm">
+             {item.content}
+           </p>
+        </div>
+      </div>
+    ))}
+  </div>
+</div>
+
+
+<style>
+  #wedding-faq {
+    --faq-background: #0a0a0a;
+    --faq-foreground: #fafafa;
+    --faq-muted-foreground: #a3a3a3;
+    --faq-border: rgba(255, 255, 255, 0.16);
+    --faq-badge: var(--faq-background);
+    --faq-badge-ring: transparent;
+    --faq-primary-foreground: #0a0a0a;
+  }
+
+  :global(#wedding-faq .accordion-item:last-child) {
+    border-bottom: none;
+  }
+</style>
+
+
+<script>
+  import { animate, spring } from "motion";
+
+  function initFAQ() {
+    const container = document.getElementById('wedding-faq');
+    if (!container) return;
+
+    const items = container.querySelectorAll('.accordion-item');
+    const theme = getComputedStyle(container);
+    const foreground = theme.getPropertyValue('--faq-foreground').trim();
+    const mutedForeground = theme.getPropertyValue('--faq-muted-foreground').trim();
+    const badgeBase = theme.getPropertyValue('--faq-badge').trim();
+    const primaryForeground = theme.getPropertyValue('--faq-primary-foreground').trim();
+    let activeItem: Element | null = null;
+
+    items.forEach(item => {
+      const button = item.querySelector('button');
+      
+      // Elements to animate
+      const content = item.querySelector('.accordion-content');
+      const numberBg = item.querySelector('.number-bg');
+      const numberText = item.querySelector('.number-text');
+      const titleText = item.querySelector('.title-text');
+      const icon = item.querySelector('.icon-plus');
+      const iconSvg = icon?.querySelector('svg');
+      const activeLine = item.querySelector('.active-line');
+      
+      if (!button) return;
+
+      button.addEventListener('click', () => {
+        const isOpen = item === activeItem;
+
+        // Close active if exists
+        if (activeItem && activeItem !== item) {
+           closeItem(activeItem);
+        }
+
+        if (isOpen) {
+          closeItem(item);
+          activeItem = null;
+        } else {
+          openItem(item);
+          activeItem = item;
+        }
+      });
+      
+      button.addEventListener('mouseenter', () => {
+        if (item !== activeItem && numberBg) {
+          animate(numberBg, { scale: 1, backgroundColor: badgeBase }, { type: spring, stiffness: 400, damping: 25 });
+        }
+      });
+      
+      button.addEventListener('mouseleave', () => {
+        if (item !== activeItem && numberBg) {
+           animate(numberBg, { scale: 1, backgroundColor: badgeBase }, { type: spring, stiffness: 400, damping: 25 });
+        }
+      });
+    });
+
+    function openItem(item: Element) {
+      const content = item.querySelector('.accordion-content') as HTMLElement;
+      const numberBg = item.querySelector('.number-bg');
+      const numberText = item.querySelector('.number-text');
+      const titleText = item.querySelector('.title-text');
+      const icon = item.querySelector('.icon-plus');
+      const iconSvg = icon?.querySelector('svg');
+      const activeLine = item.querySelector('.active-line');
+
+      if (content) animate(content, { height: "auto", opacity: 1 } as any, { duration: 0.4, ease: "easeOut" });
+      
+      if (numberBg) animate(numberBg, { scale: 1, backgroundColor: foreground }, { type: spring, stiffness: 400, damping: 25 });
+      
+      if (numberText) animate(numberText, { color: primaryForeground }, { duration: 0.2 });
+      
+      if (titleText) animate(titleText, { color: foreground }, { type: spring, stiffness: 400, damping: 30 });
+      
+      if (icon) animate(icon, { rotate: 45 }, { type: spring, stiffness: 300, damping: 20 });
+      if (iconSvg) animate(iconSvg, { color: foreground }, { duration: 0.2 });
+      
+      if (activeLine) animate(activeLine, { scaleX: 1 }, { type: spring, stiffness: 300, damping: 30 });
+    }
+
+    function closeItem(item: Element) {
+      const content = item.querySelector('.accordion-content') as HTMLElement;
+      const numberBg = item.querySelector('.number-bg');
+      const numberText = item.querySelector('.number-text');
+      const titleText = item.querySelector('.title-text');
+      const icon = item.querySelector('.icon-plus');
+      const iconSvg = icon?.querySelector('svg');
+      const activeLine = item.querySelector('.active-line');
+
+      if (content) animate(content, { height: 0, opacity: 0 } as any, { duration: 0.3, ease: "easeIn" });
+      
+      if (numberBg) animate(numberBg, { scale: 1, backgroundColor: badgeBase }, { type: spring, stiffness: 400, damping: 25 });
+      
+      if (numberText) animate(numberText, { color: mutedForeground }, { duration: 0.2 });
+      
+      if (titleText) animate(titleText, { color: mutedForeground }, { type: spring, stiffness: 400, damping: 30 });
+      
+      if (icon) animate(icon, { rotate: 0 }, { type: spring, stiffness: 300, damping: 20 });
+      if (iconSvg) animate(iconSvg, { color: mutedForeground }, { duration: 0.2 });
+      
+      if (activeLine) animate(activeLine, { scaleX: 0 }, { type: spring, stiffness: 300, damping: 30 });
+    }
+  }
+
+  // Initialize
+  initFAQ();
+  
+  // Re-init on View Transitions
+  document.addEventListener('astro:after-swap', initFAQ);
+</script>
