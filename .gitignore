@@ -54,3 +54,6 @@ temp
 
 # Local agent skill dumps
 .agents
+
+# Agent skill lockfile (local)
+skills-lock.json
