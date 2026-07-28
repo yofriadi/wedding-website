@@ -1,0 +1,70 @@
+---
+interface Props {
+  class?: string;
+  duration?: number;
+  phrases?: string[];
+  phraseIntervalMs?: number;
+} const { class: className, duration = 2, phrases, phraseIntervalMs = 2000 } = Astro.props;
+---
+
+<text-shimmer
+  class:list={[
+    "inline-flex bg-clip-text text-transparent bg-size-[200%_100%] animate-shimmer",
+    // Gradient for Dark Mode (Gray -> White -> Gray)
+    "bg-[linear-gradient(110deg,#4b5563,45%,#ffffff,55%,#4b5563)]",
+    className
+  ]}
+  style={{
+    animationDuration: `${duration}s`,
+  }}
+  data-phrases={phrases ? JSON.stringify(phrases) : undefined}
+  data-phrase-interval-ms={String(phraseIntervalMs)}
+>
+  <span data-text><slot /></span>
+</text-shimmer>
+
+<script is:inline>
+  class TextShimmer extends HTMLElement {
+    constructor() {
+      super();
+      this.interval = undefined;
+    }
+
+    connectedCallback() {
+      const phrasesAttr = this.dataset.phrases;
+      if (!phrasesAttr) return;
+
+      let phrases = [];
+      try {
+        phrases = JSON.parse(phrasesAttr);
+      } catch (e) {
+        console.error('TextShimmer: Failed to parse phrases', e);
+        return;
+      }
+
+      if (!phrases.length) return;
+
+      const intervalMs = Number(this.dataset.phraseIntervalMs) || 1000;
+      const textEl = this.querySelector('[data-text]');
+      if (!textEl) return;
+
+      let index = 0;
+      
+      this.interval = window.setInterval(() => {
+        index = (index + 1) % phrases.length;
+        textEl.textContent = phrases[index];
+      }, intervalMs);
+    }
+
+    disconnectedCallback() {
+      if (this.interval) {
+        clearInterval(this.interval);
+        this.interval = undefined;
+      }
+    }
+  }
+
+  if (!customElements.get('text-shimmer')) {
+    customElements.define('text-shimmer', TextShimmer);
+  }
+</script>

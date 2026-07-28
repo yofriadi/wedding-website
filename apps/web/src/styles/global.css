@@ -5,4 +5,15 @@
 
 @theme {
   --font-sans: "Inter", sans-serif;
+
+  --animate-shimmer: shimmer 2s linear infinite;
+
+  @keyframes shimmer {
+    from {
+      background-position: 0 0;
+    }
+    to {
+      background-position: -200% 0;
+    }
+  }
 }

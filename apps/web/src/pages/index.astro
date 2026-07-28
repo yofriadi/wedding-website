@@ -4,11 +4,10 @@ import HeroZoom from "../components/HeroZoom.astro";
 import ZoomParallax from "../components/ZoomParallax.astro";
 import QuranVerse from "../components/QuranVerse.astro";
 import TimelineScroll from "../components/TimelineScroll.astro";
-import WishMarquee from '../components/WishMarquee.astro';
 import TestimonialMarquee from '../components/TestimonialMarquee.astro';
-import PromptInput from '../components/PromptInput.astro';
 import StoryViewer from "../components/StoryViewer.astro";
 import WeddingFAQ from '../components/WeddingFAQ.astro';
+import TextShimmer from "../components/TextShimmer.astro";
 
 const storyUsers = [
   {
@@ -96,6 +95,29 @@ const storyUsers = [
 ---
 
 <Layout title="Save the Date | Yofri & Aisha">
+  <!-- Loading Overlay -->
+  <div id="loading-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950 transition-opacity duration-500">
+    <TextShimmer 
+      class="text-xl font-medium tracking-tight"
+      phrases={[
+        "Pre-heating the server…",
+        "Converting coffee into code…", 
+        "Discombobulating…", 
+        "Wrangling…", 
+        "Symbioting…", 
+        "Perambulating…", 
+        "Shenaninganing…"
+      ]}
+    >
+      Pre-heating the server…
+    </TextShimmer>
+  </div>
+
+  <!-- Background Music -->
+  <audio id="hero-music" loop preload="auto">
+    <source src="/Lee Soo Young - ONE - ENGLISH Version.mp3" type="audio/mpeg" />
+  </audio>
+
   <main class="relative bg-neutral-950">
     <HeroZoom />
     <QuranVerse />
@@ -104,17 +126,17 @@ const storyUsers = [
 
     <section class="relative overflow-hidden">
       <div class="mx-auto max-w-7xl px-6">
-        <h2 class="text-xl font-light text-center mb-4 text-neutral-300">Show Our Memories Together</h2>
+        <h2 class="text-xl font-light text-center mb-4 text-neutral-300 text-balance">Show Our Memories Together</h2>
       </div>
       <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar snap-x">
         <div class="snap-center flex-shrink-0 flex flex-col items-center gap-2 pl-6">
-          <label class="relative w-[112px] h-[200px] rounded-[12px] border-2 border-dashed border-white/20 flex flex-col items-center justify-center hover:bg-white/5 transition-colors cursor-pointer group">
-            <input 
-              type="file" 
-              accept="image/*" 
-              multiple 
-              class="hidden" 
-              onchange="if(this.files.length > 5) { alert('Maximum 5 images allowed.'); this.value = ''; } else if(this.files.length > 0) { alert('Selected ' + this.files.length + ' images. Upload logic to be implemented.'); }"
+          <label class="relative w-[112px] h-[200px] rounded-[12px] border-2 border-dashed border-white/20 flex flex-col items-center justify-center hover:bg-white/5 active:scale-[0.96] transition-[transform,colors] duration-200 cursor-pointer group">
+            <input
+              type="file"
+              accept="image/*"
+              multiple
+              class="hidden"
+              onchange="(() => { const input = this; const selected = input.files; if (!selected) return; if (selected.length > 5) { alert('Maximum 5 images allowed.'); input.value = ''; return; } if (selected.length > 0) { alert('Selected ' + selected.length + ' images. Upload logic to be implemented.'); } })()"
             />
             <div class="absolute inset-0 rounded-[12px] border border-neutral-900/50"></div>
             <svg 
@@ -167,7 +189,7 @@ const storyUsers = [
         </div>
 
         <div class="pt-12">
-          <button class="px-8 py-3 border border-white/20 hover:bg-white hover:text-black transition-colors duration-300 tracking-widest text-sm uppercase">
+          <button class="px-8 py-3 border border-white/20 hover:bg-white hover:text-black transition-[transform,colors] duration-300 tracking-widest text-sm uppercase active:scale-[0.96] cursor-pointer">
             RSVP Coming Soon
           </button>
         </div>
@@ -179,26 +201,106 @@ const storyUsers = [
     </div>
 
     <WeddingFAQ />
+  </main>
 
-<script>
+<script is:inline>
+  // Background music
+  const heroMusic = document.getElementById('hero-music');
+  let hasStarted = false;
+
+  function startMusic() {
+    if (!hasStarted && heroMusic) {
+      heroMusic.volume = 0.3;
+      heroMusic.play()
+        .then(() => {
+          hasStarted = true;
+        })
+        .catch(err => {
+          console.log('Audio playback failed:', err);
+        });
+    }
+  }
+
+  // Loading screen logic
+  const hideLoadingScreen = () => {
+    const loader = document.getElementById('loading-screen');
+    if (!loader) return;
+
+    loader.style.opacity = '0';
+    setTimeout(() => {
+      loader.remove();
+    }, 500);
+    
+    // Start music when loading screen begins to fade
+    startMusic();
+  };
+
+  const waitForHeroZoomLoaded = async () => {
+    const heroMedia = document.querySelector('#hero-container [data-hero-media]');
+    if (!heroMedia) {
+      return;
+    }
+
+    if (heroMedia.complete && heroMedia.naturalWidth > 0) {
+      if (typeof heroMedia.decode === 'function') {
+        try {
+          await heroMedia.decode();
+        } catch {
+          // Ignore decode failures and continue.
+        }
+      }
+      return;
+    }
+
+    await new Promise((resolve) => {
+      const onDone = () => resolve();
+      heroMedia.addEventListener('load', onDone, { once: true });
+      heroMedia.addEventListener('error', onDone, { once: true });
+    });
+  };
+
+  const waitForAudioLoaded = async () => {
+    if (!heroMusic) return;
+
+    // Check if already loaded
+    if (heroMusic.readyState >= 2) {
+      return;
+    }
+
+    // Wait for audio to be loaded
+    await new Promise((resolve) => {
+      const onDone = () => {
+        heroMusic.removeEventListener('canplay', onDone);
+        heroMusic.removeEventListener('error', onDone);
+        resolve();
+      };
+      heroMusic.addEventListener('canplay', onDone, { once: true });
+      heroMusic.addEventListener('error', onDone, { once: true });
+    });
+  };
+
+  const initLoadingScreen = async () => {
+    await Promise.all([waitForHeroZoomLoaded(), waitForAudioLoaded()]);
+    hideLoadingScreen();
+  };
+
+  initLoadingScreen();
+
   document.addEventListener('story-viewer-end', (e) => {
-    const currentViewer = e.target as HTMLElement;
+    const currentViewer = e.target;
     const viewers = Array.from(document.querySelectorAll('[data-story-viewer]'));
     const currentIndex = viewers.indexOf(currentViewer);
     
     if (currentIndex >= 0 && currentIndex < viewers.length - 1) {
-      e.preventDefault(); // Don't close the current viewer automatically
-      const nextViewer = viewers[currentIndex + 1] as any;
-      const currentViewerInstance = currentViewer as any;
+      e.preventDefault();
+      const nextViewer = viewers[currentIndex + 1];
       
       if (nextViewer && typeof nextViewer.openStory === 'function') {
-        // Open the next viewer immediately with animation (fade in over current)
         nextViewer.openStory({ animate: true });
         
-        // Close the current viewer without animation after the next one has likely covered it
         setTimeout(() => {
-          if (typeof currentViewerInstance.closeStory === 'function') {
-            currentViewerInstance.closeStory({ animate: false });
+          if (typeof currentViewer.closeStory === 'function') {
+            currentViewer.closeStory({ animate: false });
           }
         }, 300);
       }
@@ -206,24 +308,20 @@ const storyUsers = [
   });
 
   document.addEventListener('story-viewer-prev', (e) => {
-    const currentViewer = e.target as HTMLElement;
+    const currentViewer = e.target;
     const viewers = Array.from(document.querySelectorAll('[data-story-viewer]'));
     const currentIndex = viewers.indexOf(currentViewer);
     
     if (currentIndex > 0) {
-      e.preventDefault(); // Don't reset current viewer progress automatically
-      const prevViewer = viewers[currentIndex - 1] as any;
-      const currentViewerInstance = currentViewer as any;
+      e.preventDefault();
+      const prevViewer = viewers[currentIndex - 1];
       
       if (prevViewer && typeof prevViewer.openStory === 'function') {
-        // Open the prev viewer immediately with animation (fade in over current)
-        // Start at the last story of the previous user
         prevViewer.openStory({ animate: true, startIndex: 'last' });
         
-        // Close the current viewer without animation after the next one has likely covered it
         setTimeout(() => {
-          if (typeof currentViewerInstance.closeStory === 'function') {
-            currentViewerInstance.closeStory({ animate: false });
+          if (typeof currentViewer.closeStory === 'function') {
+            currentViewer.closeStory({ animate: false });
           }
         }, 300);
       }
@@ -253,3 +351,4 @@ const storyUsers = [
     scrollbar-width: none;
   }
 </style>
+</Layout>
