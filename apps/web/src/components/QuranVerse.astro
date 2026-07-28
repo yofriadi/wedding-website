@@ -18,19 +18,19 @@
     </div>
     
     <!-- Decorative Divider -->
-    <div class="reveal-simple opacity-0 translate-y-8 transition-all duration-1000 ease-out delay-500">
+    <div class="reveal-simple opacity-0 translate-y-8 transition-[transform,opacity] duration-1000 ease-out delay-[500ms]">
       <div class="w-20 h-px bg-gradient-to-r from-transparent via-amber-800/50 to-transparent mx-auto"></div>
     </div>
 
     <!-- Translation -->
     <div class="stagger-container">
-      <p class="text-[clamp(0.95rem,1.5vw,1.15rem)] leading-loose text-neutral-400 font-light italic tracking-wide">
+      <p class="text-[clamp(0.95rem,1.5vw,1.15rem)] leading-loose text-neutral-400 font-light italic tracking-wide text-pretty">
         Dan di antara tanda-tanda (kebesaran)-Nya ialah Dia menciptakan pasangan-pasangan untukmu dari jenismu sendiri, agar kamu cenderung dan merasa tenteram kepadanya, dan Dia menjadikan di antaramu rasa kasih dan sayang. Sungguh, pada yang demikian itu benar-benar terdapat tanda-tanda (kebesaran Allah) bagi kaum yang berpikir.
       </p>
     </div>
     
     <!-- Reference -->
-    <div class="reveal-simple opacity-0 translate-y-8 transition-all duration-1000 ease-out delay-1000">
+    <div class="reveal-simple opacity-0 translate-y-8 transition-[transform,opacity] duration-1000 ease-out delay-[1000ms]">
       <p class="text-xs tracking-[0.4em] text-amber-500/60 uppercase font-medium">
         QS. Ar-Ruum 30:21
       </p>
@@ -54,7 +54,7 @@
     display: inline-block;
     opacity: 0;
     transform: translateY(30px);
-    transition: all 1.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition: transform 1.5s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 1.5s cubic-bezier(0.2, 0.8, 0.2, 1);
     white-space: pre-wrap;
   }
 
