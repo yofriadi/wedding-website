@@ -1,0 +1,18 @@
+# prek / pre-commit compatible hook config
+# https://github.com/j178/prek
+
+repos:
+  - repo: local
+    hooks:
+      - id: oxlint
+        name: oxlint
+        language: system
+        entry: pnpm exec oxlint --fix
+        files: \.(js|jsx|mjs|cjs|ts|tsx|astro)$
+        exclude: ^(node_modules/|\.agents/|dist/|\.turbo/)
+      - id: oxfmt
+        name: oxfmt
+        language: system
+        entry: pnpm exec oxfmt --write --no-error-on-unmatched-pattern
+        files: \.(js|jsx|mjs|cjs|ts|tsx|astro|json|ya?ml|css|md|mdx)$
+        exclude: ^(node_modules/|\.agents/|dist/|\.turbo/|pnpm-lock\.yaml$)

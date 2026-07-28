@@ -17,7 +17,7 @@
     "deploy": "turbo run deploy --filter=@wedding-website/infra",
     "destroy": "turbo run destroy --filter=@wedding-website/infra",
     "check": "oxlint && oxfmt --write",
-    "prepare": "lefthook install"
+    "prepare": "prek install"
   },
   "dependencies": {
     "@wedding-website/env": "workspace:*",
@@ -26,9 +26,9 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "catalog:",
+    "@j178/prek": "^0.4.11",
     "@types/node": "catalog:",
     "@wedding-website/config": "workspace:*",
-    "lefthook": "^2.1.10",
     "oxfmt": "^0.61.0",
     "oxlint": "^1.76.0",
     "turbo": "^2.10.7",

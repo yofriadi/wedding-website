@@ -9,7 +9,6 @@ minimumReleaseAge: 0
 verifyDepsBeforeRun: warn
 allowBuilds:
   esbuild: true
-  lefthook: true
   sharp: true
   workerd: true
 catalog:
