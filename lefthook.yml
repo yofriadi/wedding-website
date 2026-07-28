@@ -10,6 +10,7 @@ pre-commit:
       run: pnpm oxlint --fix {staged_files}
       stage_fixed: true
     - name: oxfmt
+      # oxfmt currently ignores .astro in this repo; keep no-error so mixed commits still pass
       glob: "*.{js,jsx,ts,tsx,mjs,cjs,astro,json,yml,yaml,css,md,mdx}"
-      run: pnpm oxfmt --write {staged_files}
+      run: pnpm oxfmt --write --no-error-on-unmatched-pattern {staged_files}
       stage_fixed: true
