@@ -1,27 +1,23 @@
 {
   "name": "wedding-website",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "type": "module",
   "scripts": {
-    "dev": "turbo dev",
-    "build": "turbo build",
-    "check-types": "turbo check-types",
-    "dev:native": "turbo -F native dev",
-    "dev:web": "turbo -F web dev",
-    "dev:local": "LOCAL_DEV=true turbo dev --filter=web",
-    "db:push": "turbo -F @wedding-website/db db:push",
-    "db:studio": "turbo -F @wedding-website/db db:studio",
-    "db:generate": "turbo -F @wedding-website/db db:generate",
-    "db:migrate": "turbo -F @wedding-website/db db:migrate",
-    "db:local": "turbo -F @wedding-website/db db:local",
-    "deploy": "turbo -F @wedding-website/infra deploy",
-    "destroy": "turbo -F @wedding-website/infra destroy",
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "check-types": "turbo run check-types",
+    "dev:native": "turbo run dev --filter=native",
+    "dev:web": "turbo run dev --filter=web",
+    "dev:local": "LOCAL_DEV=true turbo run dev --filter=web",
+    "db:push": "turbo run db:push --filter=@wedding-website/db",
+    "db:studio": "turbo run db:studio --filter=@wedding-website/db",
+    "db:generate": "turbo run db:generate --filter=@wedding-website/db",
+    "db:migrate": "turbo run db:migrate --filter=@wedding-website/db",
+    "db:local": "turbo run db:local --filter=@wedding-website/db",
+    "deploy": "turbo run deploy --filter=@wedding-website/infra",
+    "destroy": "turbo run destroy --filter=@wedding-website/infra",
     "check": "oxlint && oxfmt --write",
-    "prepare": "husky"
+    "prepare": "lefthook install"
   },
   "dependencies": {
     "@wedding-website/env": "workspace:*",
@@ -32,19 +28,11 @@
     "@cloudflare/workers-types": "catalog:",
     "@types/node": "catalog:",
     "@wedding-website/config": "workspace:*",
-    "husky": "^9.1.7",
-    "lefthook": "^2.1.0",
-    "lint-staged": "^16.2.7",
-    "oxfmt": "^0.28.0",
-    "oxlint": "^1.43.0",
-    "turbo": "^2.8.3",
+    "lefthook": "^2.1.10",
+    "oxfmt": "^0.61.0",
+    "oxlint": "^1.76.0",
+    "turbo": "^2.10.7",
     "typescript": "catalog:"
   },
-  "lint-staged": {
-    "*": [
-      "oxlint",
-      "oxfmt --write"
-    ]
-  },
-  "packageManager": "pnpm@10.28.2"
+  "packageManager": "pnpm@11.17.0"
 }

@@ -20,27 +20,21 @@ const { stories, username, avatar, timestamp, className = "" } = Astro.props as 
 const WIDTH = 112;
 const HEIGHT = 200;
 
-const thumbnailImage = (() => {
-  for (let i = stories.length - 1; i >= 0; i -= 1) {
-    return stories[i].src;
-  }
-  return "";
-})();
 
 const lastStory = stories[stories.length - 1];
 ---
 
 <div class={`story-viewer ${className}`} data-story-viewer>
-  <script type="application/json" data-stories set:html={JSON.stringify(stories)}></script>
+  <script is:inline type="application/json" data-stories set:html={JSON.stringify(stories)}></script>
 
   <button
     type="button"
     data-open
-    class="relative flex flex-col items-center gap-2 group cursor-pointer bg-transparent border-none outline-none"
+    class="relative flex flex-col items-center gap-2 group cursor-pointer bg-transparent border-none outline-none active:scale-[0.96] transition-transform duration-200"
     aria-label={`View ${username}'s stories`}
   >
     <div class={`relative`} style={`width: ${WIDTH}px; height: ${HEIGHT}px;`}>
-      <div class="absolute inset-0 rounded-md overflow-hidden bg-slate-200">
+      <div class="absolute inset-0 rounded-[12px] overflow-hidden bg-slate-200 ring-1 ring-white/10">
           <img
             src={lastStory?.src}
             alt={`${username}'s story`}
@@ -77,7 +71,7 @@ const lastStory = stories[stories.length - 1];
 
         <div class="flex items-center justify-between px-4 mt-3">
           <div class="flex items-center gap-3">
-            <div class="w-8 h-8 rounded-full overflow-hidden bg-white/10">
+            <div class="w-8 h-8 rounded-full overflow-hidden bg-white/10 ring-1 ring-white/10">
               <img
                 src={avatar}
                 alt={username}
@@ -99,7 +93,7 @@ const lastStory = stories[stories.length - 1];
             <button
               type="button"
               data-close
-              class="inline-flex items-center justify-center rounded-md h-8 w-8 text-white hover:bg-white/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+              class="inline-flex items-center justify-center rounded-md h-10 w-10 text-white hover:bg-white/20 active:scale-[0.96] transition-[transform,colors] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 cursor-pointer"
               aria-label="Close"
             >
               <svg viewBox="0 0 24 24" class="w-5 h-5" aria-hidden="true">
@@ -135,14 +129,11 @@ const lastStory = stories[stories.length - 1];
         <!-- Slides will be injected here -->
       </div>
 
-        <!-- Slides will be injected here -->
-      </div>
-
       <div class="hidden md:flex absolute inset-y-0 left-0 right-0 items-center justify-between pointer-events-none px-4 z-20">
         <button
           type="button"
           data-prev
-          class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors pointer-events-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+          class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-white/10 text-white hover:bg-white/20 active:scale-[0.96] transition-[transform,colors] duration-200 pointer-events-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 cursor-pointer"
           aria-label="Previous story"
         >
           <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
@@ -160,7 +151,7 @@ const lastStory = stories[stories.length - 1];
         <button
           type="button"
           data-next
-          class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors pointer-events-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+          class="inline-flex items-center justify-center h-10 w-10 rounded-full bg-white/10 text-white hover:bg-white/20 active:scale-[0.96] transition-[transform,colors] duration-200 pointer-events-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50 cursor-pointer"
           aria-label="Next story"
         >
           <svg viewBox="0 0 24 24" class="w-6 h-6" aria-hidden="true">
@@ -328,11 +319,18 @@ const lastStory = stories[stories.length - 1];
     }
 
     function showSpinner() {
-      spinner?.classList.remove("hidden");
+      if (spinner) {
+        spinner.classList.remove("hidden");
+        animate(spinner, { opacity: [0, 1], scale: [0.8, 1] }, { duration: 0.2 });
+      }
     }
 
     function hideSpinner() {
-      spinner?.classList.add("hidden");
+      if (spinner) {
+        animate(spinner, { opacity: [1, 0], scale: [1, 0.8] }, { duration: 0.15 }).finished.then(() => {
+          spinner.classList.add("hidden");
+        });
+      }
     }
 
     function pause() {
@@ -365,12 +363,6 @@ const lastStory = stories[stories.length - 1];
       }, 50);
     }
 
-    function handleVideoTimeUpdate(e: Event) {
-      const video = e.target as HTMLVideoElement;
-      if (!video.duration || Number.isNaN(video.duration)) return;
-      const nextProgress = (video.currentTime / video.duration) * 100;
-      setProgress(nextProgress);
-    }
 
     function updateNav() {
       if (prevButton instanceof HTMLButtonElement) {
@@ -395,7 +387,6 @@ const lastStory = stories[stories.length - 1];
 
     function setStory(index: number, direction: number = 0) {
       clearProgress();
-      const prevIndex = currentIndex;
       currentIndex = index;
       
       const story = stories[currentIndex];
@@ -465,11 +456,11 @@ const lastStory = stories[stories.length - 1];
       
       if (options.animate) {
         animate(modal, { opacity: [0, 1] }, { duration: 0.2 });
-        animate(panel, { opacity: [0, 1], scale: [0.95, 1] }, { duration: 0.25 });
+        animate(panel, { opacity: [0, 1], scale: [0.95, 1], y: [16, 0] }, { duration: 0.3, ease: [0.16, 1, 0.3, 1] as any });
       } else {
         modal.style.opacity = "1";
         panel.style.opacity = "1";
-        panel.style.transform = "scale(1)";
+        panel.style.transform = "scale(1) translateY(0px)";
       }
       
       // Find first unviewed
@@ -499,6 +490,7 @@ const lastStory = stories[stories.length - 1];
 
       if (options.animate) {
         animate(modal, { opacity: [1, 0] }, { duration: 0.2 }).finished.then(onComplete);
+        animate(panel, { opacity: [1, 0], scale: [1, 0.95], y: [0, 12] } as any, { duration: 0.2, ease: "easeIn" });
       } else {
         modal.style.opacity = "0";
         onComplete();
@@ -534,7 +526,7 @@ const lastStory = stories[stories.length - 1];
     let isPressed = false;
     let pressStartTime = 0;
 
-    stage.addEventListener("pointerdown", (e) => {
+    stage.addEventListener("pointerdown", () => {
       isPressed = true;
       pressStartTime = Date.now();
       pause();
@@ -558,7 +550,7 @@ const lastStory = stories[stories.length - 1];
        }
     });
 
-    stage.addEventListener("pointerleave", (e) => {
+    stage.addEventListener("pointerleave", () => {
         if (isPressed) {
            isPressed = false;
            resume();
@@ -573,7 +565,11 @@ const lastStory = stories[stories.length - 1];
         case "Escape": close(); break;
         case " ": 
            e.preventDefault();
-           isPaused ? resume() : pause();
+           if (isPaused) {
+             resume();
+           } else {
+             pause();
+           }
            break;
       }
     });

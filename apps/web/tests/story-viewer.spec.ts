@@ -29,9 +29,6 @@ test("story viewer opens and navigates", async ({ page }) => {
   const img = stage.locator("img").first();
   await expect(img).toBeVisible();
 
-  // Get initial src
-  const src1 = await img.getAttribute("src");
-
   // Click next (right side of stage)
   const box = await stage.boundingBox();
   if (box) {
@@ -41,10 +38,7 @@ test("story viewer opens and navigates", async ({ page }) => {
   // Wait for transition
   await page.waitForTimeout(1000);
 
-  // Check that we have a new image or the src changed
-  const img2 = stage.locator("img").last(); // Get the last one in case old one is fading out
-  // Or check if video if the second story is video.
-  // In index.astro, story 2 is image /3.jpg.
+  // Check that the next story is rendered after the transition.
 
   // Ensure we have an image
   await expect(stage.locator("img").last()).toBeVisible();

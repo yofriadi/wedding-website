@@ -43,7 +43,7 @@ const items = [
   <div class="space-y-0">
     {items.map((item) => (
       <div class="accordion-item group border-b border-[color:var(--faq-border)]" data-id={item.id}>
-        <button class="w-full py-4 relative flex items-center gap-4 text-left focus:outline-none cursor-pointer">
+        <button class="w-full py-4 relative flex items-center gap-4 text-left focus:outline-none active:scale-[0.96] transition-transform duration-200 cursor-pointer">
            <!-- Number with animated circle -->
            <div class="relative flex items-center justify-center w-10 h-10 shrink-0">
              <div class="number-bg absolute inset-0 rounded-full bg-[color:var(--faq-badge)] ring-1 ring-[color:var(--faq-badge-ring)] origin-center"></div>
@@ -53,10 +53,9 @@ const items = [
            </div>
 
            <!-- Title -->
-           <h3 class="title-text text-lg md:text-xl font-serif tracking-tight text-[color:var(--faq-muted-foreground)] transition-all duration-300">
+           <h3 class="title-text text-lg md:text-xl font-serif tracking-tight text-[color:var(--faq-muted-foreground)] text-balance">
              {item.title}
            </h3>
-
            <!-- Animated indicator -->
             <div class="ml-auto flex items-center justify-center w-8 h-8 shrink-0">
               <div class="icon-plus transition-transform duration-300 text-[color:var(--faq-muted-foreground)]">
@@ -72,7 +71,7 @@ const items = [
 
         <!-- Content -->
          <div class="accordion-content h-0 overflow-hidden opacity-0">
-           <p class="pl-14 pr-4 md:pr-10 pb-5 pt-1 text-[color:var(--faq-muted-foreground)] leading-relaxed font-light text-sm">
+           <p class="pl-14 pr-4 md:pr-10 pb-5 pt-1 text-[color:var(--faq-muted-foreground)] leading-relaxed font-light text-sm text-pretty">
              {item.content}
            </p>
         </div>
@@ -118,14 +117,8 @@ const items = [
       const button = item.querySelector('button');
       
       // Elements to animate
-      const content = item.querySelector('.accordion-content');
-      const numberBg = item.querySelector('.number-bg');
-      const numberText = item.querySelector('.number-text');
-      const titleText = item.querySelector('.title-text');
-      const icon = item.querySelector('.icon-plus');
-      const iconSvg = icon?.querySelector('svg');
-      const activeLine = item.querySelector('.active-line');
       
+      const numberBg = item.querySelector('.number-bg');
       if (!button) return;
 
       button.addEventListener('click', () => {

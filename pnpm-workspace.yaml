@@ -1,19 +1,24 @@
 packages:
   - apps/*
   - packages/*
-
+autoInstallPeers: false
+# Fresh major upgrades land faster than pnpm's default release-age gate.
+# Revisit once the stack settles; prefer raising this for supply-chain hardening.
+minimumReleaseAge: 0
+# Stop every turbo/pnpm script from reinstalling deps and thrashing node_modules.
+verifyDepsBeforeRun: warn
+allowBuilds:
+  esbuild: true
+  lefthook: true
+  sharp: true
+  workerd: true
 catalog:
-  "@cloudflare/workers-types": ^4.20260205.0
-  "@libsql/client": 0.15.15
-  "@types/node": ^25.2.1
-  alchemy: ^0.83.2
-  dotenv: ^17.2.3
-  libsql: 0.5.22
-  typescript: ^5.9.3
-  zod: ^4.3.6
-
-onlyBuiltDependencies:
-  - esbuild
-  - lefthook
-  - sharp
-  - workerd
+  "@cloudflare/workers-types": ^5.20260728.1
+  "@libsql/client": 0.17.4
+  "@types/node": ^26.1.2
+  alchemy: ^0.93.12
+  dotenv: ^17.4.2
+  libsql: 0.5.29
+  typescript: ^6.0.3
+  wrangler: ^4.114.0
+  zod: ^4.4.3

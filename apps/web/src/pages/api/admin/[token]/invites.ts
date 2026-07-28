@@ -7,7 +7,7 @@ const INVITE_ID_LENGTH = 12;
 const INVITE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
 function generateInviteId() {
-  const cryptoObj = globalThis.crypto;
+  const cryptoObj = (globalThis as { crypto?: Crypto }).crypto;
   if (!cryptoObj?.getRandomValues) {
     throw new Error("crypto.getRandomValues is not available");
   }
@@ -17,7 +17,11 @@ function generateInviteId() {
 
   let out = "";
   for (let i = 0; i < bytes.length; i++) {
-    out += INVITE_ALPHABET[bytes[i] & 63];
+    const byte = bytes[i];
+    if (byte === undefined) {
+      throw new Error("Failed to generate invite ID");
+    }
+    out += INVITE_ALPHABET.charAt(byte & 63);
   }
   return out;
 }

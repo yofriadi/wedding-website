@@ -36,6 +36,9 @@ lerna-debug.log*
 # Turbo
 .turbo
 
+# Cloudflare / Wrangler local runtime state
+**/.wrangler
+
 # Better-T-Stack
 .alchemy
 
@@ -48,3 +51,6 @@ coverage
 .cache
 tmp
 temp
+
+# Local agent skill dumps
+.agents

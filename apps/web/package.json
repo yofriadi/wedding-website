@@ -5,32 +5,35 @@
   "type": "module",
   "scripts": {
     "build": "astro build",
+    "check-types": "astro check",
     "preview": "astro preview",
     "astro": "astro",
     "dev": "astro dev --host",
     "dev:bare": "astro dev"
   },
   "dependencies": {
-    "@astrojs/node": "^9.5.2",
+    "@astrojs/node": "^11.0.2",
     "@libsql/client": "catalog:",
     "@wedding-website/db": "workspace:*",
     "@wedding-website/env": "workspace:*",
-    "astro": "^5.17.1",
+    "astro": "^7.1.4",
     "dotenv": "catalog:",
-    "drizzle-orm": "^0.45.1",
+    "drizzle-orm": "^0.45.2",
     "libsql": "catalog:",
-    "motion": "^12.32.0",
+    "motion": "^12.42.2",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@astrojs/cloudflare": "^12.6.12",
+    "@astrojs/check": "^0.9.10",
+    "@astrojs/cloudflare": "^14.1.5",
     "@cloudflare/workers-types": "catalog:",
-    "@playwright/test": "^1.58.1",
-    "@tailwindcss/vite": "^4.1.18",
+    "@playwright/test": "^1.62.0",
+    "@tailwindcss/vite": "^4.3.3",
     "@wedding-website/config": "workspace:*",
     "alchemy": "catalog:",
-    "playwright": "^1.58.1",
-    "tailwindcss": "^4.1.18",
-    "typescript": "catalog:"
+    "playwright": "^1.62.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "catalog:",
+    "wrangler": "catalog:"
   }
 }
