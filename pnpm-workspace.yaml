@@ -10,14 +10,10 @@ verifyDepsBeforeRun: warn
 allowBuilds:
   esbuild: true
   sharp: true
-  workerd: true
 catalog:
-  "@cloudflare/workers-types": ^5.20260728.1
   "@libsql/client": 0.17.4
-  "@types/node": ^26.1.2
-  alchemy: ^0.93.12
+  "@types/node": ^26.2.0
   dotenv: ^17.4.2
   libsql: 0.5.29
-  typescript: ^6.0.3
-  wrangler: ^4.114.0
+  typescript: ^7.0.2
   zod: ^4.4.3

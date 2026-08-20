@@ -1,4 +1,5 @@
 ---
+import { existsSync } from "node:fs";
 import Layout from "../layouts/Layout.astro";
 import HeroZoom from "../components/HeroZoom.astro";
 import ZoomParallax from "../components/ZoomParallax.astro";
@@ -8,6 +9,28 @@ import TestimonialMarquee from '../components/TestimonialMarquee.astro';
 import StoryViewer from "../components/StoryViewer.astro";
 import WeddingFAQ from '../components/WeddingFAQ.astro';
 import TextShimmer from "../components/TextShimmer.astro";
+import { db } from "@wedding-website/db";
+import { invites } from "@wedding-website/db/schema";
+import { eq } from "drizzle-orm";
+
+const INVITE_COOKIE_NAME = "ww_invite_id";
+const INVITE_ID_RE = /^[A-Za-z0-9_-]{12}$/;
+
+// Personalized greeting (server-rendered; read-only — metrics stay exclusive to /i/:id).
+let inviteDisplayName: string | null = null;
+const inviteCookieValue = Astro.cookies.get(INVITE_COOKIE_NAME)?.value;
+if (typeof inviteCookieValue === "string" && INVITE_ID_RE.test(inviteCookieValue)) {
+  const inviteRow = await db
+    .select({ displayName: invites.displayName })
+    .from(invites)
+    .where(eq(invites.id, inviteCookieValue))
+    .limit(1);
+  inviteDisplayName = inviteRow[0]?.displayName ?? null;
+}
+
+// Homepage HTML is personalized per invite; never let a shared cache serve it.
+Astro.response.headers.set("Cache-Control", "no-store");
+
 
 const storyUsers = [
   {
@@ -91,26 +114,53 @@ const storyUsers = [
       { id: "story-10-2", type: "image", src: "/12.jpg", duration: 4000 },
     ],
   },
-];
+]
+
+// Couple-supplied teaser tiles (up to three); missing assets are skipped so the
+// rail degrades gracefully until the images land.
+const storyTeaserAssets = [
+  "/teasers/story-teaser-1.webp",
+  "/teasers/story-teaser-2.webp",
+  "/teasers/story-teaser-3.webp",
+].filter((src) => teaserAssetExists(src));
+
+function teaserAssetExists(src: string) {
+  // Dev: the page module lives under src/pages (public/ is ../../public).
+  // Build: the module lives under dist/server (public assets are bundled
+  // into dist/client — presence there reflects what the adapter will serve).
+  const candidates = [
+    new URL(`../../public${src}`, import.meta.url),
+    new URL(`../../client${src}`, import.meta.url),
+  ];
+  return candidates.some((url) => existsSync(url));
+}
 ---
 
 <Layout title="Save the Date | Yofri & Aisha">
   <!-- Loading Overlay -->
   <div id="loading-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950 transition-opacity duration-500">
-    <TextShimmer 
-      class="text-xl font-medium tracking-tight"
-      phrases={[
-        "Pre-heating the server…",
-        "Converting coffee into code…", 
-        "Discombobulating…", 
-        "Wrangling…", 
-        "Symbioting…", 
-        "Perambulating…", 
-        "Shenaninganing…"
-      ]}
-    >
-      Pre-heating the server…
-    </TextShimmer>
+    <div class="flex flex-col items-center">
+      <div
+        id="invite-greeting"
+        class:list={["text-lg font-light tracking-wide text-neutral-200 text-balance text-center", { "mb-4": inviteDisplayName !== null }]}
+      >
+        {inviteDisplayName}
+      </div>
+      <TextShimmer 
+        class="text-xl font-medium tracking-tight"
+        phrases={[
+          "Pre-heating the server…",
+          "Converting coffee into code…", 
+          "Discombobulating…", 
+          "Wrangling…", 
+          "Symbioting…", 
+          "Perambulating…", 
+          "Shenaninganing…"
+        ]}
+      >
+        Pre-heating the server…
+      </TextShimmer>
+    </div>
   </div>
 
   <!-- Background Music -->
@@ -129,35 +179,19 @@ const storyUsers = [
         <h2 class="text-xl font-light text-center mb-4 text-neutral-300 text-balance">Show Our Memories Together</h2>
       </div>
       <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar snap-x">
-        <div class="snap-center flex-shrink-0 flex flex-col items-center gap-2 pl-6">
-          <label class="relative w-[112px] h-[200px] rounded-[12px] border-2 border-dashed border-white/20 flex flex-col items-center justify-center hover:bg-white/5 active:scale-[0.96] transition-[transform,colors] duration-200 cursor-pointer group">
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              class="hidden"
-              onchange="(() => { const input = this; const selected = input.files; if (!selected) return; if (selected.length > 5) { alert('Maximum 5 images allowed.'); input.value = ''; return; } if (selected.length > 0) { alert('Selected ' + selected.length + ' images. Upload logic to be implemented.'); } })()"
+        {storyTeaserAssets.map((src) => (
+          <div class="snap-center flex-shrink-0 pl-6">
+            <img
+              src={src}
+              alt=""
+              width="112"
+              height="200"
+              loading="lazy"
+              decoding="async"
+              class="block h-[200px] w-[112px] rounded-[12px] object-cover"
             />
-            <div class="absolute inset-0 rounded-[12px] border border-neutral-900/50"></div>
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              width="40" 
-              height="40" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              stroke-width="1.5" 
-              stroke-linecap="round" 
-              stroke-linejoin="round" 
-              class="text-neutral-400 group-hover:text-white transition-colors mb-2"
-            >
-              <path d="M5 12h14" />
-              <path d="M12 5v14" />
-            </svg>
-            <span class="text-[10px] text-neutral-500 text-center leading-tight px-2 group-hover:text-neutral-400 transition-colors">Up to 5<br/>images</span>
-          </label>
-          <span class="text-xs text-slate-500">Add Story</span>
-        </div>
+          </div>
+        ))}
 
 
         {storyUsers.map((user, index) => (
@@ -296,13 +330,22 @@ const storyUsers = [
       const nextViewer = viewers[currentIndex + 1];
       
       if (nextViewer && typeof nextViewer.openStory === 'function') {
-        nextViewer.openStory({ animate: true });
-        
-        setTimeout(() => {
+        const closeCurrent = () => {
           if (typeof currentViewer.closeStory === 'function') {
             currentViewer.closeStory({ animate: false });
           }
-        }, 300);
+        };
+        // Close the outgoing viewer when the incoming viewer's first slide is
+        // actually ready (event-driven, no black flash); the timeout is only a
+        // safety net for a readiness signal that never arrives.
+        const fallback = setTimeout(closeCurrent, 800);
+        nextViewer.openStory({
+          animate: true,
+          onFirstSlideReady: () => {
+            clearTimeout(fallback);
+            closeCurrent();
+          },
+        });
       }
     }
   });
@@ -317,13 +360,22 @@ const storyUsers = [
       const prevViewer = viewers[currentIndex - 1];
       
       if (prevViewer && typeof prevViewer.openStory === 'function') {
-        prevViewer.openStory({ animate: true, startIndex: 'last' });
-        
-        setTimeout(() => {
+        const closeCurrent = () => {
           if (typeof currentViewer.closeStory === 'function') {
             currentViewer.closeStory({ animate: false });
           }
-        }, 300);
+        };
+        // Same event-driven hand-off as the next direction, opening the
+        // previous viewer at its last story.
+        const fallback = setTimeout(closeCurrent, 800);
+        prevViewer.openStory({
+          animate: true,
+          startIndex: 'last',
+          onFirstSlideReady: () => {
+            clearTimeout(fallback);
+            closeCurrent();
+          },
+        });
       }
     }
   });

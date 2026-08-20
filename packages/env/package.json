@@ -17,7 +17,6 @@
   "devDependencies": {
     "@types/node": "catalog:",
     "@wedding-website/config": "workspace:*",
-    "@wedding-website/infra": "workspace:*",
     "typescript": "catalog:"
   }
 }

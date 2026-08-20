@@ -9,7 +9,7 @@ This project was created with [Better-T-Stack](https://github.com/AmanVarshney01
 - **TailwindCSS** - Utility-first CSS for rapid UI development
 - **shadcn/ui** - Reusable UI components
 - **Drizzle** - TypeScript-first ORM
-- **SQLite/Turso** - Database engine
+- **SQLite** - Local file database
 - **Husky** - Git hooks for code quality
 - **Oxlint** - Oxlint + Oxfmt (linting & formatting)
 - **Turborepo** - Optimized monorepo build system
@@ -24,21 +24,21 @@ pnpm install
 
 ## Database Setup
 
-This project uses SQLite with Drizzle ORM.
+The application uses a SQLite file through Drizzle ORM. Add a file URL to
+`apps/web/.env`; relative paths are resolved from `apps/web` at runtime:
 
-1. Start the local SQLite database (optional):
-
-```bash
-pnpm run db:local
+```dotenv
+DATABASE_URL=file:../../packages/db/local.db
 ```
 
-2. Update your `.env` file in the `apps/web` directory with the appropriate connection details if needed.
-
-3. Apply the schema to your database:
+Apply the committed migrations before starting the application:
 
 ```bash
-pnpm run db:push
+pnpm run db:migrate
 ```
+
+Use `pnpm run db:push` only for disposable development databases when you
+intentionally want Drizzle to synchronize the current schema without migrations.
 
 Then, run the development server:
 

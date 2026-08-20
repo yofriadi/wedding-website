@@ -12,11 +12,22 @@ function toCookieMaxAgeSeconds(days: number) {
   return Math.max(1, Math.floor(days * 24 * 60 * 60));
 }
 
+// The redirect carries Set-Cookie and bumps seen-metrics — it must never be cached.
+function noStoreRedirect() {
+  return new Response(null, {
+    status: 302,
+    headers: {
+      Location: "/",
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
 export const GET: APIRoute = async ({ params, cookies, redirect }) => {
   const id = params.id;
 
   if (typeof id !== "string" || id.length !== INVITE_ID_LENGTH || !ID_RE.test(id)) {
-    return redirect("/", 302);
+    return noStoreRedirect();
   }
 
   const now = Date.now();
@@ -44,5 +55,5 @@ export const GET: APIRoute = async ({ params, cookies, redirect }) => {
     });
   }
 
-  return redirect("/", 302);
+  return noStoreRedirect();
 };

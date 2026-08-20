@@ -8,14 +8,10 @@
     "check-types": "turbo run check-types",
     "dev:native": "turbo run dev --filter=native",
     "dev:web": "turbo run dev --filter=web",
-    "dev:local": "LOCAL_DEV=true turbo run dev --filter=web",
     "db:push": "turbo run db:push --filter=@wedding-website/db",
     "db:studio": "turbo run db:studio --filter=@wedding-website/db",
     "db:generate": "turbo run db:generate --filter=@wedding-website/db",
     "db:migrate": "turbo run db:migrate --filter=@wedding-website/db",
-    "db:local": "turbo run db:local --filter=@wedding-website/db",
-    "deploy": "turbo run deploy --filter=@wedding-website/infra",
-    "destroy": "turbo run destroy --filter=@wedding-website/infra",
     "check": "oxlint && oxfmt --write",
     "prepare": "prek install"
   },
@@ -25,14 +21,13 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "catalog:",
-    "@j178/prek": "^0.4.11",
+    "@j178/prek": "^0.4.12",
     "@types/node": "catalog:",
     "@wedding-website/config": "workspace:*",
-    "oxfmt": "^0.61.0",
-    "oxlint": "^1.76.0",
-    "turbo": "^2.10.7",
+    "oxfmt": "^0.62.0",
+    "oxlint": "^1.77.0",
+    "turbo": "^2.10.9",
     "typescript": "catalog:"
   },
-  "packageManager": "pnpm@11.17.0"
+  "packageManager": "pnpm@11.21.0"
 }

@@ -9,31 +9,28 @@
     "preview": "astro preview",
     "astro": "astro",
     "dev": "astro dev --host",
-    "dev:bare": "astro dev"
+    "dev:bare": "astro dev",
+    "dev:stop": "astro dev stop"
   },
   "dependencies": {
-    "@astrojs/node": "^11.0.2",
+    "@astrojs/node": "^11.1.0",
     "@libsql/client": "catalog:",
     "@wedding-website/db": "workspace:*",
     "@wedding-website/env": "workspace:*",
-    "astro": "^7.1.4",
+    "astro": "^7.2.0",
     "dotenv": "catalog:",
     "drizzle-orm": "^0.45.2",
     "libsql": "catalog:",
-    "motion": "^12.42.2",
+    "motion": "^13.0.0",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
-    "@astrojs/cloudflare": "^14.1.5",
-    "@cloudflare/workers-types": "catalog:",
-    "@playwright/test": "^1.62.0",
+    "@playwright/test": "^1.62.1",
     "@tailwindcss/vite": "^4.3.3",
     "@wedding-website/config": "workspace:*",
-    "alchemy": "catalog:",
-    "playwright": "^1.62.0",
+    "playwright": "^1.62.1",
     "tailwindcss": "^4.3.3",
-    "typescript": "catalog:",
-    "wrangler": "catalog:"
+    "typescript": "catalog:"
   }
 }

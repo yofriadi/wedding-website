@@ -26,16 +26,6 @@
     },
     "db:generate": {
       "cache": false
-    },
-    "db:local": {
-      "cache": false,
-      "persistent": true
-    },
-    "deploy": {
-      "cache": false
-    },
-    "destroy": {
-      "cache": false
     }
   }
 }

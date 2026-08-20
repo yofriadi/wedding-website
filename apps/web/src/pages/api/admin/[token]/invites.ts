@@ -31,6 +31,7 @@ function json(status: number, body: unknown) {
     status,
     headers: {
       "content-type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
     },
   });
 }
@@ -40,7 +41,12 @@ export const POST: APIRoute = async ({ params, request }) => {
   const token = params.token;
 
   if (!expectedToken || token !== expectedToken) {
-    return new Response(null, { status: 404 });
+    return new Response(null, {
+      status: 404,
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    });
   }
 
   let payload: unknown;
