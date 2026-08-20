@@ -5,23 +5,36 @@ interface Props {
   phrases?: string[];
   phraseIntervalMs?: number;
 } const { class: className, duration = 2, phrases, phraseIntervalMs = 2000 } = Astro.props;
+
+// Shimmer paint lives on each text layer (not the host) so the crossfade can
+// fade the outgoing phrase out: with a single host-level background-clip:text,
+// a stacked span's opacity cannot modulate the clipped gradient.
+const shimmerLayerClasses = [
+  "bg-clip-text text-transparent bg-size-[200%_100%] animate-shimmer",
+  // Gradient for Dark Mode (Gray -> White -> Gray)
+  "bg-[linear-gradient(110deg,#4b5563,45%,#ffffff,55%,#4b5563)]",
+];
 ---
 
 <text-shimmer
   class:list={[
-    "inline-flex bg-clip-text text-transparent bg-size-[200%_100%] animate-shimmer",
-    // Gradient for Dark Mode (Gray -> White -> Gray)
-    "bg-[linear-gradient(110deg,#4b5563,45%,#ffffff,55%,#4b5563)]",
+    "inline-flex relative",
     className
   ]}
-  style={{
-    animationDuration: `${duration}s`,
-  }}
   data-phrases={phrases ? JSON.stringify(phrases) : undefined}
   data-phrase-interval-ms={String(phraseIntervalMs)}
 >
-  <span data-text><slot /></span>
+  <span data-text class:list={shimmerLayerClasses} style={{ animationDuration: `${duration}s` }}><slot /></span>
+  <span data-text-out class:list={shimmerLayerClasses} style={{ animationDuration: `${duration}s` }} aria-hidden="true"></span>
 </text-shimmer>
+
+<style>
+  text-shimmer [data-text-out] {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+</style>
 
 <script is:inline>
   class TextShimmer extends HTMLElement {
@@ -46,13 +59,39 @@ interface Props {
 
       const intervalMs = Number(this.dataset.phraseIntervalMs) || 1000;
       const textEl = this.querySelector('[data-text]');
+      const outEl = this.querySelector('[data-text-out]');
       if (!textEl) return;
 
       let index = 0;
-      
+      const CROSSFADE_MS = 150;
+
       this.interval = window.setInterval(() => {
         index = (index + 1) % phrases.length;
+
+        if (!outEl) {
+          textEl.textContent = phrases[index];
+          return;
+        }
+
+        // Crossfade instead of a hard cut: hand the outgoing phrase to the
+        // back layer and blur-fade it out while the incoming phrase fades in.
+        outEl.getAnimations().forEach((anim) => anim.cancel());
+        outEl.textContent = textEl.textContent;
+        outEl.animate(
+          [
+            { opacity: 1, filter: 'blur(0px)' },
+            { opacity: 0, filter: 'blur(2px)' }
+          ],
+          { duration: CROSSFADE_MS, easing: 'ease-out' }
+        ).finished.then(() => {
+          outEl.textContent = '';
+        }, () => { /* cancelled by a newer crossfade */ });
+
         textEl.textContent = phrases[index];
+        textEl.animate(
+          [{ opacity: 0 }, { opacity: 1 }],
+          { duration: CROSSFADE_MS, easing: 'ease-out' }
+        );
       }, intervalMs);
     }
 

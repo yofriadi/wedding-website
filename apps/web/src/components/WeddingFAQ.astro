@@ -101,6 +101,9 @@ const items = [
 <script>
   import { animate, spring } from "motion";
 
+  // JS twin of the CSS --ease-out-expo token; keep in sync.
+  const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
+
   function initFAQ() {
     const container = document.getElementById('wedding-faq');
     if (!container) return;
@@ -115,10 +118,6 @@ const items = [
 
     items.forEach(item => {
       const button = item.querySelector('button');
-      
-      // Elements to animate
-      
-      const numberBg = item.querySelector('.number-bg');
       if (!button) return;
 
       button.addEventListener('click', () => {
@@ -137,18 +136,6 @@ const items = [
           activeItem = item;
         }
       });
-      
-      button.addEventListener('mouseenter', () => {
-        if (item !== activeItem && numberBg) {
-          animate(numberBg, { scale: 1, backgroundColor: badgeBase }, { type: spring, stiffness: 400, damping: 25 });
-        }
-      });
-      
-      button.addEventListener('mouseleave', () => {
-        if (item !== activeItem && numberBg) {
-           animate(numberBg, { scale: 1, backgroundColor: badgeBase }, { type: spring, stiffness: 400, damping: 25 });
-        }
-      });
     });
 
     function openItem(item: Element) {
@@ -162,7 +149,8 @@ const items = [
 
       if (content) animate(content, { height: "auto", opacity: 1 } as any, { duration: 0.4, ease: "easeOut" });
       
-      if (numberBg) animate(numberBg, { scale: 1, backgroundColor: foreground }, { type: spring, stiffness: 400, damping: 25 });
+      // Subtle pop (1.08, not a bounce) gives the state change physicality.
+      if (numberBg) animate(numberBg, { scale: [1, 1.08, 1], backgroundColor: foreground }, { duration: 0.3, ease: EASE_OUT_EXPO });
       
       if (numberText) animate(numberText, { color: primaryForeground }, { duration: 0.2 });
       

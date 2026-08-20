@@ -1,169 +1,282 @@
 ---
 ---
-<section class="relative h-[400vh]" id="hero-container">
-  <div class="sticky top-0 h-screen w-full overflow-hidden">
-    <div class="absolute inset-0 bg-black/20 z-10 pointer-events-none"></div>
-    
-    <!-- Image with Zoom and Blur animations -->
-    <img 
-      src="/wedding_photo.png" 
-      alt="Wedding Couple" 
+<section class="relative hero-scroll" id="hero-container">
+  <div class="hero-stage sticky top-0 w-full overflow-hidden">
+    <!-- Sharp image stays visible while the hero zooms out. -->
+    <img
+      src="/wedding_photo-1024.webp"
+      srcset="/wedding_photo-390.webp 390w, /wedding_photo-640.webp 640w, /wedding_photo.webp 768w, /wedding_photo-1024.webp 1024w, /wedding_photo-1536.webp 1536w"
+      sizes="min(280vw, 1536px)"
+      width="1024"
+      height="1835"
+      alt="Aisha and Yofri displaying their wedding rings"
       data-hero-media
-      class="h-full w-full object-cover animate-image"
-      style="transform-origin: center 40%;"
+      fetchpriority="high"
+      loading="eager"
+      decoding="async"
+      class="absolute inset-0 h-full w-full object-cover animate-image"
     />
-    
+    <!-- Pre-blurred layer fades in instead of animating an expensive CSS filter. -->
+    <img
+      src="/wedding_photo_blur.webp"
+      width="768"
+      height="1376"
+      alt=""
+      aria-hidden="true"
+      loading="eager"
+      decoding="async"
+      class="absolute inset-0 h-full w-full object-cover animate-blur"
+    />
+    <div class="absolute inset-0 z-10 bg-black pointer-events-none animate-overlay"></div>
+
     <!-- Overlay Content (Names & Date) -->
     <div class="absolute inset-0 flex flex-col items-center justify-center z-20 pointer-events-none">
-       <div class="text-center space-y-6 animate-text opacity-0 transform translate-y-8">
-         <p class="text-sm md:text-lg tracking-[0.4em] text-white/90 uppercase font-light">Save the Date</p>
-         <h1 class="text-5xl md:text-8xl font-serif text-white tracking-tight drop-shadow-lg">
-           Yofri <span class="text-white/80 font-light italic">&</span> Aisha
-         </h1>
-         <p class="text-xl md:text-2xl font-light text-white/90 tracking-widest font-serif">
-           September 24, 2026
-         </p>
-       </div>
+      <div class="w-full max-w-5xl px-5 text-center text-balance space-y-6 animate-text">
+        <p class="text-sm md:text-lg tracking-[0.4em] text-white/90 uppercase font-light">Save the Date</p>
+        <h1 class="text-5xl md:text-8xl font-serif text-white tracking-tight drop-shadow-lg">
+          Yofri <span class="text-white/80 font-light italic">&</span> Aisha
+        </h1>
+        <p class="text-xl md:text-2xl font-light text-white/90 tracking-widest font-serif">
+          <time datetime="2026-09-24">September 24, 2026</time>
+        </p>
+      </div>
     </div>
   </div>
 </section>
 
 <style>
-  /* 
-   * Scroll Driven Animation 
-   * Timeline: 
-   * 0vh   -> 100vh : Zoom Out (Text hidden)
-   * 100vh -> 125vh : Short Pause (Text hidden)
-   * 125vh -> 200vh : Fast Reveal (Blur Image + Reveal Text)
-   * 200vh -> 400vh : Long Hold (Text fully visible)
-   */
+  /* The 300svh section gives the 100svh stage 200svh of pinned travel. */
+  .hero-scroll {
+    height: 300vh;
+    height: 300svh;
+  }
+  .hero-stage {
+    height: 100vh;
+    height: 100svh;
+  }
+  .hero-scroll,
+  .hero-stage {
+    /* Keep the cinematic sequence stable while mobile browser chrome changes. */
+    min-height: 0;
+  }
+  .animate-image,
+  .animate-blur {
+    transform-origin: center 40%;
+  }
 
+  /* The static fallback is the readable, fully revealed hero. Enhanced modes override it. */
+  .animate-image {
+    transform: scale(1);
+  }
+  .animate-blur {
+    opacity: 1;
+  }
+  .animate-overlay {
+    opacity: 0.3;
+  }
+  .animate-text {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Map animation progress to the 200svh period while the stage is pinned. */
   @keyframes image-scroll-effect {
     0% {
       transform: scale(2.8);
-      filter: blur(0px);
     }
-    25% { /* 100vh (100/400) */
+    33.333%, 41.667%, 66.667%, 100% {
       transform: scale(1);
-      filter: blur(0px);
     }
-    31.25% { /* 125vh (125/400) - Short pause */
-      transform: scale(1);
-      filter: blur(0px);
+  }
+
+  @keyframes blur-reveal {
+    0%, 41.667% {
+      opacity: 0;
     }
-    50%, 100% { /* 200vh to 400vh - Reveal done & Hold */
-      transform: scale(1);
-      filter: blur(8px) brightness(0.7);
+    66.667%, 100% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes overlay-reveal {
+    0%, 41.667% {
+      opacity: 0;
+    }
+    66.667%, 100% {
+      opacity: 0.3;
     }
   }
 
   @keyframes text-reveal {
-    0%, 31.25% { /* Hidden until 125vh */
+    0%, 41.667% { /* Hidden through the ~83svh pause. */
       opacity: 0;
       transform: translateY(40px);
     }
-    50%, 100% { /* Fully visible by 200vh and held until 400vh */
+    66.667%, 100% { /* Fully visible by ~133svh and held. */
       opacity: 1;
       transform: translateY(0);
     }
   }
 
-  /* Only apply CSS Scroll Animation if supported */
-  @supports (animation-timeline: scroll()) {
-    .animate-image {
-      animation: image-scroll-effect linear both;
-      animation-timeline: scroll(root); 
-      animation-range: 0vh 400vh;
+  /* A named view timeline keeps progress local to this hero section. */
+  @supports (view-timeline: --hero-progress block) and (animation-timeline: --hero-progress) {
+    .hero-scroll {
+      view-timeline: --hero-progress block;
+      view-timeline-inset: 100% 100%;
     }
-
+    .animate-image {
+      animation: image-scroll-effect cubic-bezier(0.33, 1, 0.68, 1) both;
+      animation-timeline: --hero-progress;
+      animation-range: 0% 100%;
+    }
+    .animate-blur {
+      animation: blur-reveal linear both;
+      animation-timeline: --hero-progress;
+      animation-range: 0% 100%;
+    }
+    .animate-overlay {
+      animation: overlay-reveal linear both;
+      animation-timeline: --hero-progress;
+      animation-range: 0% 100%;
+    }
     .animate-text {
       animation: text-reveal linear both;
-      animation-timeline: scroll(root);
-      animation-range: 0vh 400vh;
+      animation-timeline: --hero-progress;
+      animation-range: 0% 100%;
     }
   }
 
-  /* Fallback for JS (Simplified) */
-  @supports not (animation-timeline: scroll()) {
+  /* Unsupported browsers keep the static hero until the JS enhancement initializes. */
+
+  /* Reduced-motion users get the complete, readable hero without a scroll sequence. */
+  @media (prefers-reduced-motion: reduce) {
+    .hero-scroll {
+      height: 100vh;
+      height: 100svh;
+    }
+    .hero-stage {
+      position: relative !important;
+    }
+    .animate-image,
+    .animate-blur,
+    .animate-overlay,
+    .animate-text {
+      animation: none !important;
+    }
     .animate-image {
-      transform: scale(2.8);
+      transform: scale(1) !important;
+    }
+    .animate-blur {
+      opacity: 1 !important;
+    }
+    .animate-overlay {
+      opacity: 0.3 !important;
     }
     .animate-text {
-      opacity: 0;
-      transform: translateY(40px);
+      opacity: 1 !important;
+      transform: translateY(0) !important;
     }
   }
 </style>
 
 <script>
-  // Fallback script for browsers that don't support scroll-driven animations
-  if (!CSS.supports("animation-timeline: scroll()")) {
-    const section = document.querySelector('#hero-container') as HTMLElement;
-    const img = document.querySelector('.animate-image') as HTMLElement;
-    const text = document.querySelector('.animate-text') as HTMLElement;
-    
-    if (section && img && text) {
-      // Initial state setup
-      img.style.transform = 'scale(2.8)';
-      text.style.opacity = '0';
-      text.style.transform = 'translateY(40px)';
+  // Section-relative fallback for browsers without named view-timeline support.
+  const supportsScrollTimeline =
+    CSS.supports("view-timeline: --hero-progress block") &&
+    CSS.supports("animation-timeline: --hero-progress");
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-      window.addEventListener('scroll', () => {
-        const scrolled = window.scrollY;
-        const viewportHeight = window.innerHeight;
-        
-        // Keyframes based on vh
-        const zoomEnd = viewportHeight * 1;      // 100vh
-        const pauseEnd = viewportHeight * 1.25;  // 125vh (Shortened from 1.5)
-        const blurEnd = viewportHeight * 2.0;    // 200vh (Shortened from 2.5)
-        // Section height is 400vh, so hold phase is now 200vh -> 400vh (Longer)
-        
-        // 1. Zoom Logic (0 -> 100vh)
+  if (!supportsScrollTimeline && !prefersReducedMotion) {
+    const section = document.querySelector<HTMLElement>("#hero-container");
+    const img = section?.querySelector<HTMLElement>(".animate-image");
+    const blur = section?.querySelector<HTMLElement>(".animate-blur");
+    const overlay = section?.querySelector<HTMLElement>(".animate-overlay");
+    const text = section?.querySelector<HTMLElement>(".animate-text");
+    const stage = section?.querySelector<HTMLElement>(".hero-stage");
+
+    if (section && img && blur && overlay && text) {
+      let ticking = false;
+      let heroActive = true;
+
+      // Gate the fallback while the hero is far offscreen: scroll events then
+      // perform no rect reads and no style writes.
+      if (typeof IntersectionObserver !== "undefined") {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            heroActive = entries[entries.length - 1].isIntersecting;
+          },
+          { rootMargin: "100% 0px 100% 0px" },
+        );
+        observer.observe(section);
+      }
+
+      const update = () => {
+        ticking = false;
+        const sectionRect = section.getBoundingClientRect();
+        const scrolled = Math.max(0, -sectionRect.top);
+        const viewportHeight =
+          stage?.getBoundingClientRect().height || document.documentElement.clientHeight;
+
+        const travel = Math.max(
+          sectionRect.height - viewportHeight,
+          1,
+        );
+        // Phase boundaries mirror the CSS keyframes (33.333% / 41.667% / 66.667%).
+        const zoomEnd = travel / 3;
+        const pauseEnd = (travel * 5) / 12;
+        const blurEnd = (travel * 2) / 3;
+
         if (scrolled <= zoomEnd) {
           const progress = Math.min(scrolled / zoomEnd, 1);
-          const scale = 2.8 - (progress * 1.8);
+          const eased = 1 - Math.pow(1 - progress, 3); // easeOutCubic, matches the CSS curve.
+          const scale = 2.8 - eased * 1.8;
           img.style.transform = `scale(${scale})`;
-          img.style.filter = 'blur(0px) brightness(1)';
-          
-          // Text hidden
-          text.style.opacity = '0';
-          text.style.transform = 'translateY(40px)';
-        } 
-        // 2. Pause Logic (100vh -> 150vh)
-        else if (scrolled <= pauseEnd) {
-          img.style.transform = 'scale(1)';
-          img.style.filter = 'blur(0px) brightness(1)';
-          text.style.opacity = '0';
-          text.style.transform = 'translateY(40px)';
+          blur.style.opacity = "0";
+          overlay.style.opacity = "0";
+          text.style.opacity = "0";
+          text.style.transform = "translateY(40px)";
+          return;
         }
-        // 3. Blur & Text Logic (150vh -> 250vh)
-        else if (scrolled <= blurEnd) {
-          img.style.transform = 'scale(1)';
-          
-          const progress = (scrolled - pauseEnd) / (blurEnd - pauseEnd); // 0 to 1
-          
-          // Blur 0 -> 8px, Brightness 1 -> 0.7
-          const blur = progress * 8;
-          const brightness = 1 - (progress * 0.3);
-          img.style.filter = `blur(${blur}px) brightness(${brightness})`;
-          
-          // Text Opacity 0 -> 1, Translate 40px -> 0
-          text.style.opacity = `${progress}`;
-          text.style.transform = `translateY(${40 * (1 - progress)}px)`;
-        } 
-        // 4. Held State (> 250vh)
-        else {
-          img.style.transform = 'scale(1)';
-          img.style.filter = 'blur(8px) brightness(0.7)';
-          text.style.opacity = '1';
-          text.style.transform = 'translateY(0)';
+
+        if (scrolled <= pauseEnd) {
+          img.style.transform = "scale(1)";
+          blur.style.opacity = "0";
+          overlay.style.opacity = "0";
+          text.style.opacity = "0";
+          text.style.transform = "translateY(40px)";
+          return;
         }
-      });
-      
-      // Init
-      img.style.transform = 'scale(2.8)';
-      text.style.opacity = '0';
-      text.style.transform = 'translateY(40px)';
+
+        const progress = Math.min(
+          Math.max((scrolled - pauseEnd) / (blurEnd - pauseEnd),
+          0),
+          1,
+        );
+        img.style.transform = "scale(1)";
+        blur.style.opacity = `${progress}`;
+        overlay.style.opacity = `${progress * 0.3}`;
+        text.style.opacity = `${progress}`;
+        text.style.transform = `translateY(${40 * (1 - progress)}px)`;
+      };
+
+      const scheduleUpdate = () => {
+        if (ticking || !heroActive) return;
+        ticking = true;
+        requestAnimationFrame(update);
+      };
+
+      const initialState = () => {
+        img.style.transform = "scale(2.8)";
+        blur.style.opacity = "0";
+        overlay.style.opacity = "0";
+        text.style.opacity = "0";
+        text.style.transform = "translateY(40px)";
+      };
+
+      initialState();
+      window.addEventListener("scroll", scheduleUpdate, { passive: true });
+      window.addEventListener("resize", scheduleUpdate, { passive: true });
+      update();
     }
   }
 </script>

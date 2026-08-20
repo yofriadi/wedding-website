@@ -6,6 +6,10 @@
 @theme {
   --font-sans: "Inter", sans-serif;
 
+  /* Motion easing tokens. JS twin: EASE_OUT_EXPO = [0.16, 1, 0.3, 1] — keep in sync. */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+
   --animate-shimmer: shimmer 2s linear infinite;
 
   @keyframes shimmer {

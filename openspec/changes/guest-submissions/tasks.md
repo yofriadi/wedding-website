@@ -1,0 +1,39 @@
+# Tasks: guest-submissions
+
+## 1. Marquee rename (pure refactor)
+
+- [ ] 1.1 Delete `apps/web/src/components/WishMarquee.astro` (the old mockup) — but FIRST read its width-proportional duration logic (`duration = width / speed`, ~line 113); that technique is harvested into the renamed component (see 2.4)
+- [ ] 1.2 Rename `TestimonialMarquee.astro` → `WishMarquee.astro`; update the import in `index.astro`; no behavior or style changes
+
+## 2. Data model + wish path (photos deferred to §3)
+
+- [ ] 2.1 Add `submissions` + `submission_photos` tables to `packages/db/src/schema/` per design D1; export from schema index; `pnpm db:generate`. Then `pnpm db:migrate` (NOT `db:push`) against a populated DB copy first, verify invite rows/metrics survive, then production. Snapshot before migrating. (`db:push` bypasses committed migrations.) Enable `PRAGMA foreign_keys=ON` per connection in `packages/db/src/index.ts` (SQLite defaults OFF — the FKs are decorative otherwise).
+- [ ] 2.2 Create `POST /api/submissions` (JSON body, wishText only for now): cookie-gated via invite-session; trim + 1–500 validation; at-least-one-content rule; UNIQUE violation → `409 already_posted`; anonymous → uniform 404; `no-store`
+- [ ] 2.3 Create `GET /api/submissions`: cookie-gated; `{ mine, wall: { wishes, stories } }` per the guest-wishes spec; **`wall` EXCLUDES the caller's own submission (dedupe by id) so their photos/wish don't render twice** — the caller's content shows via `mine`; no name fields anywhere; anonymous → uniform 404; `no-store`
+- [ ] 2.4 Wish marquee states (client script — this component has NO client script today, so it's built from scratch): public → demo only, no fetch; invitee + 0 real → demo + "Be the first to leave a wish ✨" leading card; invitee + ≥1 → real-only with fill-to-width repetition, two-copy rows. **Marquee speed derives from content width, not the inherited fixed 145s–200s durations** (harvest `duration = width / speed` from the deleted mockup) — otherwise one real wish crawls at ~6px/s and looks frozen. Readability styling for the real state. **Wish cards built with `textContent`/DOM APIs only — never `innerHTML`**; test with markup/event-handler text.
+- [ ] 2.5 Verify: scripted curls (uniform 404; 201 → 409 on repeat; 400 blank/overlong; no-store); marquee states at 0/1/3 real wishes incl. single-wish loop fill at sane speed; caller's wish not duplicated between `mine` and `wall`; no names; migration leaves invites intact; FK pragma on
+
+## 3. Photo path (local disk)
+
+- [ ] 3.1 Update `POST /api/submissions` to multipart: photos 1–5, ≤10MB each, magic-byte check (jpeg/png/webp/avif); validate all before any write. **Authenticate before parsing; claim the submission row (UNIQUE invite_id) BEFORE any file write; on ANY non-201 path delete BOTH the claimed row AND the whole generated submission directory** — otherwise a mid-batch failure leaves a claimed row that permanently locks the guest out (UNIQUE + no edit/delete). "Submission SHALL NOT be created" = no surviving row AND no surviving files. **Distinguish the 409 by constraint/column (`invite_id`), not by substring-matching "UNIQUE"** — a `submissions.id` pk collision is also a UNIQUE violation and must NOT report as `already_posted`.
+- [ ] 3.2 Write to configurable `PHOTO_STORAGE_DIR` (e.g. `/srv/wedding/photos/`) at `submissions/<submission-id>/<position>.<ext>` (server-generated keys; path-traversal refused); create + chown the dir for the service account in deploy; record keys + positions in `submission_photos`
+- [ ] 3.3 Photo route `GET /api/photos/<key>`: cookie-gated, key-shape validated, correct content-type, uniform 404 anonymous/missing (`no-store` on 404s), `Cache-Control: private, max-age=31536000, immutable` on success (NEVER `public`)
+- [ ] 3.4 **Egress control (review 6, B3):** the rail tile renders `src={lastStory?.src}` — a full 10MB-cap original as a 112×200 thumbnail, no lazy-loading. Fix in the rail: `loading="lazy" decoding="async"` on tile imgs, cap the rail to the N most recent submissions, AND generate one small thumbnail per submission at upload (a single `sharp` resize at upload is far cheaper than serving originals as thumbnails). This turns a $10–30 egress surprise into ~$1–3.
+- [ ] 3.5 `GET /api/submissions` gains `wall.stories`; rail renders guest tiles (attribution-free StoryViewer, see 4.3) after demo/teaser tiles for invitees
+- [ ] 3.6 Verify: upload happy path; rejections (6 files, 11MB, bad magic bytes, traversal); failed-batch → no row AND no dir; concurrent submit → exactly one row + one dir; 409 only on `invite_id` conflict; invitee rail lazy-loads thumbnails (dev tools: no full-original fetch for tiles); public rail + anonymous direct-path 404; photo success `private`-cached, 404 `no-store`; disk sane after load test
+
+## 4. Add-story flow UI + StoryViewer
+
+- [ ] 4.1 Build the add-story tile (invite-only, hidden when `mine` exists) + one-screen flow (wish text + photo picker + client-side pre-validation). **Warn before submit that a submission is one-time and cannot be edited** (a photo-only post forfeits the wish) — copy TBD by couple.
+- [ ] 4.2 Verify: tile visibility across the three cookie states; text-only / photo-only / both; 409 → already-posted; 400 inline errors; flow stays open on network failure; the one-time warning is shown
+- [ ] 4.3 StoryViewer attribution-free + dynamic-init. ⚠️ RISKIEST TASK. Correction to prior framing: the script is a bundled ESM module (`import { animate } from "motion"`, `export interface OpenStoryOptions`), NOT an inline IIFE — and `index.astro`'s orchestrator is `is:inline` (separate global scope), so it CANNOT call into the module. **Recommended fix: convert to a custom element that self-initializes on insertion** (precedent already in-repo: `TextShimmer.astro`) — this makes dynamic init idempotent for free. (a) make `username`/`avatar` optional; attribution-free mode emits a NEUTRAL accessible label ("View guest story") and keeps the vertical space reserved (dropping the span makes guest tiles shorter than demo tiles in the same flex row); (b) init portals modals to `document.body`, but the orchestrator's `viewers.indexOf` ordering comes from the rail not body order — verify hand-off order for guest tiles. Regression-test demo stories AND dynamically-inserted guest stories (modal opens, hand-off fires, no author UI). Budget real time; split into a sub-task if it fights.
+- [ ] 4.4 Re-home the rail's left inset: `pl-6` currently lives on the add-story tile wrapper (index.astro ~line 132) and `pr-6` on the last story (~line 164). Removing/re-adding the tile must not leave demo tiles flush to the viewport edge — move `pl-6` to the first surviving tile; re-home again when the tile is re-added dynamically.
+
+## 5. Backup & close-out (VM expires Oct 18; recycle-bin grace ~Nov 2)
+
+- [ ] 5.1 Extend the DB-only backup (invite-only-personalization 1.8) to also sync the photos directory; make it incremental (nightly re-upload of 1–3GB is metered egress); confirm it covers DB + photos
+- [ ] 5.2 Final archive drill before Oct 18: run backup, restore DB + photos to a scratch dir, verify integrity (grace window is backstop, not plan). Add a dated decision point ~Oct 1: renew the VM or archive to static memorial — owner + cost noted.
+- [ ] 5.3 Moderation runbook (couple owns root): document the 3-line `sqlite3` DELETE for a wish/submission + the photo `rm` — post-once + no-names is the moderation model, but a manual removal path is near-free insurance
+- [ ] 5.4 Confirm no author/name fields in any endpoint response or rendered UI (grep + eyeball)
+- [ ] 5.5 Confirm public page makes zero submissions-endpoint requests (no cookie → no fetch)
+- [ ] 5.6 Confirm invite ids appear in no URL or file key

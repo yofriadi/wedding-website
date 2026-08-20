@@ -38,7 +38,7 @@ const lastStory = stories[stories.length - 1];
           <img
             src={lastStory?.src}
             alt={`${username}'s story`}
-            class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+            class="zoom-cover w-full h-full object-cover"
           />
       </div>
     </div>
@@ -64,7 +64,7 @@ const lastStory = stories[stories.length - 1];
               data-progress-item
               data-index={index}
             >
-              <div class="h-full bg-white rounded-full w-0" data-progress-bar></div>
+              <div class="h-full bg-white rounded-full w-full" data-progress-bar style="transform: scaleX(0); transform-origin: left;"></div>
             </div>
           ))}
         </div>
@@ -213,10 +213,32 @@ const lastStory = stories[stories.length - 1];
       stroke-dashoffset: -124;
     }
   }
+
+  /* Cover zoom is gated on real hover so touch taps never trigger a false grow. */
+  .story-viewer .zoom-cover {
+    transition: transform 300ms var(--ease-out-expo);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .story-viewer [data-open]:hover .zoom-cover {
+      transform: scale(1.1);
+    }
+  }
 </style>
 
 <script>
   import { animate } from "motion";
+
+  // JS twin of the CSS --ease-out-expo token; keep in sync.
+  const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
+
+  // Read once at module scope; drives fade-only branches below.
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  export interface OpenStoryOptions {
+    animate?: boolean;
+    startIndex?: number | "last";
+    onFirstSlideReady?: () => void;
+  }
 
   const DEFAULT_IMAGE_DURATION = 5000;
 
@@ -278,6 +300,8 @@ const lastStory = stories[stories.length - 1];
     let pauseOffset = 0;
     let pauseStarted = 0;
     let startTime = 0;
+    let firstSlideNotified = false;
+    let pendingFirstSlideReady: (() => void) | undefined;
     
     // Slide management
     let currentSlideEl: HTMLElement | null = null;
@@ -298,17 +322,19 @@ const lastStory = stories[stories.length - 1];
       // Logic for viewed segments removed as requested
     }
 
-    function setProgress(value: number) {
+    // Past/future segment states are written once per index change; the 50ms
+    // progress tick writes only the active bar, and only via transform.
+    function updateSegmentStates() {
       progressBars.forEach((bar, index) => {
         if (!bar) return;
-        if (index < currentIndex) {
-          bar.style.width = "100%";
-        } else if (index === currentIndex) {
-          bar.style.width = `${value}%`;
-        } else {
-          bar.style.width = "0%";
-        }
+        bar.style.transform = index < currentIndex ? "scaleX(1)" : "scaleX(0)";
       });
+    }
+
+    function setProgress(value: number) {
+      const bar = progressBars[currentIndex];
+      if (!bar) return;
+      bar.style.transform = `scaleX(${value / 100})`;
     }
 
     function clearProgress() {
@@ -321,13 +347,20 @@ const lastStory = stories[stories.length - 1];
     function showSpinner() {
       if (spinner) {
         spinner.classList.remove("hidden");
-        animate(spinner, { opacity: [0, 1], scale: [0.8, 1] }, { duration: 0.2 });
+        if (reducedMotion) {
+          animate(spinner, { opacity: [0, 1] }, { duration: 0.2 });
+        } else {
+          animate(spinner, { opacity: [0, 1], scale: [0.8, 1] }, { duration: 0.2 });
+        }
       }
     }
 
     function hideSpinner() {
       if (spinner) {
-        animate(spinner, { opacity: [1, 0], scale: [1, 0.8] }, { duration: 0.15 }).finished.then(() => {
+        const keyframes = reducedMotion
+          ? { opacity: [1, 0] }
+          : { opacity: [1, 0], scale: [1, 0.8] };
+        animate(spinner, keyframes, { duration: 0.15 }).finished.then(() => {
           spinner.classList.add("hidden");
         });
       }
@@ -381,6 +414,13 @@ const lastStory = stories[stories.length - 1];
         img.classList.remove("opacity-0");
         const duration = story.duration || DEFAULT_IMAGE_DURATION;
         startImageProgress(duration);
+        // Readiness signal for viewer-to-viewer hand-off; fires once per open session.
+        if (!firstSlideNotified) {
+          firstSlideNotified = true;
+          viewer.dispatchEvent(new CustomEvent("story-first-slide-ready", { bubbles: true }));
+          pendingFirstSlideReady?.();
+          pendingFirstSlideReady = undefined;
+        }
       };
       return img;
     }
@@ -392,7 +432,7 @@ const lastStory = stories[stories.length - 1];
       const story = stories[currentIndex];
       viewedIndices.add(currentIndex);
       setSegmentsViewed();
-      setProgress(0);
+      updateSegmentStates();
       updateNav();
 
       if (usernameEl) {
@@ -406,17 +446,39 @@ const lastStory = stories[stories.length - 1];
 
       if (direction !== 0) {
          stage.appendChild(newSlide);
-         
-         // Animate in
-         animate(newSlide, { x: [direction > 0 ? "100%" : "-100%", "0%"] } as any, { duration: 0.3, ease: "ease-out" } as any);
-         
-         // Animate out old slide
-         if (currentSlideEl) {
-           const oldSlide = currentSlideEl;
-           animate(oldSlide, { x: direction > 0 ? "-100%" : "100%" } as any, { duration: 0.3, ease: "ease-out" } as any)
-             .finished.then(() => {
-               oldSlide.remove();
-             });
+
+         if (reducedMotion) {
+           // Cross-fade in place: keep opacity feedback, drop the slide.
+           animate(newSlide, { opacity: [0, 1] }, { duration: 0.2 });
+
+           if (currentSlideEl) {
+             const oldSlide = currentSlideEl;
+             animate(oldSlide, { opacity: [1, 0] }, { duration: 0.2 })
+               .finished.then(() => {
+                 oldSlide.remove();
+               });
+           }
+         } else {
+           // Full transform keyframes ride the accelerated path (not the
+           // main-thread x shorthand).
+           animate(
+             newSlide,
+             { transform: [direction > 0 ? "translateX(100%)" : "translateX(-100%)", "translateX(0%)"] },
+             { duration: 0.3, ease: EASE_OUT_EXPO }
+           );
+
+           // Animate out old slide
+           if (currentSlideEl) {
+             const oldSlide = currentSlideEl;
+             animate(
+               oldSlide,
+               { transform: ["translateX(0%)", direction > 0 ? "translateX(-100%)" : "translateX(100%)"] },
+               { duration: 0.3, ease: EASE_OUT_EXPO }
+             )
+               .finished.then(() => {
+                 oldSlide.remove();
+               });
+           }
          }
       } else {
          // Immediate / Fade (first load)
@@ -443,41 +505,70 @@ const lastStory = stories[stories.length - 1];
       if (currentIndex > 0) {
         setStory(currentIndex - 1, -1);
       } else {
-        setProgress(0);
+        // Mirror of story-viewer-end: lets the orchestrator hand off to the
+        // previous viewer; when cancelled, this viewer stays put.
+        const event = new CustomEvent("story-viewer-prev", { bubbles: true, cancelable: true });
+        const allowed = viewer.dispatchEvent(event);
+        if (allowed) {
+          setProgress(0);
+        }
       }
     }
 
-    function open(options = { animate: true }) {
+    function open(options: OpenStoryOptions = {}) {
       if (isOpen) return;
       isOpen = true;
+      const { animate: shouldAnimate = true, startIndex, onFirstSlideReady } = options;
+      firstSlideNotified = false;
+      pendingFirstSlideReady = onFirstSlideReady;
       modal.classList.remove("pointer-events-none");
       modal.setAttribute("aria-hidden", "false");
       document.body.style.overflow = "hidden";
-      
-      if (options.animate) {
+
+      if (shouldAnimate) {
         animate(modal, { opacity: [0, 1] }, { duration: 0.2 });
-        animate(panel, { opacity: [0, 1], scale: [0.95, 1], y: [16, 0] }, { duration: 0.3, ease: [0.16, 1, 0.3, 1] as any });
+        if (reducedMotion) {
+          // Fade-only: no scale/y movement under reduced motion.
+          panel.style.transform = "none";
+          animate(panel, { opacity: [0, 1] }, { duration: 0.2 });
+        } else {
+          animate(
+            panel,
+            { opacity: [0, 1], transform: ["translateY(16px) scale(0.95)", "translateY(0px) scale(1)"] },
+            { duration: 0.3, ease: EASE_OUT_EXPO }
+          );
+        }
       } else {
         modal.style.opacity = "1";
         panel.style.opacity = "1";
-        panel.style.transform = "scale(1) translateY(0px)";
+        panel.style.transform = "none";
       }
-      
-      // Find first unviewed
-      let startIdx = stories.findIndex((_: any, i: number) => !viewedIndices.has(i));
-      if (startIdx === -1) startIdx = 0;
-      
+
+      // Resolve the opening story index: explicit startIndex wins, then the
+      // first unviewed story, falling back to 0.
+      let startIdx: number;
+      if (startIndex === "last") {
+        startIdx = stories.length - 1;
+      } else if (typeof startIndex === "number") {
+        startIdx = Math.min(Math.max(startIndex, 0), stories.length - 1);
+      } else {
+        startIdx = stories.findIndex((_: any, i: number) => !viewedIndices.has(i));
+        if (startIdx === -1) startIdx = 0;
+      }
+
       setStory(startIdx, 0); // 0 direction = no slide
     }
 
-    function close(options = { animate: true }) {
+    function close(options: { animate?: boolean } = {}) {
+      const shouldAnimate = options.animate ?? true;
       if (!isOpen) return;
       isOpen = false;
+      pendingFirstSlideReady = undefined;
       clearProgress();
       if (currentSlideEl instanceof HTMLVideoElement) {
         currentSlideEl.pause();
       }
-      
+
       const onComplete = () => {
         modal.classList.add("pointer-events-none");
         modal.setAttribute("aria-hidden", "true");
@@ -488,9 +579,19 @@ const lastStory = stories[stories.length - 1];
         }
       };
 
-      if (options.animate) {
+      if (shouldAnimate) {
         animate(modal, { opacity: [1, 0] }, { duration: 0.2 }).finished.then(onComplete);
-        animate(panel, { opacity: [1, 0], scale: [1, 0.95], y: [0, 12] } as any, { duration: 0.2, ease: "easeIn" });
+        // Exits ease-out and run faster than entrances: the exit confirms an
+        // action the user already took.
+        if (reducedMotion) {
+          animate(panel, { opacity: [1, 0] }, { duration: 0.15 });
+        } else {
+          animate(
+            panel,
+            { opacity: [1, 0], transform: ["translateY(0px) scale(1)", "translateY(12px) scale(0.95)"] },
+            { duration: 0.15, ease: EASE_OUT_EXPO }
+          );
+        }
       } else {
         modal.style.opacity = "0";
         onComplete();

@@ -82,6 +82,25 @@
 
   .animate-float { animation: float 10s ease-in-out infinite; }
   .animate-pulse-slow { animation: pulse-slow 8s ease-in-out infinite; }
+
+  /* Reduced motion: words fade in as groups (no rising, no per-word stagger);
+     ambient float/pulse loops stop. */
+  @media (prefers-reduced-motion: reduce) {
+    :global(.word-span) {
+      transform: none;
+      transition: opacity 0.2s var(--ease-out-expo);
+      transition-delay: 0ms !important;
+    }
+    .reveal-simple {
+      transform: none;
+      transition: opacity 0.2s var(--ease-out-expo);
+      transition-delay: 0ms !important;
+    }
+    .animate-float,
+    .animate-pulse-slow {
+      animation: none;
+    }
+  }
 </style>
 
 <script>

@@ -81,25 +81,24 @@ const COL_W = 33.333; // 33.333vw
 const ROW_H = 20;     // 20vh
 ---
 
-<div id="zoom-parallax-container" class="relative h-[400vh] w-full">
-  <div class="sticky top-0 h-screen w-full overflow-hidden bg-neutral-950">
+<div id="zoom-parallax-container" class="zoom-container relative w-full">
+  <div class="zoom-stage sticky top-0 w-full overflow-hidden bg-neutral-950">
     
     <!-- Items Wrapper -->
-    {pictures.map((picture) => (
+    {pictures.map((picture, slotIndex) => (
       <div 
         class="zoom-wrapper absolute inset-0 w-full h-full pointer-events-none flex items-center justify-center will-change-transform"
         data-is-center={picture.isCenter}
         data-scale-target={picture.scale}
+        data-slot={slotIndex}
         style={{ zIndex: picture.isCenter ? 50 : 10 }}
       >
         <!-- Inner Image Container (Positioned absolutely relative to grid) -->
         <div 
           class="zoom-inner absolute overflow-hidden shadow-2xl ring-1 ring-white/10"
           style={`
-            top: ${picture.grid.row * ROW_H}vh; 
             left: ${picture.grid.col * COL_W}vw; 
             width: ${picture.grid.w * COL_W}vw; 
-            height: ${picture.grid.h * ROW_H}vh;
           `}
         >
           <img
@@ -123,6 +122,10 @@ const ROW_H = 20;     // 20vh
   let resizeTimeout: number | undefined;
 
   function initZoomParallax() {
+    // Reduced motion: the static bento grid is the content; bind no scroll-driven
+    // transforms and let the CSS media query collapse the pin.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
     const container = document.getElementById("zoom-parallax-container");
     const wrappers = document.querySelectorAll(".zoom-wrapper");
     
@@ -206,11 +209,11 @@ const ROW_H = 20;     // 20vh
     resizeTimeout = setTimeout(initZoomParallax, 150) as unknown as number;
   }
 
-  // Lifecycle hooks - use astro:page-load as primary entry
+  // astro:page-load covers client navigation; the readyState branch covers the
+  // initial load, which this site enters without ClientRouter (no astro:page-load
+  // event fires on first render).
   document.addEventListener("astro:page-load", initZoomParallax);
   window.addEventListener('resize', handleResize);
-  
-  // Fallback for non-Astro navigation
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initZoomParallax);
   } else {
@@ -219,6 +222,27 @@ const ROW_H = 20;     // 20vh
 </script>
 
 <style>
+  .zoom-container {
+    height: 400vh;
+    height: 400svh;
+  }
+  .zoom-stage {
+    height: 100vh;
+    height: 100svh;
+  }
+
+  /* Bento slot vertical geometry: one rule per slot so each top/height pair can */
+  /* carry its vh -> svh fallback. Horizontal vw values stay inline per item.    */
+  [data-slot="0"] .zoom-inner { top: 0vh; top: 0svh; height: 40vh; height: 40svh; }
+  [data-slot="1"] .zoom-inner { top: 0vh; top: 0svh; height: 20vh; height: 20svh; }
+  [data-slot="2"] .zoom-inner { top: 20vh; top: 20svh; height: 20vh; height: 20svh; }
+  [data-slot="3"] .zoom-inner { top: 40vh; top: 40svh; height: 20vh; height: 20svh; }
+  [data-slot="4"] .zoom-inner { top: 40vh; top: 40svh; height: 20vh; height: 20svh; }
+  [data-slot="5"] .zoom-inner { top: 40vh; top: 40svh; height: 20vh; height: 20svh; }
+  [data-slot="6"] .zoom-inner { top: 60vh; top: 60svh; height: 40vh; height: 40svh; }
+  [data-slot="7"] .zoom-inner { top: 60vh; top: 60svh; height: 20vh; height: 20svh; }
+  [data-slot="8"] .zoom-inner { top: 80vh; top: 80svh; height: 20vh; height: 20svh; }
+
   .zoom-inner {
     /* Subtle border for separation in bento state */
     outline: 1px solid rgba(0,0,0,0.2); 
@@ -233,4 +257,14 @@ const ROW_H = 20;     // 20vh
     will-change: transform;
   }
 
+  /* Reduced motion: the bento grid is static, readable content in one viewport. */
+  @media (prefers-reduced-motion: reduce) {
+    .zoom-container {
+      height: 100vh !important;
+      height: 100svh !important;
+    }
+    .zoom-stage {
+      position: relative !important;
+    }
+  }
 </style>

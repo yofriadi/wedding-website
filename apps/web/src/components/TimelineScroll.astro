@@ -1,8 +1,8 @@
 ---
 ---
 
-<section id="timeline-section" class="relative h-[1200vh] w-full bg-white">
-  <div class="sticky top-0 h-screen w-full overflow-hidden">
+<section id="timeline-section" class="timeline-section relative w-full bg-white">
+  <div class="timeline-stage sticky top-0 w-full overflow-hidden">
     
     <!-- 1. Bottom Layer: Title (Black text on White bg) -->
     <!-- Visible outside the shrinking circle. Fades out when timeline starts moving. -->
@@ -44,8 +44,8 @@
       <!-- Adjusted to 50vw/50% to match shrinking circle center -->
       <div
         id="node-1"
-        class="absolute opacity-0"
-        style="left: 50vw; top: 50vh; transform: translate(-50%, -50%);"
+        class="timeline-node absolute opacity-0"
+        style="left: 50vw; transform: translate(-50%, -50%);"
       >
         <div
           id="dot-1"
@@ -63,8 +63,8 @@
       <!-- Node 2 (middle) -->
       <div
         id="node-2"
-        class="absolute"
-        style="left: 150vw; top: 30vh; transform: translate(-50%, -50%);"
+        class="timeline-node absolute"
+        style="left: 150vw; transform: translate(-50%, -50%);"
       >
         <div
           id="dot-2"
@@ -100,8 +100,8 @@
       <!-- Adjusted left to 275vw to be further from Node 2 and connect at 80% viewport width -->
       <div
         id="node-3"
-        class="absolute"
-        style="left: 275vw; top: 70vh; transform: translate(-50%, -50%);"
+        class="timeline-node absolute"
+        style="left: 275vw; transform: translate(-50%, -50%);"
       >
         <!-- Photo and Date above the node -->
         <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)] flex flex-col items-center">
@@ -130,8 +130,8 @@
       <!-- Node 4 -->
       <div
         id="node-4"
-        class="absolute"
-        style="left: 379vw; top: 60vh; transform: translate(-50%, -50%);"
+        class="timeline-node absolute"
+        style="left: 379vw; transform: translate(-50%, -50%);"
       >
         <div id="dot-4" class="h-5 w-5 rounded-full bg-neutral-950" style="transform: scale(0.6); transform-origin: center;"></div>
 
@@ -159,8 +159,8 @@
       <!-- Node 5 -->
       <div
         id="node-5"
-        class="absolute"
-        style="left: 488vw; top: 60vh; transform: translate(-50%, -50%);"
+        class="timeline-node absolute"
+        style="left: 488vw; transform: translate(-50%, -50%);"
       >
         <div id="dot-5" class="h-5 w-5 rounded-full bg-neutral-950" style="transform: scale(0.6); transform-origin: center;"></div>
 
@@ -188,8 +188,8 @@
       <!-- Node 6 -->
       <div
         id="node-6"
-        class="absolute"
-        style="left: 597vw; top: 50vh; transform: translate(-50%, -50%);"
+        class="timeline-node absolute"
+        style="left: 597vw; transform: translate(-50%, -50%);"
       >
         <div id="dot-6" class="h-5 w-5 rounded-full bg-neutral-950" style="transform: scale(0.6); transform-origin: center;"></div>
 
@@ -217,8 +217,8 @@
       <!-- Node 7 -->
       <div
         id="node-7"
-        class="absolute"
-        style="left: 706vw; top: 30vh; transform: translate(-50%, -50%);"
+        class="timeline-node absolute"
+        style="left: 706vw; transform: translate(-50%, -50%);"
       >
         <div id="dot-7" class="h-5 w-5 rounded-full bg-neutral-950" style="transform: scale(0.6); transform-origin: center;"></div>
 
@@ -246,8 +246,8 @@
       <!-- Node 8 -->
       <div
         id="node-8"
-        class="absolute"
-        style="left: 815vw; top: 20vh; transform: translate(-50%, -50%);"
+        class="timeline-node absolute"
+        style="left: 815vw; transform: translate(-50%, -50%);"
       >
         <div class="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 whitespace-nowrap text-center">
             <div data-node8-date style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
@@ -275,7 +275,7 @@
       <div
         id="dot-9-anchor"
         class="absolute"
-        style="left: 965vw; top: 133vh; width: 20px; height: 20px; transform: translate(-50%, -50%); visibility: hidden;"
+        style="left: 965vw; width: 20px; height: 20px; transform: translate(-50%, -50%); visibility: hidden;"
       ></div>
     </div>
 
@@ -302,12 +302,12 @@
     <div
       id="timeline-circle-expansion"
       class="absolute z-40 pointer-events-none"
-      style="width: 200vmax; height: 200vmax; left: 50%; top: 50vh; transform: translate(-50%, -50%);"
+      style="width: 200vmax; height: 200vmax; left: 50%; transform: translate(-50%, -50%);"
     >
       <div
         id="timeline-circle-expansion-fill"
         class="h-full w-full rounded-full bg-neutral-950"
-        style="transform: scale(0);"
+        style="transform: scale(0.001);"
       ></div>
     </div>
 
@@ -315,10 +315,10 @@
     <!-- z-50: Above the expansion fill. -->
     <div
       id="node-9"
-      class="absolute z-50 pointer-events-none"
+      class="timeline-node absolute z-50 pointer-events-none"
       style="left: 0; top: 0; width: 100%; height: 100%; transform: translate(0vw, 0vh); will-change-transform;"
     >
-      <div style="position: absolute; left: 965vw; top: 133vh; transform: translate(-50%, -50%);">
+      <div style="position: absolute; left: 965vw; transform: translate(-50%, -50%);">
         <div class="absolute left-1/2 -translate-x-1/2 top-[calc(45%)] whitespace-nowrap text-center">
           <div data-node9-date style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
             <div class="font-serif text-2xl md:text-3xl text-white">24 September 2026</div>
@@ -332,18 +332,144 @@
   </div>
 </section>
 
+<style>
+  /* Scroll runway: vh fallback, svh so mobile browser chrome cannot shift the scrub. */
+  .timeline-section {
+    height: 1200vh;
+    height: 1200svh;
+  }
+
+  /* Stage: vh fallback, svh so mobile browser chrome cannot clip the pinned stage. */
+  .timeline-stage {
+    height: 100vh;
+    height: 100svh;
+  }
+
+  /* Node vertical positions, keyed by id so each can carry its vh -> svh fallback pair. */
+  #node-1 { top: 50vh; top: 50svh; }
+  #node-2 { top: 30vh; top: 30svh; }
+  #node-3 { top: 70vh; top: 70svh; }
+  #node-4 { top: 45vh; top: 45svh; }
+  #node-5 { top: 65vh; top: 65svh; }
+  #node-6 { top: 35vh; top: 35svh; }
+  #node-7 { top: 55vh; top: 55svh; }
+  #node-8 { top: 25vh; top: 25svh; }
+  #dot-9-anchor { top: 133vh; top: 133svh; }
+  #node-9 > div { top: 133vh; top: 133svh; }
+  #timeline-circle-expansion { top: 50vh; top: 50svh; }
+
+  /* Reduced motion: readable vertical story instead of the pinned scrub sequence. */
+  @media (prefers-reduced-motion: reduce) {
+    .timeline-section {
+      height: auto !important;
+    }
+    .timeline-stage {
+      position: relative !important;
+      height: auto !important;
+      overflow: visible !important;
+    }
+    #title-layer-bottom,
+    #timeline-track > svg,
+    #timeline-circle-overlay,
+    #timeline-circle-expansion {
+      display: none !important;
+    }
+    #timeline-track {
+      width: auto !important;
+      height: auto !important;
+      position: static !important;
+      transform: none !important;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4rem;
+      padding: 4rem 1.5rem;
+    }
+    .timeline-node {
+      position: relative !important;
+      top: auto !important;
+      left: auto !important;
+      transform: none !important;
+      opacity: 1 !important;
+      width: 100%;
+      max-width: 26rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    /* Per-node content blocks were art-directed as absolutes; reflow them as flow items. */
+    .timeline-node > div {
+      position: static !important;
+      left: auto !important;
+      top: auto !important;
+      right: auto !important;
+      bottom: auto !important;
+      transform: none !important;
+      margin: 0 !important;
+    }
+    /* Dots keep their Tailwind size (dot-9 lacks the scoping attr, so the */
+    /* #id rule below would otherwise win the width cascade with width: auto). */
+    .timeline-node div[id^="dot-"] {
+      width: 1.25rem !important;
+      height: 1.25rem !important;
+    }
+    #node-9 > div > div[id^="dot-"] {
+      width: 1.25rem !important;
+      height: 1.25rem !important;
+    }
+    /* Node 1 / node 9 wrap their dot in an extra positioning div; neutralize the */
+    /* remaining absolutely-positioned label wrappers inside them. */
+    #node-1 > div > div,
+    #node-9 > div > div {
+      position: static !important;
+      transform: none !important;
+      width: auto !important;
+      margin: 0 0 1rem !important;
+      text-align: center;
+    }
+    /* Dot date/photo/desc stacks keep their column flow and spacing. */
+    .timeline-node > div {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    /* Force every hidden-by-attribute piece of content visible. */
+    [data-node2-photo], [data-node2-date], [data-node2-desc],
+    [data-node3-photo], [data-node3-date], [data-node3-desc],
+    [data-node4-photo], [data-node4-date], [data-node4-desc],
+    [data-node5-photo], [data-node5-date], [data-node5-desc],
+    [data-node6-photo], [data-node6-date], [data-node6-desc],
+    [data-node7-photo], [data-node7-date], [data-node7-desc],
+    [data-node8-photo], [data-node8-date], [data-node8-desc],
+    [data-node9-date] {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+    #node-1 {
+      opacity: 1 !important;
+    }
+  }
+</style>
+
 <script>
   import { animate, scroll } from "motion";
+
+  // JS twin of the CSS --ease-out-expo token; keep in sync.
+  const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
   let cleanupFns: Array<() => void> = [];
   let resizeTimeout: ReturnType<typeof setTimeout> | undefined;
   let initRaf: number | undefined;
   let settleTimeout: ReturnType<typeof setTimeout> | undefined;
-  let scrollRaf: number | undefined;
 
   function initTimeline() {
+    // Reduced motion: the CSS media query reflows the timeline into a readable
+    // vertical story; no animate()/scroll() scrub bindings are created at all.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+
     if (initRaf) cancelAnimationFrame(initRaf);
-    if (scrollRaf) cancelAnimationFrame(scrollRaf);
     cleanupFns.forEach((fn) => fn());
     cleanupFns = [];
     clearTimeout(resizeTimeout);
@@ -463,17 +589,18 @@
         return line.getTotalLength();
       };
 
+      // Bend point varies per segment so the elbows don't all turn at the
+      // midpoint — the line gets a looser, less mechanical rhythm.
       const tA = 0.42;
-      const tMid = 0.5;
-
+      
       const lens = [
         setElbow(line1, points[0], points[1], tA),
-        setElbow(line2, points[1], points[2], tMid),
-        setElbow(line3, points[2], points[3], tMid),
-        setElbow(line4, points[3], points[4], tMid),
-        setElbow(line5, points[4], points[5], tMid),
-        setElbow(line6, points[5], points[6], tMid),
-        setElbow(line7, points[6], points[7], tMid),
+        setElbow(line2, points[1], points[2], 0.6),
+        setElbow(line3, points[2], points[3], 0.5), // bend right of node 3's photo (photo edge ≈ 0.42 of the gap)
+        setElbow(line4, points[3], points[4], 0.55),
+        setElbow(line5, points[4], points[5], 0.42),
+        setElbow(line6, points[5], points[6], 0.58),
+        setElbow(line7, points[6], points[7], 0.45),
         setVHV(line8, points[7], points[8], 0.4)
       ];
 
@@ -495,19 +622,6 @@
       window.addEventListener("resize", onResize);
       cleanupFns.push(() => window.removeEventListener("resize", onResize));
 
-      const onScroll = () => {
-        if (scrollRaf) return;
-        scrollRaf = requestAnimationFrame(() => {
-          scrollRaf = undefined;
-          updatePaths();
-        });
-      };
-      window.addEventListener("scroll", onScroll, { passive: true });
-      cleanupFns.push(() => {
-        window.removeEventListener("scroll", onScroll);
-        if (scrollRaf) cancelAnimationFrame(scrollRaf);
-        scrollRaf = undefined;
-      });
 
       settleTimeout = setTimeout(() => {
         updatePaths();
@@ -520,8 +634,10 @@
       // 1a. Circle Shrink (Clip Path)
       const bgClipAnim = animate(
         circleOverlay,
-        { clipPath: ["circle(150% at 50% 50%)", "circle(100px at 50% 50%)", "circle(8px at 50% 50%)", "circle(8px at 50% 50%)"] },
-        { ease: "linear", times: [0, 0.04, 0.06, 1] }
+        // Short hold at full circle so tiny scroll jitter at the boundary
+        // (e.g. mobile URL-bar resizes) cannot pulse the shrinking edge.
+        { clipPath: ["circle(150% at 50% 50%)", "circle(150% at 50% 50%)", "circle(100px at 50% 50%)", "circle(8px at 50% 50%)", "circle(8px at 50% 50%)"] },
+        { ease: "linear", times: [0, 0.003, 0.042, 0.06, 1] }
       );
       cleanupFns.push(scroll(bgClipAnim, { target: section, offset: ["start start", "end end"] }));
 
@@ -546,14 +662,18 @@
       // 3. Horizontal Pan + Vertical Scroll at end
       // Keep still until 15%, then translate left.
       // At the end, translate up to reveal more vertical line.
+            // Mobile browser chrome makes svh < vh. Node tops are svh (with vh
+            // fallback), so the final vertical pan must use the same unit or
+            // dot-9 misses the expansion-circle center on phones.
+            const vUnit = CSS.supports("height", "1svh") ? "svh" : "vh";
             const trackTransformValues = [
-                  "translate(0vw, 0vh)", 
-                  "translate(0vw, 0vh)", 
-                  "translate(-765vw, 0vh)", 
-                  "translate(-815vw, 0vh)", 
-                  "translate(-915vw, 0vh)",
-                  "translate(-915vw, -83vh)",
-                  "translate(-915vw, -83vh)"
+                  `translate(0vw, 0${vUnit})`,
+                  `translate(0vw, 0${vUnit})`,
+                  `translate(-765vw, 0${vUnit})`,
+                  `translate(-815vw, 0${vUnit})`,
+                  `translate(-915vw, 0${vUnit})`,
+                  `translate(-915vw, -83${vUnit})`,
+                  `translate(-915vw, -83${vUnit})`
                 ];
             const trackTimes = [0, 0.06, 0.62, 0.66, 0.72, 0.94, 1];
       
@@ -583,6 +703,23 @@
             );
             cleanupFns.push(scroll(node1Anim, { target: section, offset: ["start start", "end end"] }));
       
+            // motion v13 attaches WAAPI tracks (opacity/transform) to the native
+            // ViewTimeline using the requested offset, but drives JS-only tracks
+            // (pathLength -> stroke-dasharray) with the timeline's full cover-range
+            // progress. That desyncs the line draw from the pan. Scrub manually from
+            // the JS scroll progress so every track shares one correct clock.
+            const scrubWithScroll = (anim: { pause(): void; time: number; duration: number }) => {
+              anim.pause();
+              cleanupFns.push(
+                scroll(
+                  (progress: number) => {
+                    anim.time = progress * anim.duration;
+                  },
+                  { target: section, offset: ["start start", "end end"] }
+                )
+              );
+            };
+      
             // 5. Line 1 Animation
             const line1Anim = animate(
               line1,
@@ -592,9 +729,19 @@
               },
               { ease: "linear", times: [0, 0.06, 0.12, 1] }
             );
-            cleanupFns.push(scroll(line1Anim, { target: section, offset: ["start start", "end end"] }));
+            scrubWithScroll(line1Anim);
       
             // Reusable Node Animation Helper
+            // Reveals are scroll-scrubbed, not threshold-triggered bursts: each
+            // part is a paused animate() whose time is driven by scroll progress
+            // in a small window around the node's connect threshold, so partial
+            // scroll positions map to partial reveals and scrolling backward
+            // plays the reveal in reverse.
+            // The original time-based timings (dot 0.6s; photo 0.45s; date +80ms;
+            // desc +160ms) are expressed as keyframe times within one shared
+            // 0.61s timeline.
+            const REVEAL_TOTAL = 0.61;
+
             function setupNodeAnimation(nodeNum: number, connectAt: number) {
               const dot = document.getElementById(`dot-${nodeNum}`);
               const photo = document.querySelector(`[data-node${nodeNum}-photo]`);
@@ -603,11 +750,12 @@
       
               if (!dot) return;
       
-              let connected = false;
-              const disconnectAt = connectAt - 0.01;
-      
               const setHidden = () => {
                 dot.style.transform = "scale(0.6)";
+                if (photo instanceof HTMLElement) {
+                  photo.style.opacity = "0";
+                  photo.style.transform = "translateY(18px)";
+                }
                 if (date instanceof HTMLElement) {
                   date.style.opacity = "0";
                   date.style.transform = "translateY(12px) scale(0.98)";
@@ -618,73 +766,84 @@
                 }
               };
       
-              const showDetails = () => {
+              setHidden();
+
+              const revealAnims: Array<{ pause(): void; time: number; duration: number }> = [];
+
+              // Dot overshoot: scale 0.6 -> 1.35 -> 1.
+              revealAnims.push(
                 animate(
                   dot,
-                  { transform: ["scale(0.6)", "scale(1.35)", "scale(1)"] },
-                  { duration: 0.6, ease: [0.16, 1, 0.3, 1] }
+                  { transform: ["scale(0.6)", "scale(1.35)", "scale(1)", "scale(1)"] },
+                  { duration: REVEAL_TOTAL, ease: [EASE_OUT_EXPO, EASE_OUT_EXPO, "linear"], times: [0, 0.492, 0.984, 1] }
+                )
+              );
+
+              if (photo instanceof HTMLElement) {
+                revealAnims.push(
+                  animate(
+                    photo,
+                    {
+                      opacity: [0, 1, 1],
+                      transform: ["translateY(18px)", "translateY(0px)", "translateY(0px)"]
+                    },
+                    { duration: REVEAL_TOTAL, ease: [EASE_OUT_EXPO, "linear"], times: [0, 0.738, 1] }
+                  )
                 );
-                if (date instanceof HTMLElement) {
+              }
+
+              if (date instanceof HTMLElement) {
+                revealAnims.push(
                   animate(
                     date,
-                    { opacity: [0, 1, 1], transform: ["translateY(12px) scale(0.98)", "translateY(0px) scale(1.04)", "translateY(0px) scale(1)"] },
-                    { duration: 0.45, delay: 0.08, ease: [0.16, 1, 0.3, 1] }
-                  );
-                }
-                if (desc instanceof HTMLElement) {
+                    {
+                      opacity: [0, 0, 1, 1, 1],
+                      transform: [
+                        "translateY(12px) scale(0.98)",
+                        "translateY(12px) scale(0.98)",
+                        "translateY(0px) scale(1.04)",
+                        "translateY(0px) scale(1)",
+                        "translateY(0px) scale(1)"
+                      ]
+                    },
+                    { duration: REVEAL_TOTAL, ease: ["linear", EASE_OUT_EXPO, EASE_OUT_EXPO, "linear"], times: [0, 0.131, 0.5, 0.869, 1] }
+                  )
+                );
+              }
+
+              if (desc instanceof HTMLElement) {
+                revealAnims.push(
                   animate(
                     desc,
-                    { opacity: [0, 1, 1], transform: ["translateY(12px) scale(0.98)", "translateY(0px) scale(1.03)", "translateY(0px) scale(1)"] },
-                    { duration: 0.45, delay: 0.16, ease: [0.16, 1, 0.3, 1] }
-                  );
-                }
-              };
-      
-              const hideDetails = () => {
-                animate(dot, { transform: ["scale(1)", "scale(0.6)"] }, { duration: 0.25, ease: "easeInOut" });
-                if (date instanceof HTMLElement) {
-                  animate(
-                    date,
-                    { opacity: [1, 0], transform: ["translateY(0px) scale(1)", "translateY(12px) scale(0.98)"] },
-                    { duration: 0.18, delay: 0.04, ease: "easeInOut" }
-                  );
-                }
-                if (desc instanceof HTMLElement) {
-                  animate(
-                    desc,
-                    { opacity: [1, 0], transform: ["translateY(0px) scale(1)", "translateY(12px) scale(0.98)"] },
-                    { duration: 0.18, delay: 0, ease: "easeInOut" }
-                  );
-                }
-              };
-      
-              setHidden();
+                    {
+                      opacity: [0, 0, 1, 1],
+                      transform: [
+                        "translateY(12px) scale(0.98)",
+                        "translateY(12px) scale(0.98)",
+                        "translateY(0px) scale(1.03)",
+                        "translateY(0px) scale(1)"
+                      ]
+                    },
+                    { duration: REVEAL_TOTAL, ease: ["linear", EASE_OUT_EXPO, EASE_OUT_EXPO], times: [0, 0.262, 0.631, 1] }
+                  )
+                );
+              }
+
+              // Scrub the reveal around the connect threshold.
+              const windowStart = connectAt - 0.01;
+              const windowEnd = connectAt + 0.02;
+              revealAnims.forEach((anim) => anim.pause());
               cleanupFns.push(
                 scroll(
                   (progress: number) => {
-                    if (!connected && progress >= connectAt) {
-                      connected = true;
-                      showDetails();
-                    } else if (connected && progress <= disconnectAt) {
-                      connected = false;
-                      hideDetails();
-                    }
+                    const local = Math.min(1, Math.max(0, (progress - windowStart) / (windowEnd - windowStart)));
+                    revealAnims.forEach((anim) => {
+                      anim.time = local * anim.duration;
+                    });
                   },
                   { target: section!, offset: ["start start", "end end"] }
                 )
               );
-      
-              if (photo instanceof HTMLElement) {
-                const photoAnim = animate(
-                  photo,
-                  {
-                    opacity: [0, 0, 1, 1],
-                    transform: ["translateY(18px)", "translateY(18px)", "translateY(0px)", "translateY(0px)"]
-                  },
-                  { ease: "linear", times: [0, connectAt - 0.015, connectAt + 0.005, 1] }
-                );
-                cleanupFns.push(scroll(photoAnim, { target: section!, offset: ["start start", "end end"] }));
-              }
             }
       
             // Initialize animations for Nodes 2-9
@@ -703,42 +862,42 @@
               { opacity: [0, 0, 1, 1, 1], pathLength: [0, 0, 0, 1, 1] },
               { ease: "linear", times: [0, 0.14, 0.15, 0.20, 1] }
             );
-            cleanupFns.push(scroll(line2Anim, { target: section, offset: ["start start", "end end"] }));
+            scrubWithScroll(line2Anim);
       
             const line3Anim = animate(
               line3,
               { opacity: [0, 0, 1, 1, 1], pathLength: [0, 0, 0, 1, 1] },
               { ease: "linear", times: [0, 0.22, 0.23, 0.28, 1] }
             );
-            cleanupFns.push(scroll(line3Anim, { target: section, offset: ["start start", "end end"] }));
+            scrubWithScroll(line3Anim);
       
             const line4Anim = animate(
               line4,
               { opacity: [0, 0, 1, 1, 1], pathLength: [0, 0, 0, 1, 1] },
               { ease: "linear", times: [0, 0.30, 0.31, 0.36, 1] }
             );
-            cleanupFns.push(scroll(line4Anim, { target: section, offset: ["start start", "end end"] }));
+            scrubWithScroll(line4Anim);
       
             const line5Anim = animate(
               line5,
               { opacity: [0, 0, 1, 1, 1], pathLength: [0, 0, 0, 1, 1] },
               { ease: "linear", times: [0, 0.38, 0.39, 0.44, 1] }
             );
-            cleanupFns.push(scroll(line5Anim, { target: section, offset: ["start start", "end end"] }));
+            scrubWithScroll(line5Anim);
       
             const line6Anim = animate(
               line6,
               { opacity: [0, 0, 1, 1, 1], pathLength: [0, 0, 0, 1, 1] },
               { ease: "linear", times: [0, 0.46, 0.47, 0.53, 1] }
             );
-            cleanupFns.push(scroll(line6Anim, { target: section, offset: ["start start", "end end"] }));
+            scrubWithScroll(line6Anim);
       
             const line7Anim = animate(
               line7,
               { opacity: [0, 0, 1, 1, 1], pathLength: [0, 0, 0, 1, 1] },
               { ease: "linear", times: [0, 0.55, 0.56, 0.62, 1] }
             );
-            cleanupFns.push(scroll(line7Anim, { target: section, offset: ["start start", "end end"] }));
+            scrubWithScroll(line7Anim);
       
             const line8Anim = animate(
               line8,
@@ -751,14 +910,14 @@
                 times: [0, 0.62, 0.625, 0.64, 0.72, 0.94, 1] 
               }
             );
-            cleanupFns.push(scroll(line8Anim, { target: section, offset: ["start start", "end end"] }));
+            scrubWithScroll(line8Anim);
       
             // 10. Circle Expansion (End)
             // Expands from 0% (at dot 3 position) to full screen
             const expansionAnim = animate(
               circleExpansionFill,
               {
-                transform: ["scale(0)", "scale(0)", "scale(1)"]
+                transform: ["scale(0.001)", "scale(0.001)", "scale(1)"]
               },
               { ease: "linear", times: [0, 0.94, 1] }
             );            cleanupFns.push(scroll(expansionAnim, { target: section, offset: ["start start", "end end"] }));    });
