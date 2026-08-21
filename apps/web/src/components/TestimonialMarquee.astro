@@ -146,4 +146,12 @@ const repeatedWishes = Array(4).fill(wishes).flat();
       transform: translateX(-100%);
     }
   }
+
+  /* Constant motion is the first thing to go: the wishes stay readable as a
+     static texture instead of four looping tracks. */
+  @media (prefers-reduced-motion: reduce) {
+    .marquee-content {
+      animation: none;
+    }
+  }
 </style>
