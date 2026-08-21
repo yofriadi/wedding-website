@@ -43,7 +43,7 @@ const items = [
   <div class="space-y-0">
     {items.map((item) => (
       <div class="accordion-item group border-b border-[color:var(--faq-border)]" data-id={item.id}>
-        <button class="w-full py-4 relative flex items-center gap-4 text-left focus:outline-none active:scale-[0.96] transition-transform duration-200 cursor-pointer">
+        <button class="w-full py-4 relative flex items-center gap-4 text-left focus:outline-none active:scale-[0.98] transition-transform duration-160 ease-out cursor-pointer">
            <!-- Number with animated circle -->
            <div class="relative flex items-center justify-center w-10 h-10 shrink-0">
              <div class="number-bg absolute inset-0 rounded-full bg-[color:var(--faq-badge)] ring-1 ring-[color:var(--faq-badge-ring)] origin-center"></div>
@@ -58,7 +58,7 @@ const items = [
            </h3>
            <!-- Animated indicator -->
             <div class="ml-auto flex items-center justify-center w-8 h-8 shrink-0">
-              <div class="icon-plus transition-transform duration-300 text-[color:var(--faq-muted-foreground)]">
+              <div class="icon-plus transition-transform duration-200 text-[color:var(--faq-muted-foreground)]">
                <svg width="20" height="20" viewBox="0 0 16 16" fill="none" class="transition-colors">
                  <path d="M8 1V15M1 8H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
                </svg>
@@ -147,17 +147,17 @@ const items = [
       const iconSvg = icon?.querySelector('svg');
       const activeLine = item.querySelector('.active-line');
 
-      if (content) animate(content, { height: "auto", opacity: 1 } as any, { duration: 0.4, ease: "easeOut" });
+      if (content) animate(content, { height: "auto", opacity: 1 } as any, { duration: 0.25, ease: EASE_OUT_EXPO });
       
       // Subtle pop (1.08, not a bounce) gives the state change physicality.
-      if (numberBg) animate(numberBg, { scale: [1, 1.08, 1], backgroundColor: foreground }, { duration: 0.3, ease: EASE_OUT_EXPO });
+      if (numberBg) animate(numberBg, { scale: [1, 1.08, 1], backgroundColor: foreground }, { duration: 0.25, ease: EASE_OUT_EXPO });
       
-      if (numberText) animate(numberText, { color: primaryForeground }, { duration: 0.2 });
+      if (numberText) animate(numberText, { color: primaryForeground }, { duration: 0.15 });
       
       if (titleText) animate(titleText, { color: foreground }, { type: spring, stiffness: 400, damping: 30 });
       
       if (icon) animate(icon, { rotate: 45 }, { type: spring, stiffness: 300, damping: 20 });
-      if (iconSvg) animate(iconSvg, { color: foreground }, { duration: 0.2 });
+      if (iconSvg) animate(iconSvg, { color: foreground }, { duration: 0.15 });
       
       if (activeLine) animate(activeLine, { scaleX: 1 }, { type: spring, stiffness: 300, damping: 30 });
     }
@@ -171,16 +171,16 @@ const items = [
       const iconSvg = icon?.querySelector('svg');
       const activeLine = item.querySelector('.active-line');
 
-      if (content) animate(content, { height: 0, opacity: 0 } as any, { duration: 0.3, ease: "easeIn" });
+      if (content) animate(content, { height: 0, opacity: 0 } as any, { duration: 0.2, ease: EASE_OUT_EXPO });
       
       if (numberBg) animate(numberBg, { scale: 1, backgroundColor: badgeBase }, { type: spring, stiffness: 400, damping: 25 });
       
-      if (numberText) animate(numberText, { color: mutedForeground }, { duration: 0.2 });
+      if (numberText) animate(numberText, { color: mutedForeground }, { duration: 0.15 });
       
       if (titleText) animate(titleText, { color: mutedForeground }, { type: spring, stiffness: 400, damping: 30 });
       
       if (icon) animate(icon, { rotate: 0 }, { type: spring, stiffness: 300, damping: 20 });
-      if (iconSvg) animate(iconSvg, { color: mutedForeground }, { duration: 0.2 });
+      if (iconSvg) animate(iconSvg, { color: mutedForeground }, { duration: 0.15 });
       
       if (activeLine) animate(activeLine, { scaleX: 0 }, { type: spring, stiffness: 300, damping: 30 });
     }

@@ -62,6 +62,7 @@
   .animate-image,
   .animate-blur {
     transform-origin: center 40%;
+    will-change: transform, opacity;
   }
 
   /* The static fallback is the readable, fully revealed hero. Enhanced modes override it. */
@@ -77,6 +78,7 @@
   .animate-text {
     opacity: 1;
     transform: translateY(0);
+    will-change: transform, opacity;
   }
 
   /* Map animation progress to the 200svh period while the stage is pinned. */
