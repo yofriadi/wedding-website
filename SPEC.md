@@ -74,7 +74,7 @@ Mitigations:
 - Only call the endpoint over HTTPS.
 - Do not share the token.
 
-## Data Model (Drizzle / SQLite/Turso)
+## Data Model (Drizzle / SQLite)
 
 Create a single table for now.
 
@@ -122,7 +122,9 @@ Overwrite behavior:
 
 ## Endpoints (Astro SSR)
 
-Astro is configured with `output: "server"` and uses Cloudflare in prod and Node adapter locally.
+Astro is configured with `output: "server"` and runs on the `@astrojs/node`
+standalone adapter (behind a Caddy reverse proxy with auto-TLS in prod; the same
+adapter serves local dev).
 
 ### 1) Resolve Invite Link
 

@@ -2,7 +2,7 @@
 
 ## Context
 
-Phase 1 (implemented, see root `SPEC.md`) ships invite links: `POST /api/admin/:token/invites` creates a row in `invites`, `GET /i/:id` bumps seen-metrics, sets client-readable cookie `ww_invite_id` (30d, `SameSite=Lax`, never overwritten), and redirects to `/`. Nothing consumes the cookie.
+Phase 1 (implemented, see root `SPEC.md`) ships invite links: `POST /api/admin/:token/invites` creates a row in `invites`, `GET /:id` bumps seen-metrics, sets client-readable cookie `ww_invite_id` (30d, `SameSite=Lax`, never overwritten), and redirects to `/`. Nothing consumes the cookie.
 
 **Deployment target changed** (locked after research): a self-hosted Tencent CVM — Standard S5.MEDIUM4 (2 vCPU Cascade Lake, 4 GiB RAM), Singapore region, Ubuntu Server 26.04 LTS, valid through Oct 18, 2026 (wedding: Oct 10; site release: ~Sep 19). Key platform facts: public IPv4 assigned by default; egress billed pay-per-traffic at $0.081/GB (no free quota); system disk 20–50 GiB expandable online; expiry → stopped → 15-day recycle-bin grace → destroyed (~Nov 2); security groups default-drop inbound; no ICP needed (Singapore); outbound SMTP port 25 blocked (465/587 open); free Anti-DDoS Basic (2 Gbps). `TestimonialMarquee.astro` is ambient decoration (opacity 0.1, pointer-events none) and stays as-is. Guest submissions are the separate `guest-submissions` change.
 

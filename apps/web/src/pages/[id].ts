@@ -23,7 +23,7 @@ function noStoreRedirect() {
   });
 }
 
-export const GET: APIRoute = async ({ params, cookies, redirect }) => {
+export const GET: APIRoute = async ({ params, cookies }) => {
   const id = params.id;
 
   if (typeof id !== "string" || id.length !== INVITE_ID_LENGTH || !ID_RE.test(id)) {
@@ -31,18 +31,41 @@ export const GET: APIRoute = async ({ params, cookies, redirect }) => {
   }
 
   const now = Date.now();
+  // Metrics are best-effort: a failed write must not stop the guest from
+  // reaching the homepage.
+  let updated: { id: string }[] = [];
+  try {
+    updated = await db
+      .update(invites)
+      .set({
+        seenAt: now,
+        seenCount: sql`${invites.seenCount} + 1`,
+      })
+      .where(eq(invites.id, id))
+      .returning({ id: invites.id });
+  } catch (err) {
+    console.error("[invite/i] metric update failed:", err);
+  }
 
-  const updated = await db
-    .update(invites)
-    .set({
-      seenAt: now,
-      seenCount: sql`${invites.seenCount} + 1`,
-    })
-    .where(eq(invites.id, id))
-    .returning({ id: invites.id });
-
+  let inviteExists = updated.length > 0;
+  if (!inviteExists) {
+    // The metrics write failed (or matched nothing): fall back to a read-only
+    // lookup so a transient DB error doesn't silently consume the invite link.
+    // If even the read fails, treat the invite as unverifiable — no cookie set,
+    // and the redirect still lands the guest on a functional homepage.
+    try {
+      const rows = await db
+        .select({ id: invites.id })
+        .from(invites)
+        .where(eq(invites.id, id))
+        .limit(1);
+      inviteExists = rows.length > 0;
+    } catch (err) {
+      console.error("[invite/i] existence lookup failed:", err);
+      inviteExists = false;
+    }
+  }
   const existing = cookies.get(INVITE_COOKIE_NAME);
-  const inviteExists = updated.length > 0;
 
   if (!existing && inviteExists) {
     const days = env.INVITE_COOKIE_DAYS;

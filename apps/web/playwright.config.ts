@@ -18,7 +18,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "pnpm dev:bare",
+    // `astro dev` loads apps/web/.env itself, but guarantee DATABASE_URL even on
+    // machines without a local .env (CI, fresh clones): point at a scratch DB.
+    command: "DATABASE_URL=${DATABASE_URL:-file:./.playwright/db.sqlite} pnpm dev:bare",
     url: "http://localhost:4321",
     reuseExistingServer: !process.env.CI,
     timeout: 120000,

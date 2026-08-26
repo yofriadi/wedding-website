@@ -15,5 +15,7 @@ catalog:
   "@types/node": ^26.2.0
   dotenv: ^17.4.2
   libsql: 0.5.29
-  typescript: ^7.0.2
+  # TS 7 drops the programmatic API `astro check` needs; stay on 6.x until
+  # https://github.com/withastro/roadmap/discussions/1321 ships.
+  typescript: ^6.0.3
   zod: ^4.4.3

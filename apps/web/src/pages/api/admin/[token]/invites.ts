@@ -36,17 +36,37 @@ function json(status: number, body: unknown) {
   });
 }
 
-export const POST: APIRoute = async ({ params, request }) => {
-  const expectedToken = env.INVITE_ADMIN_TOKEN;
-  const token = params.token;
+// Constant-time compare: the admin token is a secret; don't leak match length/timing.
+function tokenEquals(a: string, b: string) {
+  if (a.length !== b.length) {
+    return false;
+  }
+  let diff = 0;
+  for (let i = 0; i < a.length; i++) {
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return diff === 0;
+}
 
-  if (!expectedToken || token !== expectedToken) {
-    return new Response(null, {
-      status: 404,
-      headers: {
-        "Cache-Control": "no-store",
-      },
-    });
+// Bare 404 (no body) — identical for missing and wrong tokens so the route is
+// indistinguishable from a non-existent path.
+function bareNotFound() {
+  return new Response(null, {
+    status: 404,
+    headers: {
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
+function isAuthorized(token: unknown) {
+  const expectedToken = env.INVITE_ADMIN_TOKEN;
+  return typeof token === "string" && !!expectedToken && tokenEquals(token, expectedToken);
+}
+
+export const POST: APIRoute = async ({ params, request }) => {
+  if (!isAuthorized(params.token)) {
+    return bareNotFound();
   }
 
   let payload: unknown;
@@ -84,7 +104,7 @@ export const POST: APIRoute = async ({ params, request }) => {
 
       return json(201, {
         id,
-        sharePath: `/i/${id}`,
+        sharePath: `/${id}`,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

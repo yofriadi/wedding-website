@@ -16,6 +16,17 @@ function notFound() {
   });
 }
 
+// Operational failure: distinct from identity 404s so consumers can tell a
+// retryable service problem from an anonymous visitor.
+function serviceUnavailable() {
+  return new Response(null, {
+    status: 503,
+    headers: {
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
 export const GET: APIRoute = async ({ cookies }) => {
   const cookieValue = cookies.get(INVITE_COOKIE_NAME)?.value;
 
@@ -23,12 +34,19 @@ export const GET: APIRoute = async ({ cookies }) => {
     return notFound();
   }
 
-  // Read-only: metrics stay exclusive to GET /i/:id.
-  const rows = await db
-    .select({ displayName: invites.displayName })
-    .from(invites)
-    .where(eq(invites.id, cookieValue))
-    .limit(1);
+  // Read-only: metrics stay exclusive to GET /{id}.
+  let rows: { displayName: string | null }[];
+  try {
+    rows = await db
+      .select({ displayName: invites.displayName })
+      .from(invites)
+      .where(eq(invites.id, cookieValue))
+      .limit(1);
+  } catch (err) {
+    // DB outage ≠ anonymous visitor: 404 stays reserved for identity outcomes.
+    console.error("[invite/me] lookup failed:", err);
+    return serviceUnavailable();
+  }
 
   const displayName = rows[0]?.displayName;
   if (typeof displayName !== "string") {
@@ -38,8 +56,8 @@ export const GET: APIRoute = async ({ cookies }) => {
   return new Response(JSON.stringify({ displayName }), {
     status: 200,
     headers: {
-      "Cache-Control": "no-store",
       "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
     },
   });
 };

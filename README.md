@@ -10,7 +10,7 @@ This project was created with [Better-T-Stack](https://github.com/AmanVarshney01
 - **shadcn/ui** - Reusable UI components
 - **Drizzle** - TypeScript-first ORM
 - **SQLite** - Local file database
-- **Husky** - Git hooks for code quality
+- **prek** - Git hooks for code quality
 - **Oxlint** - Oxlint + Oxfmt (linting & formatting)
 - **Turborepo** - Optimized monorepo build system
 
@@ -24,14 +24,21 @@ pnpm install
 
 ## Database Setup
 
-The application uses a SQLite file through Drizzle ORM. Add a file URL to
-`apps/web/.env`; relative paths are resolved from `apps/web` at runtime:
+The application uses a SQLite file through Drizzle ORM. Copy the example env
+file and adjust it — relative paths are resolved from `apps/web` at runtime:
+
+```bash
+cp apps/web/.env.example apps/web/.env
+```
+
+which sets:
 
 ```dotenv
 DATABASE_URL=file:../../packages/db/local.db
 ```
 
-Apply the committed migrations before starting the application:
+The database file is NOT tracked by git (it holds guest data). `pnpm run
+db:migrate` creates it from the committed migrations on first run:
 
 ```bash
 pnpm run db:migrate
@@ -48,13 +55,33 @@ pnpm run dev
 
 Open [http://localhost:4321](http://localhost:4321) in your browser to see the fullstack application.
 
-## Deployment (Cloudflare via Alchemy)
+## Deployment (standalone Node + reverse proxy)
 
-- Dev: cd apps/web && pnpm run alchemy dev
-- Deploy: cd apps/web && pnpm run deploy
-- Destroy: cd apps/web && pnpm run destroy
+The site runs as a standalone Node server behind a reverse proxy (Caddy with
+auto-TLS terminates TLS and proxies to the node process) on a self-hosted VM.
 
-For more details, see the guide on [Deploying to Cloudflare with Alchemy](https://www.better-t-stack.dev/docs/guides/cloudflare-alchemy).
+Run it exactly as production does — note `pnpm dev` starts the Vite dev server,
+which is NOT the same runtime:
+
+```bash
+cd apps/web
+pnpm build
+node dist/server/entry.mjs   # HOST/PORT/DATABASE_URL/NODE_ENV from the environment
+```
+
+### Production release checklist
+
+On a fresh VM (or a new release), apply migrations BEFORE starting/restarting
+the server — libSQL will happily auto-create an empty database file and the
+site will look healthy while every invite query fails with `no such table`:
+
+```bash
+# from the repo root, with the PRODUCTION DATABASE_URL exported
+DATABASE_URL=file:/srv/wedding/wedding.db pnpm run db:migrate   # must exit 0
+systemctl restart wedding   # only after migrations succeeded
+```
+
+See `openspec/changes/invite-only-personalization/` for the deployment design.
 
 ## Git Hooks and Formatting
 
@@ -68,7 +95,9 @@ wedding-website/
 ├── apps/
 │   └── web/         # Fullstack application (Astro)
 ├── packages/
-│   ├── api/         # API layer / business logic
+│   ├── config/      # Shared tooling config (tsconfig)
+│   ├── db/          # Drizzle schema + migrations (SQLite)
+│   └── env/         # Type-safe environment variables
 ```
 
 ## Available Scripts
@@ -78,5 +107,5 @@ wedding-website/
 - `pnpm run check-types`: Check TypeScript types across all apps
 - `pnpm run db:push`: Push schema changes to database
 - `pnpm run db:studio`: Open database studio UI
-- `pnpm run db:local`: Start the local SQLite database
+- `pnpm run db:migrate`: Apply committed migrations (creates the DB on first run)
 - `pnpm run check`: Run Oxlint and Oxfmt

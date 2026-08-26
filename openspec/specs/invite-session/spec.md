@@ -1,10 +1,10 @@
-# invite-session Spec Delta
+# invite-session Specification
 
 ## Purpose
 
 Cookie-as-identity lookup layer. One read-only endpoint resolves the current visitor's invite identity from the `ww_invite_id` cookie, for consumers that need identity client-side (guest-submissions' flow now; RSVP later) — without exposing invite IDs in URLs and without allowing personalized responses to be cached. The homepage greeting does NOT consume this endpoint; it renders server-side (see guest-greeting).
 
-## ADDED Requirements
+## Requirements
 
 ### Requirement: Resolve current invite from cookie
 

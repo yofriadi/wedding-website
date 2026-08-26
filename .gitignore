@@ -39,12 +39,28 @@ lerna-debug.log*
 # Cloudflare / Wrangler local runtime state
 **/.wrangler
 
+# Local SQLite DB + sidecars — created by `pnpm db:migrate`, hold guest data,
+# must never be committed. Playwright scratch DBs follow the same pattern.
+packages/db/local.db
+packages/db/local.db-shm
+packages/db/local.db-wal
+*.db-shm
+*.db-wal
+
+# Local pi-agent skill/prompt installs (openspec tooling)
+.pi/
+
 # Better-T-Stack
 .alchemy
 
 # Testing
 coverage
 .nyc_output
+
+# Playwright scratch space (dev-server DB, reports)
+test-results/
+playwright-report/
+.playwright/
 
 # Misc
 *.tgz
