@@ -6,4 +6,6 @@ export const invites = sqliteTable("invites", {
   createdAt: integer("created_at").notNull(),
   seenAt: integer("seen_at"),
   seenCount: integer("seen_count").notNull().default(0),
+  openedAt: integer("opened_at"),
+  openedCount: integer("opened_count").notNull().default(0),
 });

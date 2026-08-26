@@ -9,6 +9,7 @@ import TestimonialMarquee from '../components/TestimonialMarquee.astro';
 import StoryViewer from "../components/StoryViewer.astro";
 import WeddingFAQ from '../components/WeddingFAQ.astro';
 import TextShimmer from "../components/TextShimmer.astro";
+import WelcomeGate from "../components/WelcomeGate.astro";
 import { db } from "@wedding-website/db";
 import { invites } from "@wedding-website/db/schema";
 import { eq } from "drizzle-orm";
@@ -145,12 +146,6 @@ function teaserAssetExists(src: string) {
   <!-- Loading Overlay -->
   <div id="loading-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950 transition-opacity duration-300 ease-out">
     <div class="flex flex-col items-center">
-      <div
-        id="invite-greeting"
-        class:list={["text-lg font-light tracking-wide text-neutral-200 text-balance text-center", { "mb-4": inviteDisplayName !== null }]}
-      >
-        {inviteDisplayName}
-      </div>
       <TextShimmer 
         class="text-xl font-medium tracking-tight"
         phrases={[
@@ -167,6 +162,9 @@ function teaserAssetExists(src: string) {
       </TextShimmer>
     </div>
   </div>
+
+  <!-- Welcome gate: the loader fade reveals it; swipe up opens the site. -->
+  <WelcomeGate displayName={inviteDisplayName} />
 
   <!-- Background Music -->
   <audio id="hero-music" loop preload="auto">
@@ -245,6 +243,10 @@ function teaserAssetExists(src: string) {
   // Background music
   const heroMusic = document.getElementById('hero-music');
   let hasStarted = false;
+  let gestureArmed = false;
+  // A swipe-up ends in `touchend`, which browsers accept as a user gesture for
+  // audio. Desktop wheel/trackpad scroll does NOT count, so click/key are armed too.
+  const gestureEvents = ['touchend', 'pointerup', 'click', 'keydown'];
 
   function startMusic() {
     if (!hasStarted && heroMusic) {
@@ -252,10 +254,31 @@ function teaserAssetExists(src: string) {
       heroMusic.play()
         .then(() => {
           hasStarted = true;
+          disarmMusicGesture();
         })
         .catch(err => {
           console.log('Audio playback failed:', err);
+          armMusicGesture();
         });
+    }
+  }
+  function startMusicFromGesture() {
+    disarmMusicGesture();
+    startMusic();
+  }
+
+  function armMusicGesture() {
+    if (gestureArmed || hasStarted) return;
+    gestureArmed = true;
+    for (const event of gestureEvents) {
+      document.addEventListener(event, startMusicFromGesture, { once: true, passive: true });
+    }
+  }
+
+  function disarmMusicGesture() {
+    gestureArmed = false;
+    for (const event of gestureEvents) {
+      document.removeEventListener(event, startMusicFromGesture);
     }
   }
 

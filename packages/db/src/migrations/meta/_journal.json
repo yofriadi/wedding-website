@@ -8,6 +8,13 @@
       "when": 1769330890328,
       "tag": "0000_sweet_mole_man",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1787631170119,
+      "tag": "0001_faulty_purple_man",
+      "breakpoints": true
     }
   ]
 }

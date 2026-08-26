@@ -2,6 +2,7 @@ import type { APIRoute } from "astro";
 import { db } from "@wedding-website/db";
 import { invites } from "@wedding-website/db/schema";
 import { env } from "@wedding-website/env/server";
+import { desc } from "drizzle-orm";
 
 const INVITE_ID_LENGTH = 12;
 const INVITE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
@@ -63,6 +64,33 @@ function isAuthorized(token: unknown) {
   const expectedToken = env.INVITE_ADMIN_TOKEN;
   return typeof token === "string" && !!expectedToken && tokenEquals(token, expectedToken);
 }
+
+// Read side for the couple: who has been sent an invite, who looked, who opened.
+export const GET: APIRoute = async ({ params }) => {
+  if (!isAuthorized(params.token)) {
+    return bareNotFound();
+  }
+
+  try {
+    const rows = await db
+      .select({
+        id: invites.id,
+        displayName: invites.displayName,
+        createdAt: invites.createdAt,
+        seenAt: invites.seenAt,
+        seenCount: invites.seenCount,
+        openedAt: invites.openedAt,
+        openedCount: invites.openedCount,
+      })
+      .from(invites)
+      .orderBy(desc(invites.createdAt));
+
+    return json(200, { invites: rows });
+  } catch (err) {
+    console.error("[admin/invites] listing failed:", err);
+    return json(500, { error: "invite_list_failed" });
+  }
+};
 
 export const POST: APIRoute = async ({ params, request }) => {
   if (!isAuthorized(params.token)) {

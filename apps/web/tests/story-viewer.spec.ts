@@ -1,10 +1,12 @@
 import { test, expect } from "@playwright/test";
+import { dismissWelcomeGate } from "./helpers";
 
 test("story viewer opens and navigates", async ({ page }) => {
   page.on("console", (msg) => console.log(msg.text()));
   page.on("pageerror", (exception) => console.log(`Uncaught exception: "${exception}"`));
 
   await page.goto("/");
+  await dismissWelcomeGate(page);
 
   // Check if story viewer trigger is visible
   const trigger = page.locator("[data-story-viewer] [data-open]").first();
@@ -63,6 +65,7 @@ test("story viewer opens and navigates", async ({ page }) => {
 
 test("forward hand-off keeps a modal visible until the next viewer is ready", async ({ page }) => {
   await page.goto("/");
+  await dismissWelcomeGate(page);
 
   await page.locator("[data-story-viewer] [data-open]").first().click();
   const visibleModal = page.locator('[data-modal][aria-hidden="false"]');
@@ -117,6 +120,7 @@ test("forward hand-off keeps a modal visible until the next viewer is ready", as
 
 test("reverse hand-off opens the previous viewer at its last story", async ({ page }) => {
   await page.goto("/");
+  await dismissWelcomeGate(page);
 
   // Open viewer 2 (Yofri).
   await page.locator("[data-story-viewer] [data-open]").nth(1).click();
@@ -143,6 +147,7 @@ test("reverse hand-off opens the previous viewer at its last story", async ({ pa
 
 test("progress fill advances via transform scaleX, not width", async ({ page }) => {
   await page.goto("/");
+  await dismissWelcomeGate(page);
 
   await page.locator("[data-story-viewer] [data-open]").first().click();
   const visibleModal = page.locator('[data-modal][aria-hidden="false"]');

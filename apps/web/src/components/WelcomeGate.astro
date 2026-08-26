@@ -1,0 +1,363 @@
+---
+import { existsSync } from "node:fs";
+import TextShimmer from "./TextShimmer.astro";
+
+interface Props {
+  displayName?: string | null;
+}
+
+const { displayName = null } = Astro.props;
+
+// Couple-supplied gate background slot (same exists-check pattern as the story
+// teasers): the light neutral fallback ships until an asset lands here.
+const GATE_BG_SRC = "/gate/gate-bg.webp";
+
+function gateBgAssetExists(src: string) {
+  // Dev: this component lives under src/components (public/ is ../../public).
+  // Build: compiled modules sit two levels under dist/ and public assets are
+  // bundled into dist/client — presence there reflects what the adapter serves.
+  const candidates = [
+    new URL(`../../public${src}`, import.meta.url),
+    new URL(`../../client${src}`, import.meta.url),
+  ];
+  return candidates.some((url) => existsSync(url));
+}
+
+const hasGateBg = gateBgAssetExists(GATE_BG_SRC);
+---
+
+<!--
+  Welcome gate: SSR'd between loader and hero. Stacked below #loading-screen
+  (z-50) so the loader fade IS the black->bright transition, above all page
+  content. The greeting is rendered server-side, verbatim (auto-escaped).
+-->
+<div id="welcome-gate" class="fixed inset-0 z-40 bg-[#f7f4ef] text-neutral-800">
+  <div class="absolute inset-0" aria-hidden="true">
+    {
+      hasGateBg && (
+        <img
+          src={GATE_BG_SRC}
+          alt=""
+          class="block h-full w-full object-cover"
+          fetchpriority="high"
+          decoding="async"
+        />
+      )
+    }
+  </div>
+
+  <div class="relative flex h-full items-center justify-center px-6">
+    <div
+      id="gate-greeting"
+      class="max-w-3xl text-balance text-center font-serif text-3xl font-light tracking-wide md:text-5xl"
+    >
+      {displayName}
+    </div>
+  </div>
+
+  <div class="absolute inset-x-0 bottom-10 flex justify-center">
+    <TextShimmer class="text-xs font-medium uppercase tracking-[0.3em] sm:text-sm" duration={2.4}>
+      Swipe up to open
+    </TextShimmer>
+  </div>
+</div>
+
+<!--
+  Safari has not shipped the `scripting` media feature, so the @media rule
+  below alone leaves the gate rendered for no-JS Safari guests (and its
+  CSS `touch-action: none` would deaden the viewport until the failsafe).
+  This <noscript> style hides the gate whenever scripting is off, on every
+  browser, with zero cost for JS users. Composes with the failsafe.
+-->
+<noscript>
+  <style>
+    #welcome-gate {
+      display: none;
+    }
+  </style>
+</noscript>
+
+<style>
+  #welcome-gate {
+    /* The gesture owns the whole surface while armed: no scroll chaining or
+       iOS rubber-band may leak through to the page behind. */
+    touch-action: none;
+    overscroll-behavior: none;
+    /* Transform-only reveal: keep the exit on the compositor. */
+    will-change: transform;
+    /* Failsafe (D6): if the inline gesture script never arms, the gate must
+       not trap the page — fade it out after a bounded delay. The script
+       cancels this animation the moment it arms. */
+    animation: gate-failsafe 600ms ease-out 15s forwards;
+  }
+
+  @keyframes gate-failsafe {
+    to {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+  }
+
+  /* No scripting, no gate: the homepage stays fully usable. */
+  @media (scripting: none) {
+    #welcome-gate {
+      display: none;
+    }
+  }
+
+  /* TextShimmer's stock gradient is tuned for dark surfaces; the gate is a
+     light surface, so retint the shimmer layers. :global because the spans
+     live in TextShimmer's scope. */
+  #welcome-gate :global(text-shimmer [data-text]),
+  #welcome-gate :global(text-shimmer [data-text-out]) {
+    background-image: linear-gradient(110deg, #a8a29e, 45%, #292524, 55%, #a8a29e);
+  }
+</style>
+
+<script is:inline>
+  (function () {
+    var gate = document.getElementById('welcome-gate');
+    if (!gate) return;
+
+    var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    var armed = false;
+    var committed = false;
+    var tracking = false;
+    var metricFired = false;
+
+    var startY = 0;
+    var currentY = 0;
+    var lastY = 0;
+    var lastT = 0;
+    var velocity = 0; // px/ms, upward positive
+
+    // Tunables — the spec pins the behavior classes, not the constants.
+    var COMMIT_DISTANCE = 0.28; // fraction of viewport height
+    var COMMIT_VELOCITY = 0.5; // px/ms upward flick
+    var COMMIT_MS = 400;
+    var SPRING_MS = 250;
+    var STALE_VELOCITY_MS = 100;
+
+    function lockScroll() {
+      document.documentElement.style.overflow = 'hidden';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function unlockScroll() {
+      document.documentElement.style.overflow = '';
+      document.body.style.overflow = '';
+    }
+
+    // Keep the content behind the gate out of the a11y/focus tree while armed,
+    // so keyboard/AT users can't Tab into a visually covered page. inert is a
+    // no-op where unsupported, degrading gracefully to the previous behavior.
+    function setMainInert(inert) {
+      var main = document.querySelector('main');
+      if (!main) return false;
+      if (inert) {
+        main.setAttribute('inert', '');
+      } else {
+        main.removeAttribute('inert');
+      }
+      return true;
+    }
+
+    // This inline script runs before <main> is parsed (the gate sits above it
+    // in the markup), so applying inert at arm time can miss. Apply it now and
+    // re-assert once <main> exists (DOMContentLoaded) while the gate is armed.
+    function applyInert() {
+      if (setMainInert(true)) return;
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function onReady() {
+          if (armed && !committed) setMainInert(true);
+        }, { once: true });
+      }
+    }
+
+    function fireOpenMetric() {
+      if (metricFired) return;
+      // Cookie-identified, once per pageview, fire-and-forget: the reveal is
+      // never delayed or failed by this request.
+      if (!/(?:^|;\s*)ww_invite_id=/.test(document.cookie)) return;
+      metricFired = true;
+      try {
+        fetch('/api/invite/opened', { method: 'POST', keepalive: true });
+      } catch (err) {
+        // Best-effort metric: swallow transport-level failures too.
+      }
+    }
+
+    function startMusicNow() {
+      // startMusic lives in the homepage inline script; calling it
+      // synchronously inside the committing gesture keeps playback
+      // policy-compliant on mobile (transient activation window).
+      if (typeof window.startMusic === 'function') {
+        try {
+          window.startMusic();
+        } catch (err) {
+          // Music is non-critical; never break the reveal for it.
+        }
+      }
+    }
+
+    function finishReveal() {
+      // Release the background from inert before the gate leaves the tree.
+      setMainInert(false);
+      gate.remove();
+      unlockScroll();
+    }
+
+    function commit() {
+      if (committed) return;
+      committed = true;
+      disarm();
+
+      startMusicNow();
+      fireOpenMetric();
+
+      if (reducedMotion) {
+        // No tracking, no slide: instant dismissal.
+        finishReveal();
+        return;
+      }
+
+      var finished = false;
+      var finish = function () {
+        if (finished) return;
+        finished = true;
+        finishReveal();
+      };
+
+      gate.style.transition = 'transform ' + COMMIT_MS + 'ms ease-out';
+      gate.style.transform = 'translateY(-100%)';
+      gate.addEventListener('transitionend', finish, { once: true });
+      // Safety net: transitionend can be dropped (hidden tab, interrupted).
+      setTimeout(finish, COMMIT_MS + 100);
+    }
+
+    // --- Touch: Level-2 finger-tracked swipe -------------------------------
+
+    function onTouchStart(e) {
+      if (committed || tracking || e.touches.length !== 1) return;
+      tracking = true;
+      startY = e.touches[0].clientY;
+      currentY = 0;
+      lastY = 0;
+      lastT = e.timeStamp;
+      velocity = 0;
+      gate.style.transition = 'none';
+    }
+
+    function onTouchMove(e) {
+      if (!tracking || committed) return;
+      // Non-passive listener: stop scroll chaining / rubber-band leak.
+      e.preventDefault();
+      // 1:1 upward tracking, clamped — the gate never travels downward.
+      var y = Math.min(0, e.touches[0].clientY - startY);
+      currentY = y;
+      var dt = e.timeStamp - lastT;
+      if (dt > 0) {
+        velocity = (lastY - y) / dt;
+        lastY = y;
+        lastT = e.timeStamp;
+      }
+      gate.style.transform = 'translateY(' + y + 'px)';
+    }
+
+    function onTouchEnd(e) {
+      if (!tracking || committed) return;
+      tracking = false;
+      // A finger that rested before release carries no flick.
+      if (e.timeStamp - lastT > STALE_VELOCITY_MS) velocity = 0;
+
+      var threshold = window.innerHeight * COMMIT_DISTANCE;
+      if (-currentY >= threshold || velocity >= COMMIT_VELOCITY) {
+        // The committing touchend already starts the music synchronously;
+        // stop it bubbling to the homepage's document-level armed-gesture
+        // listener so startMusic isn't invoked twice in one window.
+        e.stopPropagation();
+        commit();
+      } else {
+        gate.style.transition = 'transform ' + SPRING_MS + 'ms ease-out';
+        gate.style.transform = 'translateY(0)';
+      }
+    }
+
+    function onTouchCancel() {
+      if (!tracking) return;
+      tracking = false;
+      gate.style.transition = 'transform ' + SPRING_MS + 'ms ease-out';
+      gate.style.transform = 'translateY(0)';
+    }
+
+    // --- Desktop: functional dismissal, no physics --------------------------
+
+    function dismissIfArmed(e) {
+      if (committed) return;
+      // A stray keypress while the (possibly long-loading) loader still covers
+      // the gate must not burn the envelope reveal behind it.
+      if (e && e.type === 'keydown' && document.getElementById('loading-screen')) return;
+      commit();
+    }
+
+    // --- Arming --------------------------------------------------------------
+
+    function disarm() {
+      gate.removeEventListener('touchstart', onTouchStart);
+      gate.removeEventListener('touchmove', onTouchMove);
+      gate.removeEventListener('touchend', onTouchEnd);
+      gate.removeEventListener('touchcancel', onTouchCancel);
+      gate.removeEventListener('wheel', dismissIfArmed);
+      gate.removeEventListener('click', dismissIfArmed);
+      gate.removeEventListener('touchend', dismissIfArmed);
+      gate.removeEventListener('pointerup', dismissIfArmed);
+      window.removeEventListener('keydown', dismissIfArmed);
+    }
+
+    function arm() {
+      if (armed) return;
+      armed = true;
+
+      // The gesture is live: cancel the CSS failsafe auto-dismiss.
+      if (typeof gate.getAnimations === 'function') {
+        gate.getAnimations().forEach(function (anim) {
+          anim.cancel();
+        });
+      }
+
+      lockScroll();
+      applyInert();
+
+      if (reducedMotion) {
+        // A reduced-motion finger swipe does not synthesize `click`, so bind
+        // touchend/pointerup as well — any release dismisses instantly.
+        gate.addEventListener('click', dismissIfArmed, { passive: true });
+        gate.addEventListener('touchend', dismissIfArmed, { passive: true });
+        gate.addEventListener('pointerup', dismissIfArmed, { passive: true });
+        window.addEventListener('keydown', dismissIfArmed, { passive: true });
+        return;
+      }
+
+      gate.addEventListener('touchstart', onTouchStart, { passive: true });
+      gate.addEventListener('touchmove', onTouchMove, { passive: false });
+      gate.addEventListener('touchend', onTouchEnd, { passive: true });
+      gate.addEventListener('touchcancel', onTouchCancel, { passive: true });
+      // Wheel carries no user activation; music stays on the homepage's
+      // armed-gesture fallback for desktop.
+      gate.addEventListener('wheel', dismissIfArmed, { passive: true });
+      gate.addEventListener('click', dismissIfArmed, { passive: true });
+      window.addEventListener('keydown', dismissIfArmed, { passive: true });
+    }
+
+    // The "scroll 0 by construction" assumption breaks on reload / bfcache
+    // scroll restoration — pin it explicitly before locking.
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+    window.scrollTo(0, 0);
+
+    arm();
+  })();
+</script>

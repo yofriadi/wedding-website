@@ -37,7 +37,12 @@ const shimmerLayerClasses = [
 </style>
 
 <script is:inline>
-  class TextShimmer extends HTMLElement {
+  // Emitted once per render (is:inline): the guard and function scope keep
+  // this idempotent when several TextShimmer instances share a page.
+  (function () {
+    if (customElements.get('text-shimmer')) return;
+
+    class TextShimmer extends HTMLElement {
     constructor() {
       super();
       this.interval = undefined;
@@ -103,7 +108,6 @@ const shimmerLayerClasses = [
     }
   }
 
-  if (!customElements.get('text-shimmer')) {
     customElements.define('text-shimmer', TextShimmer);
-  }
+  })();
 </script>
