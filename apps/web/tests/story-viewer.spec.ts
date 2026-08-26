@@ -114,7 +114,7 @@ test("forward hand-off keeps a modal visible until the next viewer is ready", as
   await expect(visibleModal).toHaveCount(1);
   await expect(visibleModal.locator("[data-stage] img").first()).toHaveAttribute(
     "src",
-    /\/4\.jpg$/,
+    /\/4.webp$/,
   );
 });
 
@@ -136,10 +136,10 @@ test("reverse hand-off opens the previous viewer at its last story", async ({ pa
   if (!box) throw new Error("stage not visible");
   await page.mouse.click(box.x + box.width * 0.25, box.y + box.height / 2);
 
-  // Hand-off settles: one modal remains, viewer 1's at its LAST story (/7.jpg).
+  // Hand-off settles: one modal remains, viewer 1's at its LAST story (/7.webp).
   await expect(visibleModal.locator("[data-stage] img").first()).toHaveAttribute(
     "src",
-    /\/7\.jpg$/,
+    /\/7.webp$/,
     { timeout: 5000 },
   );
   await expect(visibleModal).toHaveCount(1);

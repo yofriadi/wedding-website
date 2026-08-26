@@ -5,7 +5,7 @@ import HeroZoom from "../components/HeroZoom.astro";
 import ZoomParallax from "../components/ZoomParallax.astro";
 import QuranVerse from "../components/QuranVerse.astro";
 import TimelineScroll from "../components/TimelineScroll.astro";
-import TestimonialMarquee from '../components/TestimonialMarquee.astro';
+import WishMarquee from '../components/WishMarquee.astro';
 import StoryViewer from "../components/StoryViewer.astro";
 import WeddingFAQ from '../components/WeddingFAQ.astro';
 import TextShimmer from "../components/TextShimmer.astro";
@@ -41,83 +41,83 @@ Astro.response.headers.set("Cache-Control", "no-store");
 const storyUsers = [
   {
     username: "Aisha",
-    avatar: "/wedding_photo.png",
+    avatar: "/wedding_photo-390.webp",
     stories: [
-      { id: "story-1-1", type: "image", src: "/0.jpg", duration: 4200 },
-      { id: "story-1-2", type: "image", src: "/3.jpg", duration: 4200 },
-      { id: "story-1-3", type: "image", src: "/7.jpg", duration: 4200 },
+      { id: "story-1-1", type: "image", src: "/0.webp", duration: 4200 },
+      { id: "story-1-2", type: "image", src: "/3.webp", duration: 4200 },
+      { id: "story-1-3", type: "image", src: "/7.webp", duration: 4200 },
     ],
   },
   {
     username: "Yofri",
-    avatar: "/2.jpg",
+    avatar: "/2.webp",
     stories: [
-      { id: "story-2-1", type: "image", src: "/4.jpg", duration: 4000 },
-      { id: "story-2-2", type: "image", src: "/5.jpg", duration: 4000 },
+      { id: "story-2-1", type: "image", src: "/4.webp", duration: 4000 },
+      { id: "story-2-2", type: "image", src: "/5.webp", duration: 4000 },
     ],
   },
   {
     username: "Sarah",
-    avatar: "/6.jpg",
+    avatar: "/6.webp",
     stories: [
-      { id: "story-3-1", type: "image", src: "/8.jpg", duration: 4000 },
-      { id: "story-3-2", type: "image", src: "/9.jpg", duration: 4000 },
+      { id: "story-3-1", type: "image", src: "/8.webp", duration: 4000 },
+      { id: "story-3-2", type: "image", src: "/9.webp", duration: 4000 },
     ],
   },
   {
     username: "David",
-    avatar: "/10.jpg",
+    avatar: "/10.webp",
     stories: [
-      { id: "story-4-1", type: "image", src: "/11.jpg", duration: 4000 },
-      { id: "story-4-2", type: "image", src: "/12.jpg", duration: 4000 },
+      { id: "story-4-1", type: "image", src: "/11.webp", duration: 4000 },
+      { id: "story-4-2", type: "image", src: "/12.webp", duration: 4000 },
     ],
   },
   {
     username: "Emma",
-    avatar: "/13.jpg",
+    avatar: "/13.webp",
     stories: [
-      { id: "story-5-1", type: "image", src: "/14.jpg", duration: 4000 },
-      { id: "story-5-2", type: "image", src: "/15.jpg", duration: 4000 },
+      { id: "story-5-1", type: "image", src: "/14.webp", duration: 4000 },
+      { id: "story-5-2", type: "image", src: "/15.webp", duration: 4000 },
     ],
   },
   {
     username: "James",
-    avatar: "/16.jpg",
+    avatar: "/16.webp",
     stories: [
-      { id: "story-6-1", type: "image", src: "/17.jpg", duration: 4000 },
-      { id: "story-6-2", type: "image", src: "/18.jpg", duration: 4000 },
+      { id: "story-6-1", type: "image", src: "/17.webp", duration: 4000 },
+      { id: "story-6-2", type: "image", src: "/18.webp", duration: 4000 },
     ],
   },
   {
     username: "Olivia",
-    avatar: "/3.jpg",
+    avatar: "/3.webp",
     stories: [
-      { id: "story-7-1", type: "image", src: "/0.jpg", duration: 4000 },
-      { id: "story-7-2", type: "image", src: "/2.jpg", duration: 4000 },
+      { id: "story-7-1", type: "image", src: "/0.webp", duration: 4000 },
+      { id: "story-7-2", type: "image", src: "/2.webp", duration: 4000 },
     ],
   },
   {
     username: "Michael",
-    avatar: "/4.jpg",
+    avatar: "/4.webp",
     stories: [
-      { id: "story-8-1", type: "image", src: "/5.jpg", duration: 4000 },
-      { id: "story-8-2", type: "image", src: "/6.jpg", duration: 4000 },
+      { id: "story-8-1", type: "image", src: "/5.webp", duration: 4000 },
+      { id: "story-8-2", type: "image", src: "/6.webp", duration: 4000 },
     ],
   },
   {
     username: "Sophia",
-    avatar: "/7.jpg",
+    avatar: "/7.webp",
     stories: [
-      { id: "story-9-1", type: "image", src: "/8.jpg", duration: 4000 },
-      { id: "story-9-2", type: "image", src: "/9.jpg", duration: 4000 },
+      { id: "story-9-1", type: "image", src: "/8.webp", duration: 4000 },
+      { id: "story-9-2", type: "image", src: "/9.webp", duration: 4000 },
     ],
   },
   {
     username: "Daniel",
-    avatar: "/10.jpg",
+    avatar: "/10.webp",
     stories: [
-      { id: "story-10-1", type: "image", src: "/11.jpg", duration: 4000 },
-      { id: "story-10-2", type: "image", src: "/12.jpg", duration: 4000 },
+      { id: "story-10-1", type: "image", src: "/11.webp", duration: 4000 },
+      { id: "story-10-2", type: "image", src: "/12.webp", duration: 4000 },
     ],
   },
 ]
@@ -177,7 +177,7 @@ function teaserAssetExists(src: string) {
     <ZoomParallax />
     <TimelineScroll />
 
-    <section class="relative overflow-hidden">
+    <section class="relative overflow-hidden" data-progressive-section>
       <div class="mx-auto max-w-7xl px-6">
         <h2 class="text-xl font-light text-center mb-4 text-neutral-300 text-balance">Show Our Memories Together</h2>
       </div>
@@ -185,11 +185,10 @@ function teaserAssetExists(src: string) {
         {storyTeasers.map((teaser, teaserIndex) => (
           <div class="snap-center flex-shrink-0 animate-fade-up" style={`animation-delay: ${teaserIndex * 60}ms`}>
             <img
-              src={teaser.src}
+              data-src={teaser.src}
               alt={teaser.alt}
               width="112"
               height="200"
-              loading="lazy"
               decoding="async"
               class="block h-[200px] w-[112px] rounded-[12px] object-cover"
             />
@@ -209,8 +208,7 @@ function teaserAssetExists(src: string) {
       </div>
     </section>
     <section class="relative py-4 overflow-hidden space-y-12">
-      <TestimonialMarquee />
-      <!-- <WishMarquee /> -->
+      <WishMarquee />
     </section>
 
     <!-- Event Details -->
@@ -262,6 +260,7 @@ function teaserAssetExists(src: string) {
         });
     }
   }
+
   function startMusicFromGesture() {
     disarmMusicGesture();
     startMusic();
@@ -406,6 +405,49 @@ function teaserAssetExists(src: string) {
       }
     }
   });
+</script>
+
+<script>
+  // Section-scoped progressive image loading.
+  //
+  // Sections marked [data-progressive-section] render their <img>s without a
+  // src (data-src only). This observer swaps the real src in once the section
+  // is ~1.5 viewport-heights from entering — early enough that every photo is
+  // fetched AND decoded before its scroll-driven reveal plays, even on a fast
+  // flick through the pinned parallax/timeline sections.
+  const hydrate = (section: Element) => {
+    section.querySelectorAll<HTMLImageElement>("img[data-src]").forEach((img) => {
+      img.src = img.dataset.src!;
+      img.removeAttribute("data-src");
+      // Decode ahead of paint; failures fall back to normal <img> handling.
+      if (typeof img.decode === "function") img.decode().catch(() => {});
+    });
+    section.dispatchEvent(new CustomEvent("section:images-ready", { bubbles: true }));
+  };
+
+  const observer = new IntersectionObserver(
+    (entries, obs) => {
+      for (const entry of entries) {
+        if (!entry.isIntersecting) continue;
+        obs.unobserve(entry.target);
+        hydrate(entry.target);
+      }
+    },
+    // Grows the trigger zone well past the viewport so loading starts before entry.
+    { rootMargin: "150% 0px" }
+  );
+
+  const observeSections = () => {
+    document.querySelectorAll("[data-progressive-section]").forEach((section) => {
+      const el = section as HTMLElement;
+      if (el.dataset.progressObserved) return;
+      el.dataset.progressObserved = "true";
+      observer.observe(el);
+    });
+  };
+
+  observeSections();
+  document.addEventListener("astro:page-load", observeSections);
 </script>
 
 <style>

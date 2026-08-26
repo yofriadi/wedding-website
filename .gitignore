@@ -73,3 +73,6 @@ temp
 
 # Agent skill lockfile (local)
 skills-lock.json
+
+# Original full-res media sources (kept local, not deployed)
+/originals/

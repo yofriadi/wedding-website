@@ -36,9 +36,11 @@ const lastStory = stories[stories.length - 1];
     <div class={`relative`} style={`width: ${WIDTH}px; height: ${HEIGHT}px;`}>
       <div class="absolute inset-0 rounded-[12px] overflow-hidden bg-slate-200 ring-1 ring-white/10">
           <img
-            src={lastStory?.src}
+            data-src={lastStory?.src}
             alt={`${username}'s story`}
+            width="224" height="400"
             class="zoom-cover w-full h-full object-cover"
+            decoding="async"
           />
       </div>
     </div>
@@ -73,9 +75,11 @@ const lastStory = stories[stories.length - 1];
           <div class="flex items-center gap-3">
             <div class="w-8 h-8 rounded-full overflow-hidden bg-white/10 ring-1 ring-white/10">
               <img
-                src={avatar}
+                data-src={avatar}
                 alt={username}
+                width="64" height="64"
                 class="w-full h-full object-cover"
+                decoding="async"
                 data-avatar
               />
             </div>
@@ -284,6 +288,7 @@ const lastStory = stories[stories.length - 1];
     const stage = viewer.querySelector("[data-stage]") as HTMLElement;
     const usernameEl = viewer.querySelector("[data-username]");
     const timestampEl = viewer.querySelector("[data-timestamp]");
+    const avatarImg = modal.querySelector("[data-avatar]") as HTMLImageElement | null;
     const progressBars = Array.from(viewer.querySelectorAll("[data-progress-bar]")) as HTMLElement[];
 
     if (!modal || !panel || !openButton || !closeButton || !stage) return;
@@ -530,6 +535,12 @@ const lastStory = stories[stories.length - 1];
     function open(options: OpenStoryOptions = {}) {
       if (isOpen) return;
       isOpen = true;
+      // The modal is portaled to <body>, outside every [data-progressive-section],
+      // so the section preloader never reaches this img — hydrate on first open.
+      if (avatarImg?.dataset.src) {
+        avatarImg.src = avatarImg.dataset.src;
+        avatarImg.removeAttribute("data-src");
+      }
       const { animate: shouldAnimate = true, startIndex, onFirstSlideReady } = options;
       firstSlideNotified = false;
       pendingFirstSlideReady = onFirstSlideReady;
