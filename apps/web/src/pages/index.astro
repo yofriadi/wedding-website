@@ -1,5 +1,4 @@
 ---
-import { existsSync } from "node:fs";
 import Layout from "../layouts/Layout.astro";
 import HeroZoom from "../components/HeroZoom.astro";
 import ZoomParallax from "../components/ZoomParallax.astro";
@@ -7,29 +6,47 @@ import QuranVerse from "../components/QuranVerse.astro";
 import TimelineScroll from "../components/TimelineScroll.astro";
 import WishMarquee from '../components/WishMarquee.astro';
 import StoryViewer from "../components/StoryViewer.astro";
+import AddStoryTile from "../components/AddStoryTile.astro";
+import AddStoryFlow from "../components/AddStoryFlow.astro";
 import WeddingFAQ from '../components/WeddingFAQ.astro';
 import TextShimmer from "../components/TextShimmer.astro";
 import WelcomeGate from "../components/WelcomeGate.astro";
+import RsvpSection from "../components/RsvpSection.astro";
+import VenueMap from "../components/VenueMap.astro";
+import EventTimes from "../components/EventTimes.astro";
 import { db } from "@wedding-website/db";
-import { invites } from "@wedding-website/db/schema";
+import { invites, rsvps, submissionPhotos } from "@wedding-website/db/schema";
 import { eq } from "drizzle-orm";
 
 const INVITE_COOKIE_NAME = "ww_invite_id";
 const INVITE_ID_RE = /^[A-Za-z0-9_-]{12}$/;
 
-// Personalized greeting (server-rendered; read-only — metrics stay exclusive to /{id}).
+// Personalized greeting + RSVP controls (server-rendered; read-only — metrics
+// stay exclusive to /{id}).
 let inviteDisplayName: string | null = null;
+let inviteRsvpAttending: boolean | null = null;
 const inviteCookieValue = Astro.cookies.get(INVITE_COOKIE_NAME)?.value;
+// Cookie SHAPE only (guest-submissions 4.1): gates SSR of the add-story
+// tile. Not an identity check — an unknown-but-well-formed cookie still
+// renders the tile and the client's GET resolves the truth (404 → hidden).
+const inviteCookieShapeOk =
+  typeof inviteCookieValue === "string" && INVITE_ID_RE.test(inviteCookieValue);
 if (typeof inviteCookieValue === "string" && INVITE_ID_RE.test(inviteCookieValue)) {
   try {
     const inviteRow = await db
-      .select({ displayName: invites.displayName })
+      .select({
+        displayName: invites.displayName,
+        attending: rsvps.attending,
+      })
       .from(invites)
+      .leftJoin(rsvps, eq(rsvps.inviteId, invites.id))
       .where(eq(invites.id, inviteCookieValue))
       .limit(1);
-    inviteDisplayName = inviteRow[0]?.displayName ?? null;
+    const row = inviteRow[0];
+    inviteDisplayName = row?.displayName ?? null;
+    inviteRsvpAttending = row?.attending ?? null;
   } catch (err) {
-    // The overlay must never break on a lookup failure — degrade to anonymous.
+    // The page must never break on a lookup failure — degrade to anonymous.
     console.error("[invite-greeting] lookup failed:", err);
   }
 }
@@ -38,127 +55,63 @@ if (typeof inviteCookieValue === "string" && INVITE_ID_RE.test(inviteCookieValue
 Astro.response.headers.set("Cache-Control", "no-store");
 
 
-const storyUsers = [
-  {
-    username: "Aisha",
-    avatar: "/wedding_photo-390.webp",
-    stories: [
-      { id: "story-1-1", type: "image", src: "/0.webp", duration: 4200 },
-      { id: "story-1-2", type: "image", src: "/3.webp", duration: 4200 },
-      { id: "story-1-3", type: "image", src: "/7.webp", duration: 4200 },
-    ],
-  },
-  {
-    username: "Yofri",
-    avatar: "/2.webp",
-    stories: [
-      { id: "story-2-1", type: "image", src: "/4.webp", duration: 4000 },
-      { id: "story-2-2", type: "image", src: "/5.webp", duration: 4000 },
-    ],
-  },
-  {
-    username: "Sarah",
-    avatar: "/6.webp",
-    stories: [
-      { id: "story-3-1", type: "image", src: "/8.webp", duration: 4000 },
-      { id: "story-3-2", type: "image", src: "/9.webp", duration: 4000 },
-    ],
-  },
-  {
-    username: "David",
-    avatar: "/10.webp",
-    stories: [
-      { id: "story-4-1", type: "image", src: "/11.webp", duration: 4000 },
-      { id: "story-4-2", type: "image", src: "/12.webp", duration: 4000 },
-    ],
-  },
-  {
-    username: "Emma",
-    avatar: "/13.webp",
-    stories: [
-      { id: "story-5-1", type: "image", src: "/14.webp", duration: 4000 },
-      { id: "story-5-2", type: "image", src: "/15.webp", duration: 4000 },
-    ],
-  },
-  {
-    username: "James",
-    avatar: "/16.webp",
-    stories: [
-      { id: "story-6-1", type: "image", src: "/17.webp", duration: 4000 },
-      { id: "story-6-2", type: "image", src: "/18.webp", duration: 4000 },
-    ],
-  },
-  {
-    username: "Olivia",
-    avatar: "/3.webp",
-    stories: [
-      { id: "story-7-1", type: "image", src: "/0.webp", duration: 4000 },
-      { id: "story-7-2", type: "image", src: "/2.webp", duration: 4000 },
-    ],
-  },
-  {
-    username: "Michael",
-    avatar: "/4.webp",
-    stories: [
-      { id: "story-8-1", type: "image", src: "/5.webp", duration: 4000 },
-      { id: "story-8-2", type: "image", src: "/6.webp", duration: 4000 },
-    ],
-  },
-  {
-    username: "Sophia",
-    avatar: "/7.webp",
-    stories: [
-      { id: "story-9-1", type: "image", src: "/8.webp", duration: 4000 },
-      { id: "story-9-2", type: "image", src: "/9.webp", duration: 4000 },
-    ],
-  },
-  {
-    username: "Daniel",
-    avatar: "/10.webp",
-    stories: [
-      { id: "story-10-1", type: "image", src: "/11.webp", duration: 4000 },
-      { id: "story-10-2", type: "image", src: "/12.webp", duration: 4000 },
-    ],
-  },
-]
+// Story-rail placeholders (story-rail-attribution D1): ONE population — three
+// unnamed example posts built from the couple's own photos. No username,
+// avatar or timestamp: an empty rail must not invent guests, and the label row
+// keeps its transparent filler so mock tiles hold the same rail geometry as
+// the real, first-named tiles that replace them. `src` is the full-size .webp
+// (StoryViewer derives the .avif sibling by extension swap); the tile
+// over-fetches a cached file its own modal then reuses (D8). Each mock carries
+// exactly ONE story, so advancing past its only slide hands off to the next
+// mock in rail order (D9) — three single-slide posts chain like a real
+// three-post rail.
+const mockStories: {
+  stories: { id: string; type: "image"; src: string; duration: number }[];
+}[] = [
+  { stories: [{ id: "mock-1", type: "image", src: "/story_example_1.webp", duration: 4000 }] },
+  { stories: [{ id: "mock-2", type: "image", src: "/story_example_2.webp", duration: 4000 }] },
+  { stories: [{ id: "mock-3", type: "image", src: "/story_example_3.webp", duration: 4000 }] },
+];
 
-// Couple-supplied teaser tiles (up to three); missing assets are skipped so the
-// rail degrades gracefully until the images land.
-const storyTeasers = [
-  { src: "/teasers/story-teaser-1.webp", alt: "Coming soon: our story, part 1" },
-  { src: "/teasers/story-teaser-2.webp", alt: "Coming soon: our story, part 2" },
-  { src: "/teasers/story-teaser-3.webp", alt: "Coming soon: our story, part 3" },
-].filter((teaser) => teaserAssetExists(teaser.src));
-
-function teaserAssetExists(src: string) {
-  // Dev: the page module lives under src/pages (public/ is ../../public).
-  // Build: the module lives under dist/server (public assets are bundled
-  // into dist/client — presence there reflects what the adapter will serve).
-  const candidates = [
-    new URL(`../../public${src}`, import.meta.url),
-    new URL(`../../client${src}`, import.meta.url),
-  ];
-  return candidates.some((url) => existsSync(url));
+// SSR gate (story-rail-mocks D4 + public-wall D4): uniform and cookie-blind —
+// the mocks render while zero real guest stories exist (no submission has any
+// photo) and disappear for EVERYONE (public included) once the first real
+// photo lands, live, through guest-rail.ts's syncMockTiles eviction.
+// On DB error, fail open (render the mocks): an outage already degrades the
+// page to the anonymous state and the client fetch fails too.
+let hasAnyGuestPhoto = false;
+try {
+  const existingPhoto = await db
+    .select({ id: submissionPhotos.id })
+    .from(submissionPhotos)
+    .limit(1);
+  hasAnyGuestPhoto = existingPhoto.length > 0;
+} catch (err) {
+  console.error("[story-rail-mocks] gate check failed (fail open):", err);
 }
+const showMockStoryTiles = !hasAnyGuestPhoto;
 ---
 
-<Layout title="Save the Date | Yofri & Aisha">
+<Layout title="Yofri & Aisha">
   <!-- Loading Overlay -->
-  <div id="loading-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-neutral-950 transition-opacity duration-300 ease-out">
+  <div id="loading-screen" class="fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300 ease-out">
     <div class="flex flex-col items-center">
-      <TextShimmer 
+      <TextShimmer
         class="text-xl font-medium tracking-tight"
+        duration={2}
         phrases={[
-          "Pre-heating the server…",
-          "Converting coffee into code…", 
-          "Discombobulating…", 
-          "Wrangling…", 
-          "Symbioting…", 
-          "Perambulating…", 
-          "Shenaninganing…"
+          "nyari titik koma yang ilang…",
+          "konsultasi sama kerang ajaib…",
+          "nyenyenyenyenye…",
+          "ndasmu…",
+          "Di desa ngga pakai dolar…",
+          "sorry yee…",
+          "sodara-sodara…",
+          "Kompilasi 1 dan 0 jadi cerita kami…",
+          "Dikit lagi beres, siap-siap takjub…",
         ]}
       >
-        Pre-heating the server…
+        nyari titik koma yang ilang…
       </TextShimmer>
     </div>
   </div>
@@ -177,65 +130,77 @@ function teaserAssetExists(src: string) {
     <ZoomParallax />
     <TimelineScroll />
 
-    <section class="relative overflow-hidden" data-progressive-section>
+    <!-- Memories story rail: dark is the baseline, light inverts. The
+         --memories-* tokens live in this file's :root (rsvp-* precedent) —
+         StoryViewer, AddStoryTile and the guest-rail's dynamically built
+         tiles read them by inheritance. -->
+    <section id="memories-section" class="relative overflow-hidden" data-progressive-section>
       <div class="mx-auto max-w-7xl px-6">
-        <h2 class="text-xl font-light text-center mb-4 text-neutral-300 text-balance">Show Our Memories Together</h2>
+        <h2 class="text-xl font-light text-center mb-4 text-[color:var(--memories-heading)] text-balance">Show Our Memories Together</h2>
       </div>
-      <div class="flex gap-2 overflow-x-auto pb-2 no-scrollbar snap-x px-6">
-        {storyTeasers.map((teaser, teaserIndex) => (
-          <div class="snap-center flex-shrink-0 animate-fade-up" style={`animation-delay: ${teaserIndex * 60}ms`}>
-            <img
-              data-src={teaser.src}
-              alt={teaser.alt}
-              width="112"
-              height="200"
-              decoding="async"
-              class="block h-[200px] w-[112px] rounded-[12px] object-cover"
-            />
+    <div data-story-rail class="flex gap-2 overflow-x-auto pb-2 no-scrollbar snap-x px-6">
+        {/* Add-story tile (guest-submissions 4.1): invite-only entry point.
+             SSR gates on the cookie's SHAPE only (cheap pre-render filter);
+             the client script is the real gate — the payload's `inviteValid`
+             (server-resolved invite) AND `mine === null` must both hold, so a
+             STALE well-shaped cookie hides the tile after load. The
+             container's px-6 owns the left inset, so tile removal never
+             flushes the story tiles to the viewport edge (4.4). */}
+        {inviteCookieShapeOk ? (
+          <div class="snap-center flex-shrink-0">
+            <AddStoryTile />
           </div>
-        ))}
+        ) : null}
 
-        {storyUsers.map((user, index) => (
-          <div class="snap-center flex-shrink-0 animate-fade-up" style={`animation-delay: ${(storyTeasers.length + index) * 60}ms`}>
-            <StoryViewer
-              stories={user.stories}
-              username={user.username}
-              avatar={user.avatar}
-              timestamp="2026-02-03T16:45:00Z"
-            />
-          </div>
-        ))}
+        {/* Story-rail placeholders (story-rail-attribution D1): the rail's
+             ONLY story tiles while the wall is empty — three unnamed example
+             posts, one slide each. Each mock needs its own wrapper div:
+             eviction walks parentElement from the <story-viewer> element, so a
+             bare mock in the flex row would delete the entire rail. Real guest
+             tiles are appended after these by scripts/guest-rail.ts, and every
+             mock is evicted the moment any real story exists. */}
+        {showMockStoryTiles &&
+          mockStories.map((entry, index) => (
+            <div
+              class="snap-center flex-shrink-0 animate-fade-up"
+              style={`animation-delay: ${index * 60}ms`}
+            >
+              <StoryViewer stories={entry.stories} mock />
+            </div>
+          ))}
       </div>
     </section>
-    <section class="relative py-4 overflow-hidden space-y-12">
+    <!-- Wish marquee band: --wishes-* tokens live in this file's :root
+         (rsvp-* precedent); WishMarquee.astro's global styles read them by
+         inheritance so the band inverts with the OS theme. -->
+    <section id="wishes-section" class="relative py-4 overflow-hidden space-y-12">
       <WishMarquee />
     </section>
 
+    <!-- Venue map (venue-map-routes) -->
+    <VenueMap />
+
     <!-- Event Details -->
-    <div class="relative z-10 bg-neutral-950 px-6 py-24 md:py-32">
-      <div class="mx-auto max-w-2xl text-center space-y-12">
+    <div id="rsvp-section" class="relative z-10 px-6 py-12 md:py-16">
+      <div class="mx-auto max-w-2xl text-center space-y-10">
 
-        <div class="space-y-6 text-neutral-300 font-light">
-          <p class="text-lg text-neutral-400">
-            The Grand Estate<br/>
-            San Francisco, California
-          </p>
-        </div>
+        <EventTimes />
 
-        <div class="pt-12">
-          <button class="px-8 py-3 border border-white/20 hover:bg-white hover:text-black transition-[transform,background-color,color] duration-160 ease-out tracking-widest text-sm uppercase active:scale-[0.97] cursor-pointer">
-            RSVP Coming Soon
-          </button>
-        </div>
-
-        <div class="pt-32 pb-12 opacity-50 text-xs tracking-widest text-neutral-600">
-          <p>Formal Invitation to Follow</p>
-        </div>
+        <RsvpSection
+          inviteDisplayName={inviteDisplayName}
+          rsvpAttending={inviteRsvpAttending}
+        />
       </div>
     </div>
 
     <WeddingFAQ />
   </main>
+
+  {/* Add-story flow modal (guest-submissions 4.1): one-screen wish +
+     photo submission. Rendered unconditionally (it is inert/hidden until
+     opened, and its opener tile is invite-gated) so the client script can
+     always bind to it. */}
+  <AddStoryFlow />
 
 <script is:inline>
   // Background music
@@ -281,8 +246,24 @@ function teaserAssetExists(src: string) {
     }
   }
 
+
   // Loading screen logic
+  //
+  // Minimum dwell: on a warm cache / fast connection the media gate resolves
+  // in a few hundred ms and the loader would flash for less time than it takes
+  // to read one phrase. Hold it up at least LOADER_MIN_DWELL_MS (measured from
+  // first paint) so the buffering beat — phrases cycling, then fade into the
+  // welcome gate — stays legible on any device.
+  const LOADER_MIN_DWELL_MS = 2600;
+  const loaderShownAt = performance.now();
+
   const hideLoadingScreen = () => {
+    const elapsed = performance.now() - loaderShownAt;
+    const wait = Math.max(0, LOADER_MIN_DWELL_MS - elapsed);
+    setTimeout(doHideLoadingScreen, wait);
+  };
+
+  const doHideLoadingScreen = () => {
     const loader = document.getElementById('loading-screen');
     if (!loader) return;
 
@@ -290,9 +271,12 @@ function teaserAssetExists(src: string) {
     setTimeout(() => {
       loader.remove();
     }, 300);
-    
-    // Start music when loading screen begins to fade
-    startMusic();
+
+    // NOTE: no startMusic() here. The loader predates the welcome gate; audio
+    // unlock now belongs to the gate's commit gesture (WelcomeGate calls
+    // window.startMusic() synchronously inside the committing touchend). An
+    // uninvited play() with no user activation either throws NotAllowedError
+    // or silently violates autoplay policy depending on engine heuristics.
   };
 
   const waitForHeroZoomLoaded = async () => {
@@ -350,11 +334,11 @@ function teaserAssetExists(src: string) {
     const currentViewer = e.target;
     const viewers = Array.from(document.querySelectorAll('[data-story-viewer]'));
     const currentIndex = viewers.indexOf(currentViewer);
-    
+
     if (currentIndex >= 0 && currentIndex < viewers.length - 1) {
       e.preventDefault();
       const nextViewer = viewers[currentIndex + 1];
-      
+
       if (nextViewer && typeof nextViewer.openStory === 'function') {
         const closeCurrent = () => {
           if (typeof currentViewer.closeStory === 'function') {
@@ -380,11 +364,11 @@ function teaserAssetExists(src: string) {
     const currentViewer = e.target;
     const viewers = Array.from(document.querySelectorAll('[data-story-viewer]'));
     const currentIndex = viewers.indexOf(currentViewer);
-    
+
     if (currentIndex > 0) {
       e.preventDefault();
       const prevViewer = viewers[currentIndex - 1];
-      
+
       if (prevViewer && typeof prevViewer.openStory === 'function') {
         const closeCurrent = () => {
           if (typeof currentViewer.closeStory === 'function') {
@@ -417,8 +401,23 @@ function teaserAssetExists(src: string) {
   // flick through the pinned parallax/timeline sections.
   const hydrate = (section: Element) => {
     section.querySelectorAll<HTMLImageElement>("img[data-src]").forEach((img) => {
+      const sources = Array.from(img.parentElement?.querySelectorAll<HTMLSourceElement>("source[data-srcset], source[data-src]") ?? []);
+      for (const source of sources) {
+        if (source.dataset.srcset) source.srcset = source.dataset.srcset;
+        if (source.dataset.src) source.src = source.dataset.src;
+        if (source.dataset.sizes) source.sizes = source.dataset.sizes;
+        source.removeAttribute("data-srcset");
+        source.removeAttribute("data-src");
+        source.removeAttribute("data-sizes");
+      }
+      if (img.dataset.srcset) {
+        img.srcset = img.dataset.srcset;
+        if (img.dataset.sizes) img.sizes = img.dataset.sizes;
+      }
       img.src = img.dataset.src!;
       img.removeAttribute("data-src");
+      img.removeAttribute("data-srcset");
+      img.removeAttribute("data-sizes");
       // Decode ahead of paint; failures fall back to normal <img> handling.
       if (typeof img.decode === "function") img.decode().catch(() => {});
     });
@@ -450,15 +449,133 @@ function teaserAssetExists(src: string) {
   document.addEventListener("astro:page-load", observeSections);
 </script>
 
+<script>
+  // Guest-submissions client orchestration: add-story flow + rail tiles.
+  // (The wish marquee ships its own script inside WishMarquee.astro.)
+  import { initAddStoryFlow } from "../scripts/add-story-flow";
+  import { initGuestRail } from "../scripts/guest-rail";
+
+  initAddStoryFlow();
+  initGuestRail();
+</script>
+
 <style>
-  .animate-fade-up {
+  :root {
+    --loading-bg: #0a0a0a; /* dark mode fallback (neutral-950) */
+
+    /* RSVP section (rsvp-star-confirm D5): dark is the baseline, light inverts.
+       The section's own component reads these by inheritance — #rsvp-section
+       lives here, so this is the file that owns them. */
+    --rsvp-bg: #0a0a0a; /* neutral-950 */
+    --rsvp-fg: #fafafa; /* neutral-50: counter digits, name, strong copy */
+    --rsvp-muted: #a3a3a3; /* neutral-400: labels, note, guidance line */
+    --rsvp-error: #f87171; /* red-400 */
+
+    /* Memories story rail (rsvp-* precedent): dark is the baseline, light
+       inverts. StoryViewer/AddStoryTile and the guest-rail's dynamically
+       built tiles read these by inheritance — this file owns them. */
+    --memories-bg: #0a0a0a; /* neutral-950 — matches main's chrome */
+    --memories-heading: #d4d4d4; /* neutral-300 */
+    --memories-frame: #e2e8f0; /* slate-200: tile placeholder behind images */
+    --memories-frame-ring: rgba(255, 255, 255, 0.1); /* white/10 hairline */
+    --memories-label: #737373; /* neutral-500: tile captions, add-story label */
+    --memories-tile-border: #525252; /* neutral-600: dashed add-story border */
+    --memories-tile-hover-border: #a3a3a3; /* neutral-400: hover state */
+    --memories-tile-bg: rgba(23, 23, 23, 0.4); /* neutral-900/40 fill */
+    --memories-tile-icon: #a3a3a3; /* neutral-400 plus icon */
+
+    /* Wish marquee band (rsvp-* precedent): dark is the baseline, light
+       inverts. WishMarquee.astro's is:global styles read these by
+       inheritance — the section wrapper lives here, so this file owns them. */
+    --wishes-bg: #0a0a0a; /* neutral-950 — matches main's chrome */
+    --wishes-text: #ffffff; /* ambient demo texture (was inherited body white) */
+    --wishes-real-text: #e5e5e5; /* neutral-200: readable real wishes */
+    --wishes-cta-text: #fafafa; /* neutral-50: leading CTA card */
+    --wishes-cta-bg: rgba(255, 255, 255, 0.06); /* white/6 card fill */
+    --wishes-cta-border: rgba(255, 255, 255, 0.14); /* white/14 hairline */
+  }
+
+  /* Light theme */
+  @media (prefers-color-scheme: light) {
+    :root {
+      --loading-bg: #ffffff;
+      --rsvp-bg: #ffffff;
+      --rsvp-fg: #0a0a0a;
+      --rsvp-muted: #525252; /* neutral-600 — holds contrast on white */
+      --rsvp-error: #b91c1c; /* red-700 */
+
+      --memories-bg: #ffffff;
+      --memories-heading: #404040; /* neutral-700 — readable on white */
+      --memories-frame: #e5e5eb; /* slate-200 — barely differs, by design */
+      --memories-frame-ring: rgba(0, 0, 0, 0.08); /* hairline holds on white */
+      --memories-label: #525252; /* neutral-600 — holds contrast on white */
+      --memories-tile-border: #a3a3a3; /* neutral-400 */
+      --memories-tile-hover-border: #525252; /* neutral-600 */
+      --memories-tile-bg: rgba(245, 245, 244, 0.6); /* stone-100/60 */
+      --memories-tile-icon: #525252; /* neutral-600 */
+
+      --wishes-bg: #ffffff;
+      --wishes-text: #262626; /* neutral-800 — ambient texture holds on white */
+      --wishes-real-text: #404040; /* neutral-700 — readable on white */
+      --wishes-cta-text: #0a0a0a;
+      --wishes-cta-bg: rgba(0, 0, 0, 0.05);
+      --wishes-cta-border: rgba(0, 0, 0, 0.14);
+    }
+  }
+
+  /* Loading screen theme-aware background */
+  #loading-screen {
+    background-color: var(--loading-bg);
+  }
+
+  /* RSVP section background (was a hard-coded bg-neutral-950 utility) */
+  #rsvp-section {
+    background-color: var(--rsvp-bg);
+  }
+
+  /* Memories section background — same rsvp-* treatment: the section owns
+     its chrome so it inverts with the OS theme instead of inheriting main's */
+  #memories-section {
+    background-color: var(--memories-bg);
+  }
+
+  /* Reserved rail height (story-rail-attribution D6): real story tiles are
+     injected client-side after the wall fetch resolves, so a NON-empty wall
+     SSRs an empty row. Reserving exactly one tile row (200px frame + 8px gap
+     + 16px label + the rail's own 8px bottom padding) keeps the section from
+     collapsing and re-flowing the page when the tiles land. */
+  [data-story-rail] {
+    min-height: 232px;
+  }
+
+  /* Wish marquee band background — paints over main's chrome so the band
+     inverts like its neighbours (memories above, venue below) */
+  #wishes-section {
+    background-color: var(--wishes-bg);
+  }
+
+  /* Theme-aware text shimmer gradients for dark mode (white shimmer) */
+  #loading-screen :global(text-shimmer [data-text]),
+  #loading-screen :global(text-shimmer [data-text-out]) {
+    background-image: linear-gradient(110deg, #4b5563, 45%, #ffffff, 55%, #4b5563);
+  }
+
+  /* Theme-aware text shimmer gradients for light mode (dark shimmer) */
+  @media (prefers-color-scheme: light) {
+    #loading-screen :global(text-shimmer [data-text]),
+    #loading-screen :global(text-shimmer [data-text-out]) {
+      background-image: linear-gradient(110deg, #a8a29e, 45%, #292524, 55%, #a8a29e);
+    }
+  }
+
+  :global(.animate-fade-up) {
     animation: fade-up 0.6s var(--ease-out-expo) forwards;
     opacity: 0;
     transform: translateY(20px);
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .animate-fade-up {
+    :global(.animate-fade-up) {
       animation: fade 0.2s ease;
     }
   }
