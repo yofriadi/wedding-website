@@ -1,0 +1,292 @@
+---
+/**
+ * Event time gallery — when the day happens.
+ *
+ * A two-panel horizontal expanding gallery (the 21st.dev "gallery-animation"
+ * pattern): each panel is a full-bleed image card, and hovering or touching a
+ * panel expands it (flex-grow) while its sibling collapses, with a smooth expo
+ * settle. Collapsed panels are thin vertical strips; the expanded panel grows
+ * until it is a perfect square (row height == expanded width, sized from JS).
+ * The images sit under a soft blur + scrim so the text stays dominant, and the
+ * blur eases off once a panel opens.
+ *
+ * The full event name ("Akad Nikah" / "Resepsi") stays centered and horizontal in
+ * both states. Expanding reveals the time directly below it with a MagicUI
+ * text-animate-style blur/slide reveal (pure CSS, class-toggled). One panel is
+ * always expanded — Akad Nikah by default — so the pair never sits neutral.
+ *
+ * Rendered in the Event Details section (#rsvp-section) above the RSVP counter.
+ * The row is wider than the old max-w-md tile grid and keeps a dedicated gap on
+ * both sides so the collapsed strip always has clear breathing room.
+ *
+ * Chrome tokens follow the WeddingFAQ/VenueMap precedent: the component root
+ * owns its --times-* vars, dark is the baseline, light inverts via
+ * prefers-color-scheme. The width expand + time reveal are pure CSS (driven by
+ * toggling .is-expanded); the blur-reveal curve matches --ease-blur-reveal (QuranVerse).
+ */
+const EVENTS = [
+  {
+    short: "Akad",
+    name: "Akad Nikah",
+    time: "08:00",
+    defaultOpen: true,
+    image: "/event-akad",
+  },
+  {
+    short: "Resepsi",
+    name: "Resepsi",
+    time: "10:00",
+    image: "/event-resepsi",
+  },
+];
+---
+
+<div
+  id="event-times"
+  class="has-active mx-auto mb-10 flex w-full max-w-3xl gap-4 md:mb-14 md:gap-6 px-2 md:px-6"
+  role="list"
+>
+  {
+    EVENTS.map((event, i) => (
+      <button
+        type="button"
+        role="listitem"
+        class:list={["times-panel group relative flex-1 overflow-hidden rounded-3xl border text-left outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--times-ring)]", event.defaultOpen && "is-expanded"]}
+        data-index={i}
+        aria-expanded={event.defaultOpen ? "true" : "false"}
+        aria-label={`${event.name} at ${event.time}`}
+      >
+        {/* Background image — modern formats first, JPEG fallback. */}
+        <picture class="pointer-events-none absolute inset-0">
+          <source srcset={`${event.image}.avif`} type="image/avif" />
+          <source srcset={`${event.image}.webp`} type="image/webp" />
+          <img
+            src={`${event.image}.jpg`}
+            alt=""
+            loading="lazy"
+            width={event.short === "Akad" ? 768 : 584}
+            height={event.short === "Akad" ? 433 : 525}
+            class="times-img pointer-events-none absolute inset-0 h-full w-full scale-110 object-cover blur-[2px]"
+          />
+        </picture>
+        {/* Scrim: dark gradient for legibility in both themes. */}
+        <span class="pointer-events-none absolute inset-0 bg-[color:var(--times-scrim)]" />
+
+        {/* Centered label — full name always shown, time revealed below on expand. */}
+        <span class="times-label pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-center">
+          <span class="times-name text-xl md:text-2xl font-semibold text-[color:var(--times-name)]">
+            {event.name}
+          </span>
+          <span
+            class="times-time text-4xl md:text-5xl font-bold tabular-nums text-[color:var(--times-time)]"
+          >
+            {event.time}
+          </span>
+        </span>
+      </button>
+    ))
+  }
+</div>
+
+<style>
+  #event-times {
+    /* --times-h / --times-grow are set from JS so the expanded panel lands on a
+       perfect square (row height = expanded width). */
+    --times-scrim: linear-gradient(to top, rgb(0 0 0 / 0.6), rgb(0 0 0 / 0.22));
+    --times-name: #fafafa; /* neutral-50: full event name */
+    --times-time: #ffffff; /* the hour digits */
+    --times-ring: rgb(255 255 255 / 0.4);
+  }
+
+  @media (prefers-color-scheme: light) {
+    #event-times {
+      --times-scrim: linear-gradient(to top, rgb(0 0 0 / 0.5), rgb(0 0 0 / 0.16));
+      --times-name: #ffffff;
+      --times-ring: rgb(0 0 0 / 0.35);
+    }
+  }
+
+  .times-panel {
+    /* JS sets --times-h (square height) and --times-w (collapsed strip width); the
+       fallbacks below cover the pre-JS / no-JS render. */
+    height: var(--times-h, clamp(16rem, 46vw, 24rem));
+    border-color: rgb(255 255 255 / 0.08);
+    cursor: pointer;
+    min-width: 0;
+    -webkit-tap-highlight-color: transparent;
+    /* Neutral: both panels share the row evenly (each ~half, a tall rectangle). */
+    flex: 1 1 0;
+    transition: width 1s var(--ease-out-expo), flex-grow 1s var(--ease-out-expo);
+    will-change: width, flex-grow;
+  }
+
+  /* Active: once a panel is chosen, widths are driven directly (not flex-basis %)
+     so the collapsed strip keeps a real px width. */
+  #event-times.has-active .times-panel {
+    flex: 0 0 auto;
+    width: var(--times-w, 4.5rem);
+  }
+  #event-times.has-active .times-panel.is-expanded {
+    /* Expanded panel is a square: width == height. */
+    width: var(--times-h, auto);
+  }
+
+  @media (prefers-color-scheme: light) {
+    .times-panel {
+      border-color: rgb(0 0 0 / 0.08);
+    }
+  }
+
+  /* The image keeps the same blur (blur-[2px], from the base class) whether the
+     panel is collapsed or expanded, so the text dominates equally in both states. */
+
+  /* The full name is always visible; only the time is revealed below it on expand.
+     In the collapsed thin strip the name turns vertical (one readable line); it
+     rotates back to horizontal as the panel opens. A soft shadow keeps it legible
+     over the image in both states. */
+  .times-name {
+    display: inline-block;
+    white-space: nowrap;
+    text-shadow: 0 1px 8px rgb(0 0 0 / 0.28);
+    transition:
+      writing-mode 0s linear 0.18s,
+      font-size 0.6s var(--ease-out-expo),
+      letter-spacing 0.6s var(--ease-out-expo);
+  }
+  .times-panel:not(.is-expanded) .times-name {
+    writing-mode: vertical-rl;
+    font-size: 0.95rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+  }
+  /* Expanded: the name steps up to match the time's scale so it reads clearly. */
+  .times-panel.is-expanded .times-name {
+    font-size: 2.25rem; /* text-4xl */
+    font-weight: 700;
+    line-height: 1.15;
+  }
+  @media (min-width: 768px) {
+    .times-panel.is-expanded .times-name {
+      font-size: 3.75rem; /* text-6xl */
+    }
+  }
+
+  /* MagicUI text-animate-style reveal of the TIME — pure CSS, class-toggled by JS.
+     Hidden below + blurred when collapsed; rises and sharpens when the panel opens.
+     The 0.35s delay lives only on the ENTER (is-expanded) transition, so collapsing
+     hides the time instantly instead of waiting out the delay. */
+  .times-time {
+    display: inline-block;
+    max-width: 100%;
+    text-shadow: 0 1px 10px rgb(0 0 0 / 0.3);
+    opacity: 0;
+    filter: blur(10px);
+    transform: translateY(14px);
+    will-change: opacity, filter, transform;
+    transition:
+      opacity 0.15s ease,
+      filter 0.15s ease,
+      transform 0.15s ease;
+  }
+  .times-panel.is-expanded .times-time {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+    transition:
+      opacity 0.7s var(--ease-blur-reveal) 0.35s,
+      filter 0.7s var(--ease-blur-reveal) 0.35s,
+      transform 0.7s var(--ease-blur-reveal) 0.35s;
+  }
+  /* Touch devices: make the whole card clearly tappable. */
+  @media (hover: none) {
+    .times-panel {
+      cursor: default;
+    }
+  }
+
+  /* Reduced motion: expand + reveal become instant, no blur computation. */
+  @media (prefers-reduced-motion: reduce) {
+    .times-panel {
+      transition: none !important;
+    }
+    .times-time {
+      transition: none !important;
+      opacity: 1 !important;
+      filter: none !important;
+      transform: none !important;
+      will-change: auto;
+    }
+  }
+</style>
+
+<script>
+  function initEventTimes() {
+    const rootEl = document.getElementById("event-times");
+    if (!rootEl) return;
+    const root: HTMLElement = rootEl;
+
+    const panels = Array.from(root.querySelectorAll<HTMLElement>(".times-panel"));
+
+    // Square sizing: the EXPANDED panel is a square, so the row height equals the
+    // expanded width. Collapsed panels are thin vertical strips with a real px
+    // width. Both widths + the shared height are set as CSS vars; the panels
+    // transition their `width` between the collapsed strip and the square width.
+    function sizeSquare() {
+      const styles = getComputedStyle(root);
+      const pad =
+        (parseFloat(styles.paddingLeft) || 0) + (parseFloat(styles.paddingRight) || 0);
+      const gap = parseFloat(styles.columnGap || styles.gap) || 0;
+      const total = root.clientWidth - pad;
+      const n = panels.length;
+      if (n < 2 || total <= 0) return;
+      // Collapsed strip width — wide enough for the vertical name to read clearly.
+      const c = Math.round(Math.max(56, Math.min(92, total * 0.11)));
+      // Expanded square side: whatever width is left once the other panel is a strip.
+      const side = Math.round(total - c * (n - 1) - gap * (n - 1));
+      root.style.setProperty("--times-w", `${c}px`);
+      root.style.setProperty("--times-h", `${side}px`);
+    }
+
+    // Default to the SSR-expanded panel (Akad) so there's always one open and one
+    // collapsed — the gallery never sits in a neutral both-even state.
+    let openIndex = panels.findIndex((p) => p.classList.contains("is-expanded"));
+
+    function setOpen(next: number) {
+      if (next === openIndex) return;
+      openIndex = next;
+      root.classList.toggle("has-active", openIndex >= 0);
+      panels.forEach((panel, i) => {
+        const isOpen = i === openIndex;
+        // Toggling the class drives both the width expand and the CSS time reveal.
+        panel.classList.toggle("is-expanded", isOpen);
+        panel.setAttribute("aria-expanded", String(isOpen));
+      });
+    }
+
+    panels.forEach((panel, i) => {
+      // Desktop: hover to expand.
+      panel.addEventListener("pointerenter", (e) => {
+        if (e.pointerType === "mouse") setOpen(i);
+      });
+      // Touch / click: tap to expand (the sibling collapses).
+      panel.addEventListener("click", () => setOpen(i));
+      // Keyboard access.
+      panel.addEventListener("focus", () => setOpen(i));
+    });
+    // No collapse-on-leave: one panel always stays expanded.
+
+    sizeSquare();
+    if (typeof ResizeObserver !== "undefined") {
+      new ResizeObserver(sizeSquare).observe(root);
+    } else {
+      window.addEventListener("resize", sizeSquare);
+    }
+  }
+
+  document.addEventListener("astro:page-load", initEventTimes);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initEventTimes);
+  } else {
+    initEventTimes();
+  }
+</script>
