@@ -1,0 +1,863 @@
+---
+/**
+ * Interactive venue map section (venue-map-routes change).
+ *
+ * Leaflet 2.0 map with three baked driving routes from transit hubs to
+ * Graha 58, rich-popup markers for origins + nearby POIs, automatic device
+ * color-scheme tiles, and lazy initialization via IntersectionObserver so
+ * nothing map-shaped loads on initial page load.
+ *
+ * Renders the venue name and city heading above an interactive Leaflet map
+ * with routes, markers, and transit info.
+ */
+import { existsSync } from "node:fs";
+import { VENUE_CITY, VENUE_LAT, VENUE_LNG, VENUE_NAME } from "../lib/venue";
+
+const VENUE_ADDRESS = "Jl. Dr. Wahidin, Purwosari, Kec. Laweyan, Surakarta";
+
+// Popup banner photos may not all be delivered by the couple at build time.
+// Mirror the repo's missing-asset pattern (gateBgAssetExists() in
+// WelcomeGate.astro): filter each location's `image` out when the file is
+// absent from public/, so the popup renders text-only instead of a broken
+// banner. The runtime `onerror` removal in venue-map.ts is the
+// belt-and-braces half for post-build deletions.
+function mapAssetExists(src: string) {
+  // Dev: this component lives under src/components (public/ is ../../public).
+  // Build: compiled modules sit under dist/ and public assets are bundled
+  // into dist/client — presence there reflects what the adapter serves.
+  const candidates = [
+    new URL(`../../public${src}`, import.meta.url),
+    new URL(`../../client${src}`, import.meta.url),
+  ];
+  return candidates.some((url) => existsSync(url));
+}
+
+interface LocationRecord {
+  id: string;
+  type: string;
+  name: string;
+  lat: number;
+  lng: number;
+  color: string;
+  routeKey: string | null;
+  image?: string;
+}
+
+const LOCATIONS: LocationRecord[] = [
+  {
+    id: "tirtonadi",
+    type: "Terminal",
+    name: "Tirtonadi",
+    lat: -7.5517387,
+    lng: 110.8184343,
+    color: "#10b981",
+    routeKey: "tirtonadi",
+  },
+  {
+    id: "purwosari",
+    type: "Stasiun",
+    name: "Purwosari",
+    lat: -7.5616918,
+    lng: 110.7965074,
+    color: "#3b82f6",
+    routeKey: "purwosari",
+  },
+  {
+    id: "balapan",
+    type: "Stasiun",
+    name: "Solo Balapan",
+    lat: -7.5572285,
+    lng: 110.8209388,
+    color: "#06b6d4",
+    routeKey: "balapan",
+  },
+  {
+    id: "soemarmo",
+    type: "Bandara",
+    name: "Adi Soemarmo",
+    lat: -7.5162608,
+    lng: 110.7560184,
+    color: "#8b5cf6",
+    routeKey: "soemarmo",
+  },
+  {
+    id: "selat-solo",
+    type: "Restoran",
+    name: "Selat Solo Tenda Biru",
+    lat: -7.5686559,
+    lng: 110.8052207,
+    color: "#f59e0b",
+    routeKey: null,
+  },
+  {
+    id: "smk-murni",
+    type: "Sekolah",
+    name: "SMK Murni 1 Surakarta",
+    lat: -7.568661,
+    lng: 110.805799,
+    color: "#f59e0b",
+    routeKey: null,
+  },
+].map((loc) => {
+  const src = `/map/${loc.id}.webp`;
+  return mapAssetExists(src) ? { ...loc, image: src } : loc;
+});
+
+const VENUE_IMAGE_SRC = "/map/graha-58.webp";
+const hasVenueImage = mapAssetExists(VENUE_IMAGE_SRC);
+
+// Guest-facing route labels (road distance + typical drive time).
+const ROUTE_META: Record<string, { distanceKm: string; durationLabel: string }> = {
+  tirtonadi: { distanceKm: "3.3 km", durationLabel: "14 min" },
+  purwosari: { distanceKm: "1.9 km", durationLabel: "8 min" },
+  balapan: { distanceKm: "3.0 km", durationLabel: "13 min" },
+  soemarmo: { distanceKm: "11 km", durationLabel: "29 min" },
+};
+
+const VENUE_MAP_DATA = {
+  venue: {
+    name: VENUE_NAME,
+    popupName: "Graha 58",
+    category: "Gedung Konvensi",
+    city: VENUE_CITY,
+    address: VENUE_ADDRESS,
+    mapUrl: "https://maps.app.goo.gl/VAeWL7EqazFi3Nh66",
+    lat: VENUE_LAT,
+    lng: VENUE_LNG,
+    ...(hasVenueImage ? { image: VENUE_IMAGE_SRC } : {}),
+  },
+  locations: LOCATIONS,
+  routes: ROUTE_META,
+};
+
+const VENUE_MAPS_LINK = `https://www.google.com/maps/search/?api=1&query=${VENUE_LAT},${VENUE_LNG}`;
+---
+
+<section id="venue-map" class="relative z-10 overflow-hidden py-12 md:py-16 bg-[color:var(--venue-bg)]">
+  <div class="mx-auto max-w-2xl space-y-4 px-6 text-center">
+    <p class="text-xs tracking-widest uppercase text-[color:var(--venue-eyebrow)]">Venue</p>
+    <div class="space-y-2">
+      <h2 class="font-serif text-3xl font-light text-[color:var(--venue-heading)] md:text-4xl">
+        {VENUE_NAME}
+      </h2>
+      <p class="text-base font-light text-[color:var(--venue-city)] md:text-lg">
+        {VENUE_CITY}
+      </p>
+    </div>
+  </div>
+
+  <div class="relative mt-8 w-full text-left">
+    <script is:inline type="application/json" data-venue-map set:html={JSON.stringify(VENUE_MAP_DATA)}></script>
+
+    <!-- Full-bleed map: device theme is applied by the lazy map runtime. -->
+    <div
+      data-venue-map-container
+      class="venue-map h-[560px] w-full overflow-hidden bg-[color:var(--venue-map-frame)] md:h-[720px]"
+      role="application"
+      aria-label="Interactive map showing driving routes to the venue"
+    >
+    </div>
+
+    <div
+      data-venue-map-placeholder
+      class="absolute inset-0 flex items-center justify-center bg-[color:var(--venue-surface)]"
+    >
+      <p class="text-sm tracking-widest uppercase text-[color:var(--venue-eyebrow)]">
+        Directions to the venue&hellip;
+      </p>
+    </div>
+
+    <div
+      data-venue-map-fallback
+      data-fallback-hidden
+      class="absolute inset-0 hidden bg-[color:var(--venue-surface)] px-6 py-8 text-center"
+    >
+      <p class="text-xs tracking-widest uppercase text-[color:var(--venue-eyebrow)]">Directions to the venue</p>
+      <p class="pt-4 text-sm text-[color:var(--venue-city)]">
+        {VENUE_ADDRESS}<br />
+        {VENUE_CITY}
+      </p>
+      <a
+        href={VENUE_MAPS_LINK}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="mt-6 inline-block rounded-lg border border-[color:var(--venue-fallback-btn-border)] bg-[color:var(--venue-fallback-btn-bg)] px-4 py-2 text-sm font-medium text-[color:var(--venue-fallback-btn-text)] shadow-lg hover:bg-[color:var(--venue-fallback-btn-hover)]"
+      >
+        Open in Google Maps
+      </a>
+    </div>
+  </div>
+</section>
+
+<!--
+  No-JS: without scripting the observer never runs, so the placeholder would
+  be a permanent spinner. Hide it and reveal the static fallback (repo idiom:
+  WelcomeGate.astro noscript style).
+-->
+<noscript>
+  <style>
+    #venue-map [data-venue-map-placeholder] {
+      display: none;
+    }
+    #venue-map [data-venue-map-fallback] {
+      display: block;
+    }
+  </style>
+</noscript>
+
+<style>
+  /* Section chrome tokens (WeddingFAQ precedent: tokens on the component
+     root, light inverts via prefers-color-scheme). The map runtime
+     (venue-map.ts) and Leaflet surfaces are NOT themed here — only the
+     heading/background chrome around the full-bleed map. */
+  #venue-map {
+    --venue-bg: #0a0a0a; /* neutral-950 */
+    --venue-eyebrow: #737373; /* neutral-500: eyebrow + loading/fallback labels */
+    --venue-heading: #f5f5f5; /* neutral-100 */
+    --venue-city: #a3a3a3; /* neutral-400 */
+    --venue-surface: #171717; /* neutral-900: placeholder + no-JS fallback */
+    --venue-map-frame: #e5e5e5; /* neutral-200: behind tiles pre-mount */
+    --venue-fallback-btn-bg: #0a0a0a;
+    --venue-fallback-btn-text: #ffffff;
+    --venue-fallback-btn-hover: #262626; /* neutral-800 */
+    --venue-fallback-btn-border: transparent; /* black pill on neutral-900: shadow carries the edge */
+  }
+
+  @media (prefers-color-scheme: light) {
+    #venue-map {
+      --venue-bg: #ffffff;
+      --venue-eyebrow: #525252; /* neutral-600 */
+      --venue-heading: #171717; /* neutral-900 */
+      --venue-city: #525252; /* neutral-600 */
+      --venue-surface: #f5f5f5; /* neutral-100 */
+      --venue-map-frame: #e5e5e5; /* neutral-200 — unchanged, sits behind tiles */
+      --venue-fallback-btn-bg: #ffffff;
+      --venue-fallback-btn-text: #171717; /* neutral-900: flips with the section */
+      --venue-fallback-btn-hover: #e5e5e5; /* neutral-200 */
+      --venue-fallback-btn-border: rgb(0 0 0 / 0.12); /* a white pill on #f5f5f5 needs an edge */
+    }
+  }
+
+  /* Placeholder sits above the container until Leaflet mounts. */
+  [data-venue-map-container] {
+    position: relative;
+  }
+</style>
+
+<!--
+  Global styles — Leaflet builds popup/divIcon/control DOM at runtime WITHOUT
+  Astro's scope hash, so a plain scoped <style> block would silently match
+  nothing (design D14; same fix as QuranVerse/WelcomeGate/WeddingFAQ).
+-->
+<style is:global>
+  /* ---- Marker pins (runtime divIcon DOM) -------------------------------- */
+
+  .venue-map-marker {
+    background: transparent;
+    border: none;
+  }
+
+  .venue-map-marker-pin {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .venue-map-marker-dot {
+    display: block;
+    width: 14px;
+    height: 14px;
+    border-radius: 9999px;
+    border: 2px solid #ffffff;
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.5);
+  }
+
+  .venue-map-marker-dot-poi {
+    width: 10px;
+    height: 10px;
+    background: #fbbf24;
+    border-width: 1.5px;
+  }
+
+  .venue-map-marker-dot-destination {
+    width: 18px;
+    height: 18px;
+    background: #ef4444;
+  }
+
+  .venue-map-marker-label {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 2px;
+    font-size: 10px;
+    line-height: 1;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #e5e5e5;
+    text-shadow: 0 1px 2px rgb(0 0 0 / 0.9);
+    white-space: nowrap;
+  }
+
+  .venue-map-marker-poi .venue-map-marker-label,
+  .venue-map-marker-destination .venue-map-marker-label {
+    display: none;
+  }
+
+  /* Pulse ring on the destination pin only, and only for users who have not
+     asked for reduced motion (repo motion contract). */
+  .venue-map-marker-pulse {
+    position: absolute;
+    inset: 0;
+    border-radius: 9999px;
+    background: #ef4444;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .venue-map-marker-pulse {
+      animation: venue-map-ping 1.8s var(--ease-out-standard) infinite;
+    }
+  }
+
+  @keyframes venue-map-ping {
+    0% {
+      transform: scale(1);
+      opacity: 0.6;
+    }
+    75%,
+    100% {
+      transform: scale(2.2);
+      opacity: 0;
+    }
+  }
+
+  /* ---- Popups ------------------------------------------------------------ */
+
+  .venue-map.theme-dark .leaflet-popup-content-wrapper,
+  .venue-map.theme-dark .leaflet-popup-tip {
+    background: #171717; /* neutral-900 */
+    color: #e5e5e5; /* neutral-200 */
+    box-shadow: 0 4px 18px rgb(0 0 0 / 0.6);
+  }
+
+  /* Popup overrides are scoped under .venue-map: Leaflet's stylesheet is
+     injected at mount (AFTER this page CSS), so equal-specificity rules
+     would lose to Leaflet's defaults regardless of source order. */
+  .venue-map .leaflet-popup-content-wrapper {
+    padding: 0;
+    border-radius: 12px;
+    border: 1px solid rgb(255 255 255 / 0.08);
+  }
+
+  .venue-map .leaflet-popup-content {
+    margin: 0;
+    width: auto !important;
+    line-height: 1.4;
+  }
+
+  /* Beat Leaflet's `.leaflet-popup-content p { margin: 1.3em 0 }`; vertical
+     rhythm comes from the body's flex gap instead. */
+  .venue-map .leaflet-popup-content p {
+    margin: 0;
+  }
+  /* No close button: popups pass `closeButton: false` — outside clicks and
+     Escape dismiss them, so the X control was removed per the couple. */
+
+  .venue-map-popup {
+    box-sizing: border-box;
+    width: 200px;
+  }
+
+  /* The card itself takes focus when a popup opens (nothing inside is
+     interactive), so it must not paint a ring — the marker keeps the visible
+     focus indicator, and closing returns focus to it. */
+  .venue-map-popup:focus {
+    outline: none;
+  }
+
+  /* MapCN rich popup: flush banner on top, padded body below. */
+  .venue-map-popup-banner {
+    position: relative;
+    height: 110px;
+    overflow: hidden;
+    border-radius: 11px 11px 0 0;
+    background: #262626;
+  }
+
+  .venue-map-popup-banner img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .venue-map-popup-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px 12px;
+  }
+
+  .venue-map-popup-type {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: #a3a3a3;
+    padding-bottom: 2px;
+  }
+
+  .venue-map-popup-name {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.25;
+    color: #f5f5f5;
+    margin: 0;
+  }
+
+  .venue-map-popup-venue .venue-map-popup-name {
+    font-size: 18px;
+  }
+
+  .venue-map-popup-meta {
+    font-size: 12px;
+    color: #a3a3a3;
+    margin: 0;
+  }
+
+  /* Light-map theme flips popup surfaces (design D19). */
+  .venue-map.theme-light .leaflet-popup-content-wrapper,
+  .venue-map.theme-light .leaflet-popup-tip {
+    background: #fafafa;
+    color: #262626;
+    box-shadow: 0 4px 18px rgb(0 0 0 / 0.22);
+  }
+
+  .venue-map.theme-light .venue-map-popup-name {
+    color: #171717;
+  }
+
+  .venue-map.theme-light .venue-map-popup-type,
+  .venue-map.theme-light .venue-map-popup-meta {
+    color: #525252;
+  }
+
+  .venue-map.theme-light .venue-map-popup-banner {
+    background: #e5e5e5;
+  }
+
+  .venue-map.theme-light .venue-map-marker-label {
+    color: #262626;
+    text-shadow: 0 1px 2px rgb(255 255 255 / 0.8);
+  }
+
+  /* ---- MapCN route planning + controls ------------------------------------ */
+
+  /* Full-bleed chips row: stretch Leaflet's bottom-left corner across the
+     whole map so the row runs edge to edge. The corner itself keeps
+     pointer-events: none (Leaflet default), and the row disables its own so
+     the empty part of the strip still passes map/page gestures through —
+     only the chips are interactive. */
+  .venue-map .leaflet-bottom.leaflet-left {
+    right: 0;
+  }
+
+  .venue-map-route-planner {
+    display: flex;
+    width: 100%;
+    flex-direction: row;
+    gap: 8px;
+    overflow-x: auto;
+    /* Edge-to-edge SCROLL STRIP, but the cards keep a small inset from the
+       screen edges (padding lives inside the scroll area, so it also applies
+       when the row is scrolled to either end). */
+    padding-inline: 10px;
+    scrollbar-width: none;
+  }
+
+  /* Needs the .venue-map prefix to beat Leaflet's injected
+     `.leaflet-control { pointer-events: auto }` (ties lose on stylesheet
+     order — Leaflet's CSS is appended at mount, after this one). */
+  .venue-map .venue-map-route-planner {
+    pointer-events: none;
+  }
+
+  .venue-map-route-planner::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Lift the chips row above the flush-bottom attribution strip and drop
+     Leaflet's default 10px left control margin. Leaflet's own
+     `.leaflet-bottom .leaflet-control` / `.leaflet-left .leaflet-control`
+     rules lose on specificity. */
+  .venue-map .leaflet-bottom .venue-map-route-planner {
+    margin-bottom: 22px;
+    margin-left: 0;
+  }
+
+  .venue-map-route-option {
+    pointer-events: auto;
+    display: flex;
+    flex: none;
+    cursor: pointer;
+    flex-direction: column;
+    gap: 6px;
+    border: 1px solid rgb(0 0 0 / 0.1);
+    border-radius: 9px;
+    background: rgb(255 255 255 / 0.94);
+    padding: 9px 11px;
+    color: #262626;
+    text-align: left;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.14);
+    backdrop-filter: blur(8px);
+    transition:
+      background-color 140ms var(--ease-out-strong),
+      border-color 140ms var(--ease-out-strong),
+      color 140ms var(--ease-out-strong),
+      transform 140ms var(--ease-out-strong);
+  }
+
+  /* Color-only hover stays ungated (a tap flash is normal button feedback);
+     the lift transform is hover-gated so touch taps never stick a raised chip. */
+  .venue-map-route-option:hover {
+    border-color: rgb(0 0 0 / 0.2);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .venue-map-route-option:hover {
+      transform: translateY(-1px);
+    }
+  }
+
+  .venue-map-route-option:active {
+    transform: scale(0.97);
+  }
+
+  .venue-map-route-option.is-active {
+    border-color: #171717;
+    background: #171717;
+    color: #fff;
+    box-shadow: 0 4px 14px rgb(0 0 0 / 0.3);
+  }
+
+  .venue-map-route-name {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 12px;
+    font-weight: 650;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+
+  .venue-map-route-dot {
+    width: 8px;
+    height: 8px;
+    flex: none;
+    border-radius: 9999px;
+    box-shadow: 0 0 0 2px rgb(255 255 255 / 0.75);
+  }
+
+  .venue-map-route-stats {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 10px;
+    line-height: 1;
+    opacity: 0.72;
+  }
+
+  .venue-map-route-stats > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+
+  .venue-map-route-stats svg {
+    width: 12px;
+    height: 12px;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-width: 1.8;
+  }
+
+  .venue-map.theme-dark .venue-map-route-option:not(.is-active) {
+    border-color: rgb(255 255 255 / 0.13);
+    background: rgb(23 23 23 / 0.9);
+    color: #e5e5e5;
+  }
+
+  /* Theme-aware compact control. Light base = the same translucent-white card as
+     the zoom circles and route chips it sits beside; `.theme-dark` re-inverts
+     to the strict black/white pill. Either way every surface is explicit, so
+     Leaflet's default blue anchor color cannot leak through. */
+  .venue-map .venue-map-control-button {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid rgb(0 0 0 / 0.1);
+    border-radius: 8px;
+    background: rgb(255 255 255 / 0.94);
+    padding: 7px 12px;
+    color: #262626;
+    font-size: 13px;
+    font-weight: 550;
+    line-height: 20px;
+    text-decoration: none;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.14);
+    cursor: pointer;
+    backdrop-filter: blur(8px);
+    transition:
+      background-color 140ms var(--ease-out-strong),
+      color 140ms var(--ease-out-strong),
+      transform 140ms var(--ease-out-strong);
+  }
+
+  .venue-map .venue-map-control-button:hover {
+    background: #fff;
+    color: #262626;
+  }
+
+  .venue-map .venue-map-control-button:focus-visible {
+    outline: 2px solid #171717;
+    outline-offset: 2px;
+  }
+
+  .venue-map-control-button:active {
+    transform: scale(0.97);
+  }
+
+  .venue-map.theme-dark .venue-map-control-button {
+    border-color: #fff;
+    background: #000;
+    color: #fff;
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.3);
+    backdrop-filter: none;
+  }
+
+  .venue-map.theme-dark .venue-map-control-button:hover {
+    background: #000;
+    color: #fff;
+  }
+
+  .venue-map.theme-dark .venue-map-control-button:focus-visible {
+    outline-color: #fff;
+  }
+
+  /* Zoom control: two detached circles with a gap instead of Leaflet's
+     default joined bar. The bar container loses its border/radius/shadow;
+     each button becomes its own card. `.leaflet-bar.leaflet-control-zoom`
+     is needed to out-specify Leaflet's `.leaflet-bar a:first-child` radii
+     (a tie would lose — Leaflet's stylesheet is injected after this one). */
+  .venue-map .leaflet-bar.leaflet-control-zoom {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .venue-map .leaflet-bar.leaflet-control-zoom a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid rgb(0 0 0 / 0.1);
+    border-radius: 50%;
+    background: rgb(255 255 255 / 0.94);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 0.14);
+    color: #262626;
+    line-height: 1;
+    text-decoration: none;
+    text-indent: 0;
+    backdrop-filter: blur(8px);
+    transition:
+      background-color 140ms var(--ease-out-strong),
+      transform 140ms var(--ease-out-strong);
+  }
+
+  .venue-map .leaflet-bar.leaflet-control-zoom a svg {
+    display: block;
+    width: 16px;
+    height: 16px;
+    pointer-events: none;
+  }
+
+  /* Leaflet's `.leaflet-touch .leaflet-bar a:first-child/:last-child` corner
+     radii and line-heights can tie/override base rules on touch devices — reset them explicitly. */
+  .venue-map.leaflet-touch .leaflet-bar.leaflet-control-zoom a,
+  .venue-map.leaflet-touch .leaflet-bar.leaflet-control-zoom a:first-child,
+  .venue-map.leaflet-touch .leaflet-bar.leaflet-control-zoom a:last-child {
+    width: 36px;
+    height: 36px;
+    line-height: 1;
+    border-radius: 50%;
+  }
+
+  /* Color-only hover ungated; the lift is hover/pointer gated (StoryViewer:249). */
+  .venue-map .leaflet-bar.leaflet-control-zoom a:hover {
+    background: #fff;
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .venue-map .leaflet-bar.leaflet-control-zoom a:hover {
+      transform: translateY(-1px);
+    }
+  }
+
+  .venue-map .leaflet-bar.leaflet-control-zoom a:active {
+    transform: scale(0.94);
+  }
+
+  .venue-map .leaflet-bar.leaflet-control-zoom a.leaflet-disabled {
+    background: rgb(255 255 255 / 0.94);
+    color: #262626;
+    opacity: 0.4;
+  }
+
+  .venue-map.theme-dark .leaflet-bar.leaflet-control-zoom a {
+    border-color: rgb(255 255 255 / 0.13);
+    background: rgb(23 23 23 / 0.9);
+    color: #e5e5e5;
+  }
+
+  .venue-map.theme-dark .leaflet-bar.leaflet-control-zoom a:hover {
+    background: rgb(38 38 38 / 0.95);
+  }
+
+  .venue-map.theme-dark .leaflet-bar.leaflet-control-zoom a.leaflet-disabled {
+    background: rgb(23 23 23 / 0.9);
+    color: #e5e5e5;
+  }
+
+  /* Provider credits remain for licensing, but the default white box and
+     Leaflet Ukraine-flag prefix are removed. Prefix removal also happens in
+     JS via attributionControl.setPrefix(false). */
+  .venue-map .leaflet-attribution-flag {
+    display: none !important;
+  }
+
+  .venue-map .leaflet-control-attribution {
+    margin: 0 4px 3px 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    background: transparent !important;
+    color: rgb(38 38 38 / 0.62);
+    font-size: 9px;
+    line-height: 1.2;
+    box-shadow: none !important;
+    backdrop-filter: none;
+  }
+
+  .venue-map .leaflet-control-attribution a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  /* Placeholder crossfade (D14): dims out over ~250ms as the live map fades
+     in beneath it — one hand-off, no same-frame swap. Instant under reduced */
+  /* motion and on the no-JS fallback path. */
+  [data-venue-map-placeholder] {
+    transition: opacity 250ms ease;
+  }
+  /* Pointer-transparent the moment the swap begins: the map beneath must be */
+  /* interactive through the hand-off (D14), and a fading-but-clickable */
+  /* overlay would eat map clicks for its whole 260ms lifetime. */
+  [data-venue-map-placeholder].is-unmounting {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .venue-map.theme-dark .leaflet-control-attribution {
+    color: rgb(255 255 255 / 0.58);
+    text-shadow: 0 1px 2px rgb(0 0 0 / 0.7);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .venue-map-route-option,
+    .venue-map .venue-map-control-button,
+    .venue-map .leaflet-bar.leaflet-control-zoom a {
+      transition: none;
+    }
+    /* Belt-and-braces: Leaflet's own zoom tween is a class-toggled CSS */
+    /* transition (leaflet.css) with no reduced-motion handling of its own. */
+    .venue-map .leaflet-zoom-anim .leaflet-zoom-animated {
+      transition: none;
+    }
+    [data-venue-map-placeholder] {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  // Thin wiring only (design D17): observer setup + delegation. All Leaflet
+  // calls live in the typed venue-map.ts module, which is what `astro check`
+  // actually validates.
+  //
+  // CRITICAL: venue-map.ts must ONLY be dynamically imported inside the
+  // observer callback. A static import here would hoist the whole 140KB
+  // Leaflet runtime into this always-loaded module script (verified: the
+  // bundled chunk gets a <script type="module" src=...> tag in the page),
+  // shipping Leaflet to every homepage visitor — the exact violation of
+  // "no map resources loaded on initial page load" that the spec's scenario
+  // forbids (design D11).
+  const ROOT_MARGIN = "150% 0px"; // matches the section preloader convention
+
+  function initVenueMapSection() {
+    const section = document.getElementById("venue-map");
+    if (!section) return;
+    if (section.dataset.venueMapObserved) return;
+    section.dataset.venueMapObserved = "true";
+
+    const mount = async () => {
+      try {
+        const { mountVenueMap } = await import("./venue-map");
+        await mountVenueMap(section);
+      } catch (err) {
+        // Leaflet chunk failed (offline / 404): swap to the static fallback,
+        // never a permanent spinner (design D7). The fallback markup lives in
+        // this same document, so it can be driven directly without another
+        // import of the chunk that just failed.
+        console.error("[venue-map] map failed to load:", err);
+        const placeholder = section.querySelector("[data-venue-map-placeholder]");
+        const fallback = section.querySelector("[data-venue-map-fallback]");
+        // Tailwind's `hidden` is a class rule; clearing inline display does
+        // not beat it, so drop the class itself.
+        if (placeholder instanceof HTMLElement) placeholder.classList.add("hidden");
+        if (fallback instanceof HTMLElement) fallback.classList.remove("hidden");
+      }
+    };
+
+    const observer = new IntersectionObserver(
+      (entries, obs) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          obs.unobserve(entry.target);
+          void mount();
+        }
+      },
+      { rootMargin: ROOT_MARGIN },
+    );
+
+    observer.observe(section);
+  }
+
+  // This repo has no <ClientRouter />: astro:page-load never fires and must
+  // not be relied upon (documented trap in the fix-scroll-motion-findings
+  // design) — the readyState branch covers the initial load.
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initVenueMapSection);
+  } else {
+    initVenueMapSection();
+  }
+</script>
