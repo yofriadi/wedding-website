@@ -4,7 +4,7 @@ const items = [
     id: "rsvp",
     number: "01",
     title: "When is the RSVP deadline?",
-    content: "Please RSVP by August 1st, 2026. We need to get the final headcount to our caterers, so we won't be able to accept late RSVPs."
+    content: "Please RSVP by October 4th, 2026. We need to get the final headcount to our caterers, so we kindly ask that you respond before then."
   },
   {
     id: "dress-code",
@@ -16,7 +16,7 @@ const items = [
     id: "plus-one",
     number: "03",
     title: "Can I bring a plus one?",
-    content: "Due to limited venue capacity, we are unable to accommodate plus ones unless specifically indicated on your invitation. When you RSVP, you will see exactly who is invited."
+    content: "Due to limited venue capacity, we are unable to accommodate plus ones unless specifically indicated on your invitation. When you RSVP, you'll confirm your attendance."
   },
   {
     id: "children",
@@ -39,11 +39,11 @@ const items = [
 ];
 ---
 
-<div class="w-full max-w-3xl mx-auto p-4" id="wedding-faq">
-  <div class="space-y-0">
+<div class="w-full bg-[color:var(--faq-background)]" id="wedding-faq">
+  <div class="space-y-0 max-w-3xl mx-auto px-4 pt-2 pb-10">
     {items.map((item) => (
       <div class="accordion-item group border-b border-[color:var(--faq-border)]" data-id={item.id}>
-        <button class="w-full py-4 relative flex items-center gap-4 text-left focus:outline-none active:scale-[0.98] transition-transform duration-160 ease-out cursor-pointer">
+        <button class="w-full py-3 relative flex items-center gap-4 text-left focus:outline-none active:scale-[0.98] transition-transform duration-160 ease-out cursor-pointer">
            <!-- Number with animated circle -->
            <div class="relative flex items-center justify-center w-10 h-10 shrink-0">
              <div class="number-bg absolute inset-0 rounded-full bg-[color:var(--faq-badge)] ring-1 ring-[color:var(--faq-badge-ring)] origin-center"></div>
@@ -82,6 +82,11 @@ const items = [
 
 
 <style>
+  /* Theme tokens (this component is the repo precedent): dark is the authored
+     default, light inverts the same black/white pair via the OS preference.
+     The root paints --faq-background itself because body/main stay
+     bg-neutral-950 in either scheme — the same reason #rsvp-section,
+     #wishes-section and #venue-map own their own chrome. */
   #wedding-faq {
     --faq-background: #0a0a0a;
     --faq-foreground: #fafafa;
@@ -90,6 +95,18 @@ const items = [
     --faq-badge: var(--faq-background);
     --faq-badge-ring: transparent;
     --faq-primary-foreground: #0a0a0a;
+  }
+
+  @media (prefers-color-scheme: light) {
+    #wedding-faq {
+      --faq-background: #ffffff;
+      --faq-foreground: #0a0a0a;
+      --faq-muted-foreground: #525252; /* neutral-600: holds contrast on white */
+      --faq-border: rgba(0, 0, 0, 0.16);
+      --faq-badge: #ffffff;
+      --faq-badge-ring: transparent;
+      --faq-primary-foreground: #ffffff;
+    }
   }
 
   :global(#wedding-faq .accordion-item:last-child) {
@@ -101,19 +118,35 @@ const items = [
 <script>
   import { animate, spring } from "motion";
 
+
   // JS twin of the CSS --ease-out-expo token; keep in sync.
   const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
+
+  // Read once at module scope; drives fade-only branches below.
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function initFAQ() {
     const container = document.getElementById('wedding-faq');
     if (!container) return;
 
     const items = container.querySelectorAll('.accordion-item');
-    const theme = getComputedStyle(container);
-    const foreground = theme.getPropertyValue('--faq-foreground').trim();
-    const mutedForeground = theme.getPropertyValue('--faq-muted-foreground').trim();
-    const badgeBase = theme.getPropertyValue('--faq-badge').trim();
-    const primaryForeground = theme.getPropertyValue('--faq-primary-foreground').trim();
+    // Alias for closure use: `container`'s null-narrowing doesn't reach inside
+    // nested functions.
+    const root = container;
+
+    // Colors are resolved from the cascade on each interaction (SlideToConfirm's
+    // readDuration precedent) instead of being captured once at init — the
+    // light theme is a media query, so a snapshot could animate stale ink.
+    function theme() {
+      const styles = getComputedStyle(root);
+      return {
+        foreground: styles.getPropertyValue('--faq-foreground').trim(),
+        mutedForeground: styles.getPropertyValue('--faq-muted-foreground').trim(),
+        badgeBase: styles.getPropertyValue('--faq-badge').trim(),
+        primaryForeground: styles.getPropertyValue('--faq-primary-foreground').trim(),
+      };
+    }
+
     let activeItem: Element | null = null;
 
     items.forEach(item => {
@@ -143,23 +176,50 @@ const items = [
       const numberBg = item.querySelector('.number-bg');
       const numberText = item.querySelector('.number-text');
       const titleText = item.querySelector('.title-text');
-      const icon = item.querySelector('.icon-plus');
+      const icon = item.querySelector('.icon-plus') as HTMLElement | null;
       const iconSvg = icon?.querySelector('svg');
-      const activeLine = item.querySelector('.active-line');
+      const activeLine = item.querySelector('.active-line') as HTMLElement | null;
+      const { foreground, primaryForeground } = theme();
 
-      if (content) animate(content, { height: "auto", opacity: 1 } as any, { duration: 0.25, ease: EASE_OUT_EXPO });
+      if (content) {
+        if (reducedMotion) {
+          // Height snaps; only the opacity tweens.
+          content.style.height = "auto";
+          animate(content, { opacity: 1 }, { duration: 0.15 });
+        } else {
+          animate(content, { height: "auto", opacity: 1 } as any, { duration: 0.25, ease: EASE_OUT_EXPO });
+        }
+      }
       
       // Subtle pop (1.08, not a bounce) gives the state change physicality.
-      if (numberBg) animate(numberBg, { scale: [1, 1.08, 1], backgroundColor: foreground }, { duration: 0.25, ease: EASE_OUT_EXPO });
+      if (numberBg) {
+        if (reducedMotion) {
+          animate(numberBg, { backgroundColor: foreground }, { duration: 0.15 });
+        } else {
+          animate(numberBg, { scale: [1, 1.08, 1], backgroundColor: foreground }, { duration: 0.25, ease: EASE_OUT_EXPO });
+        }
+      }
       
       if (numberText) animate(numberText, { color: primaryForeground }, { duration: 0.15 });
       
       if (titleText) animate(titleText, { color: foreground }, { type: spring, stiffness: 400, damping: 30 });
       
-      if (icon) animate(icon, { rotate: 45 }, { type: spring, stiffness: 300, damping: 20 });
+      if (icon) {
+        if (reducedMotion) {
+          icon.style.transform = "rotate(45deg)";
+        } else {
+          animate(icon, { rotate: 45 }, { type: spring, stiffness: 300, damping: 20 });
+        }
+      }
       if (iconSvg) animate(iconSvg, { color: foreground }, { duration: 0.15 });
       
-      if (activeLine) animate(activeLine, { scaleX: 1 }, { type: spring, stiffness: 300, damping: 30 });
+      if (activeLine) {
+        if (reducedMotion) {
+          activeLine.style.transform = "scaleX(1)";
+        } else {
+          animate(activeLine, { scaleX: 1 }, { type: spring, stiffness: 300, damping: 30 });
+        }
+      }
     }
 
     function closeItem(item: Element) {
@@ -167,22 +227,48 @@ const items = [
       const numberBg = item.querySelector('.number-bg');
       const numberText = item.querySelector('.number-text');
       const titleText = item.querySelector('.title-text');
-      const icon = item.querySelector('.icon-plus');
+      const icon = item.querySelector('.icon-plus') as HTMLElement | null;
       const iconSvg = icon?.querySelector('svg');
-      const activeLine = item.querySelector('.active-line');
+      const activeLine = item.querySelector('.active-line') as HTMLElement | null;
+      const { mutedForeground, badgeBase } = theme();
 
-      if (content) animate(content, { height: 0, opacity: 0 } as any, { duration: 0.2, ease: EASE_OUT_EXPO });
+      if (content) {
+        if (reducedMotion) {
+          content.style.height = "0px";
+          animate(content, { opacity: 0 }, { duration: 0.15 });
+        } else {
+          animate(content, { height: 0, opacity: 0 } as any, { duration: 0.2, ease: EASE_OUT_EXPO });
+        }
+      }
       
-      if (numberBg) animate(numberBg, { scale: 1, backgroundColor: badgeBase }, { type: spring, stiffness: 400, damping: 25 });
+      if (numberBg) {
+        if (reducedMotion) {
+          animate(numberBg, { backgroundColor: badgeBase }, { duration: 0.15 });
+        } else {
+          animate(numberBg, { scale: 1, backgroundColor: badgeBase }, { type: spring, stiffness: 400, damping: 25 });
+        }
+      }
       
       if (numberText) animate(numberText, { color: mutedForeground }, { duration: 0.15 });
       
       if (titleText) animate(titleText, { color: mutedForeground }, { type: spring, stiffness: 400, damping: 30 });
       
-      if (icon) animate(icon, { rotate: 0 }, { type: spring, stiffness: 300, damping: 20 });
+      if (icon) {
+        if (reducedMotion) {
+          icon.style.transform = "rotate(0deg)";
+        } else {
+          animate(icon, { rotate: 0 }, { type: spring, stiffness: 300, damping: 20 });
+        }
+      }
       if (iconSvg) animate(iconSvg, { color: mutedForeground }, { duration: 0.15 });
       
-      if (activeLine) animate(activeLine, { scaleX: 0 }, { type: spring, stiffness: 300, damping: 30 });
+      if (activeLine) {
+        if (reducedMotion) {
+          activeLine.style.transform = "scaleX(0)";
+        } else {
+          animate(activeLine, { scaleX: 0 }, { type: spring, stiffness: 300, damping: 30 });
+        }
+      }
     }
   }
 
