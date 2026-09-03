@@ -87,7 +87,7 @@ const pictures = [
 ];
 
 const COL_W = 33.333; // 33.333vw
-const ROW_H = 20;     // 20vh
+const ROW_H = 20;     // 20lvh per row (5 rows = the stage); vertical geometry lives in the per-slot CSS
 ---
 
 <div id="zoom-parallax-container" class="zoom-container relative w-full" data-progressive-section>
@@ -110,14 +110,17 @@ const ROW_H = 20;     // 20vh
             width: ${picture.grid.w * COL_W}vw; 
           `}
         >
-          <img
-            data-src={picture.src}
-            alt={picture.alt}
-            width={picture.iw}
-            height={picture.ih}
-            class="zoom-image"
-            decoding="async"
-          />
+          <picture>
+            <source data-src={`${picture.src.replace(/\.webp$/, ".avif")}`} type="image/avif" />
+            <img
+              data-src={picture.src}
+              alt={picture.alt}
+              width={picture.iw}
+              height={picture.ih}
+              class="zoom-image"
+              decoding="async"
+            />
+          </picture>
         </div>
       </div>
     ))}
@@ -126,21 +129,52 @@ const ROW_H = 20;     // 20vh
 </div>
 
 <script>
-  import { animate, scroll } from "motion";
+  import { animate, inView, scroll } from "motion";
 
   // Cleanup storage
   let cleanupFns: Array<() => void> = [];
   let resizeTimeout: number | undefined;
+  // The blur reveal is a one-shot that must outlive init's cleanup pass: if the
+  // pending timer lived in cleanupFns, a re-init between the inView fire and the
+  // reveal would cancel it and strand the images in their hidden (.js) state.
+  let revealTimer: ReturnType<typeof setTimeout> | undefined;
+  // Viewport width the current bindings were measured against. Height-only
+  // `resize` events are mobile browser chrome collapsing, not a layout change:
+  // every length here is vw/svh-based, so re-initializing on them would only
+  // tear down and rebuild the scroll bindings mid-scroll (scroll-motion spec:
+  // no bindings are rebuilt in response to a height-only resize). Same guard
+  // TimelineScroll uses.
+  let measuredWidth = 0;
 
   function initZoomParallax() {
+    // Record the width the measurements below are taken against, so
+    // handleResize can ignore the height-only resizes browser chrome emits.
+    measuredWidth = window.innerWidth;
+
     // Reduced motion: the static bento grid is the content; bind no scroll-driven
     // transforms and let the CSS media query collapse the pin.
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const container = document.getElementById("zoom-parallax-container");
     const wrappers = document.querySelectorAll(".zoom-wrapper");
-    
+
     if (!container || wrappers.length === 0) return;
+
+    const stage = container.querySelector(".zoom-stage") as HTMLElement | null;
+    if (!stage) return;
+
+    // Reveal lifecycle, tracked on the stage element (not in this closure) so it
+    // survives a re-init and resets with the DOM on client navigation:
+    //   absent      - images hidden by .js, waiting for the stage to scroll in
+    //   "scheduled" - inView fired; the stagger is queued or running
+    //   "done"      - images stay visible; nothing left to bind
+    const revealState = stage.dataset.zoomReveal;
+
+    // JS is running and motion is allowed: hide the images for the reveal. Done
+    // here (not in markup) so no-JS / reduced-motion never see hidden images.
+    // Once the reveal has played the class stays off for good — a later init
+    // must never re-hide and re-blur the grid.
+    stage.classList.toggle("js", revealState !== "done");
 
     // Cleanup previous scroll bindings
     cleanupFns.forEach(fn => fn());
@@ -161,14 +195,18 @@ const ROW_H = 20;     // 20vh
     if (centerWrapper) {
       const inner = centerWrapper.querySelector('.zoom-inner') as HTMLElement;
       if (inner) {
-        // Calculate scale needed to cover the viewport
-        // The wrapper is full screen (100x100). The inner is smaller.
-        // If we scale the wrapper, the inner scales with it.
-        // We want inner to fill screen.
-        // Scale = ScreenDim / InnerDim
+        // Calculate the scale that makes the center image cover the stage.
+        // The wrapper is full screen (100x100); the inner is smaller, and
+        // scaling the wrapper scales the inner with it.
+        // Measured against the stage's own rect rather than
+        // window.innerWidth/innerHeight: the dynamic viewport re-resolves every
+        // time mobile browser chrome collapses, which would change the finale's
+        // crop mid-scroll. The stage is also the right thing to cover — it is
+        // what clips the image.
+        const stageRect = stage.getBoundingClientRect();
         const rect = inner.getBoundingClientRect();
-        const scaleX = window.innerWidth / rect.width;
-        const scaleY = window.innerHeight / rect.height;
+        const scaleX = stageRect.width / rect.width;
+        const scaleY = stageRect.height / rect.height;
         centerScaleFactor = Math.max(scaleX, scaleY) * 1.01; // No gaps
       }
     }
@@ -213,9 +251,54 @@ const ROW_H = 20;     // 20vh
         cleanupFns.push(cleanup);
       }
     });
+
+    // Blur Fade reveal (Magic UI): each image fades from opacity 0 + blur(6px)
+    // with a small upward settle, staggered per image. Triggered once, the first
+    // time 10% of the stage scrolls into view, then held back by a short delay
+    // so the grid settles before the reveal plays. Reduced-motion users never
+    // reach this (initZoomParallax returned early), so their static grid stays
+    // fully visible.
+    if (!revealState) {
+      const images = Array.from(container.querySelectorAll<HTMLElement>(".zoom-image"));
+      const REVEAL_DELAY_MS = 400; // wait after the stage scrolls into view
+
+      const stopReveal = inView(stage, () => {
+        // Marked before the delay and never cleared. An IntersectionObserver
+        // always delivers an initial observation for an element already on
+        // screen, so any re-init that re-bound inView while the stage was still
+        // in view — the end of the runway, scrolling up and down as the URL bar
+        // collapses — replayed the whole reveal. Element state makes that
+        // impossible: the observer is only ever bound while the state is unset.
+        stage.dataset.zoomReveal = "scheduled";
+        clearTimeout(revealTimer);
+        revealTimer = setTimeout(() => {
+          const finished = images.map((img, i) =>
+            animate(
+              img,
+              { opacity: [0, 1], y: [-6, 0], filter: ["blur(6px)", "blur(0px)"] },
+              { delay: i * 0.25, duration: 0.5, ease: "easeOut" }
+            ).finished.catch(() => {})
+          );
+          // Drop the hiding class only after every image has committed its
+          // revealed inline styles, so the tail of the stagger never flashes.
+          void Promise.all(finished).then(() => {
+            stage.dataset.zoomReveal = "done";
+            stage.classList.remove("js");
+          });
+        }, REVEAL_DELAY_MS);
+      }, { amount: 0.1 });
+
+      // The observer is a binding (dispose on re-init); the timer is not — it
+      // lives at module scope so an in-flight reveal survives one.
+      cleanupFns.push(stopReveal);
+    }
   }
 
   function handleResize() {
+    // Height-only resizes are mobile browser chrome collapsing or expanding;
+    // the vw/svh geometry bound here is unchanged by them, so ignore them
+    // instead of tearing down and rebuilding every scroll binding mid-scroll.
+    if (window.innerWidth === measuredWidth) return;
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(initZoomParallax, 150) as unknown as number;
   }
@@ -233,26 +316,47 @@ const ROW_H = 20;     // 20vh
 </script>
 
 <style>
+  /* Blur Fade reveal: images start hidden/blurred only while this component's JS
+     is waiting to play it. The class is added from the script (never in markup),
+     so no-JS and reduced-motion paths keep images fully visible — and it is
+     removed for good once the reveal completes, so a later init can't re-hide
+     the grid and replay it. */
+  .zoom-stage.js .zoom-image {
+    opacity: 0;
+    filter: blur(6px);
+  }
+
+  /* Runway + stage sized in lvh, not svh: lvh is the viewport with browser
+     chrome HIDDEN, which is the state a pinned sequence is actually watched in —
+     every mobile browser retracts its URL bar on the first downward scroll. At
+     svh the sticky stage sits ~60-80px short of the screen for the whole pinned
+     run, exposing page background beneath it (HeroZoom/TimelineScroll already
+     made this move; scroll-motion spec: "Pinned stages are sized to the
+     chrome-hidden viewport").
+     Never dvh: it re-resolves while the chrome collapses, so the runway would
+     silently change length mid-scroll and jump the scrub. lvh is as static as
+     svh. The vh fallback agrees with lvh by construction — iOS Safari's legacy
+     vh already resolves to the large viewport. */
   .zoom-container {
     height: 400vh;
-    height: 400svh;
+    height: 400lvh;
   }
   .zoom-stage {
     height: 100vh;
-    height: 100svh;
+    height: 100lvh;
   }
 
   /* Bento slot vertical geometry: one rule per slot so each top/height pair can */
-  /* carry its vh -> svh fallback. Horizontal vw values stay inline per item.    */
-  [data-slot="0"] .zoom-inner { top: 0vh; top: 0svh; height: 40vh; height: 40svh; }
-  [data-slot="1"] .zoom-inner { top: 0vh; top: 0svh; height: 20vh; height: 20svh; }
-  [data-slot="2"] .zoom-inner { top: 20vh; top: 20svh; height: 20vh; height: 20svh; }
-  [data-slot="3"] .zoom-inner { top: 40vh; top: 40svh; height: 20vh; height: 20svh; }
-  [data-slot="4"] .zoom-inner { top: 40vh; top: 40svh; height: 20vh; height: 20svh; }
-  [data-slot="5"] .zoom-inner { top: 40vh; top: 40svh; height: 20vh; height: 20svh; }
-  [data-slot="6"] .zoom-inner { top: 60vh; top: 60svh; height: 40vh; height: 40svh; }
-  [data-slot="7"] .zoom-inner { top: 60vh; top: 60svh; height: 20vh; height: 20svh; }
-  [data-slot="8"] .zoom-inner { top: 80vh; top: 80svh; height: 20vh; height: 20svh; }
+  /* carry its vh -> lvh fallback. Horizontal vw values stay inline per item.    */
+  [data-slot="0"] .zoom-inner { top: 0vh; top: 0lvh; height: 40vh; height: 40lvh; }
+  [data-slot="1"] .zoom-inner { top: 0vh; top: 0lvh; height: 20vh; height: 20lvh; }
+  [data-slot="2"] .zoom-inner { top: 20vh; top: 20lvh; height: 20vh; height: 20lvh; }
+  [data-slot="3"] .zoom-inner { top: 40vh; top: 40lvh; height: 20vh; height: 20lvh; }
+  [data-slot="4"] .zoom-inner { top: 40vh; top: 40lvh; height: 20vh; height: 20lvh; }
+  [data-slot="5"] .zoom-inner { top: 40vh; top: 40lvh; height: 20vh; height: 20lvh; }
+  [data-slot="6"] .zoom-inner { top: 60vh; top: 60lvh; height: 40vh; height: 40lvh; }
+  [data-slot="7"] .zoom-inner { top: 60vh; top: 60lvh; height: 20vh; height: 20lvh; }
+  [data-slot="8"] .zoom-inner { top: 80vh; top: 80lvh; height: 20vh; height: 20lvh; }
 
   .zoom-inner {
     /* Subtle border for separation in bento state */
@@ -272,7 +376,7 @@ const ROW_H = 20;     // 20vh
   @media (prefers-reduced-motion: reduce) {
     .zoom-container {
       height: 100vh !important;
-      height: 100svh !important;
+      height: 100lvh !important;
     }
     .zoom-stage {
       position: relative !important;
