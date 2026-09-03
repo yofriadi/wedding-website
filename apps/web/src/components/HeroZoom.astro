@@ -3,41 +3,48 @@
 <section class="relative hero-scroll" id="hero-container">
   <div class="hero-stage sticky top-0 w-full overflow-hidden">
     <!-- Sharp image stays visible while the hero zooms out. -->
-    <img
-      src="/wedding_photo-1024.webp"
-      srcset="/wedding_photo-390.webp 390w, /wedding_photo-640.webp 640w, /wedding_photo.webp 768w, /wedding_photo-1024.webp 1024w, /wedding_photo-1536.webp 1536w"
-      sizes="min(280vw, 1536px)"
-      width="1024"
-      height="1835"
-      alt="Aisha and Yofri displaying their wedding rings"
-      data-hero-media
-      fetchpriority="high"
-      loading="eager"
-      decoding="async"
-      class="absolute inset-0 h-full w-full object-cover animate-image"
-    />
+    <picture>
+      <source srcset="/wedding_photo-390.avif 390w, /wedding_photo-640.avif 640w, /wedding_photo.avif 768w, /wedding_photo-1024.avif 1024w, /wedding_photo-1536.avif 1536w" sizes="min(280vw, 1536px)" type="image/avif" />
+      <source srcset="/wedding_photo-390.webp 390w, /wedding_photo-640.webp 640w, /wedding_photo.webp 768w, /wedding_photo-1024.webp 1024w, /wedding_photo-1536.webp 1536w" sizes="min(280vw, 1536px)" type="image/webp" />
+      <img
+        src="/wedding_photo-1024.webp"
+        srcset="/wedding_photo-390.webp 390w, /wedding_photo-640.webp 640w, /wedding_photo.webp 768w, /wedding_photo-1024.webp 1024w, /wedding_photo-1536.webp 1536w"
+        sizes="min(280vw, 1536px)"
+        width="1024"
+        height="1835"
+        alt="Aisha and Yofri displaying their wedding rings"
+        data-hero-media
+        fetchpriority="high"
+        loading="eager"
+        decoding="async"
+        class="absolute inset-0 h-full w-full object-cover animate-image"
+      />
+    </picture>
     <!-- Pre-blurred layer fades in instead of animating an expensive CSS filter. -->
-    <img
-      src="/wedding_photo_blur.webp"
-      width="768"
-      height="1376"
-      alt=""
-      aria-hidden="true"
-      loading="eager"
-      decoding="async"
-      class="absolute inset-0 h-full w-full object-cover animate-blur"
-    />
+    <picture>
+      <source src="/wedding_photo_blur.avif" type="image/avif" />
+      <source src="/wedding_photo_blur.webp" type="image/webp" />
+      <img
+        src="/wedding_photo_blur.webp"
+        width="768"
+        height="1376"
+        alt=""
+        aria-hidden="true"
+        loading="eager"
+        decoding="async"
+        class="absolute inset-0 h-full w-full object-cover animate-blur"
+      />
+    </picture>
     <div class="absolute inset-0 z-10 bg-black pointer-events-none animate-overlay"></div>
 
     <!-- Overlay Content (Names & Date) -->
     <div class="absolute inset-0 flex flex-col items-center justify-center z-20 pointer-events-none">
-      <div class="w-full max-w-5xl px-5 text-center text-balance space-y-6 animate-text">
-        <p class="text-sm md:text-lg tracking-[0.4em] text-white/90 uppercase font-light">Save the Date</p>
+      <div class="w-full max-w-5xl px-5 text-center text-balance space-y-2 animate-text">
         <h1 class="text-5xl md:text-8xl font-serif text-white tracking-tight drop-shadow-lg">
           Yofri <span class="text-white/80 font-light italic">&</span> Aisha
         </h1>
         <p class="text-xl md:text-2xl font-light text-white/90 tracking-widest font-serif">
-          <time datetime="2026-10-10">October 10, 2026</time>
+          <time datetime="2026-10-10" class="animate-date">October 10, 2026</time>
         </p>
       </div>
     </div>
@@ -45,14 +52,28 @@
 </section>
 
 <style>
-  /* The 300svh section gives the 100svh stage 200svh of pinned travel. */
+  /* The 300lvh section gives the 100lvh stage 200lvh of pinned travel.
+
+     lvh, not svh: `lvh` is the viewport with browser chrome HIDDEN, which is the
+     state the pinned sequence is actually watched in — every browser retracts the
+     URL bar as soon as you scroll down. At `svh` the sticky stage would be ~70px
+     shorter than the visible area for the entire pinned phase, exposing a band of
+     section background under it. Sized `lvh` the stage matches the screen exactly
+     once the bar is gone; the cost is that the bottom ~70px sits below the fold at
+     rest, before the first scroll.
+
+     Never `dvh`: dvh re-resolves while the chrome collapses, so the runway would
+     silently change length mid-scroll and jump the scrub. lvh is as static as svh.
+
+     The `vh` fallback agrees with `lvh` by construction — iOS Safari's legacy `vh`
+     has always been the large viewport. */
   .hero-scroll {
     height: 300vh;
-    height: 300svh;
+    height: 300lvh;
   }
   .hero-stage {
     height: 100vh;
-    height: 100svh;
+    height: 100lvh;
   }
   .hero-scroll,
   .hero-stage {
@@ -81,7 +102,36 @@
     will-change: transform, opacity;
   }
 
-  /* Map animation progress to the 200svh period while the stage is pinned. */
+  /* --sweep is the % position of the reveal band's center across the date.
+     -17% = fully hidden, 117% = fully revealed solid text. */
+  @property --sweep {
+    syntax: "<percentage>";
+    inherits: false;
+    initial-value: 117%;
+  }
+
+  /* Dia-style band sweep without framer-motion: one gradient whose stops all
+     derive from --sweep. Revealed glyphs are white, the moving band is a warm
+     champagne/gold shimmer, the unrevealed tail is transparent. Painted via
+     background-clip: text, so it composites correctly over the photo. */
+  .animate-date {
+    color: transparent;
+    -webkit-background-clip: text;
+    background-clip: text;
+    background-image: linear-gradient(
+      90deg,
+      rgb(255 255 255 / 0.9) 0%,
+      rgb(255 255 255 / 0.9) calc(var(--sweep, 117%) - 17%),
+      #faf0e0 calc(var(--sweep, 117%) - 17%),
+      #f0d6a8 calc(var(--sweep, 117%) - 5.667%),
+      #e2ab63 calc(var(--sweep, 117%) + 5.667%),
+      #f6e9d2 calc(var(--sweep, 117%) + 17%),
+      transparent calc(var(--sweep, 117%) + 17%),
+      transparent 100%
+    );
+  }
+
+  /* Map animation progress to the 200lvh period while the stage is pinned. */
   @keyframes image-scroll-effect {
     0% {
       transform: scale(2.8);
@@ -110,13 +160,26 @@
   }
 
   @keyframes text-reveal {
-    0%, 41.667% { /* Hidden through the ~83svh pause. */
+    0%, 41.667% { /* Hidden through the ~83lvh pause. */
       opacity: 0;
       transform: translateY(40px);
     }
-    66.667%, 100% { /* Fully visible by ~133svh and held. */
+    66.667%, 100% { /* Fully visible by ~133lvh and held. */
       opacity: 1;
       transform: translateY(0);
+    }
+  }
+
+  /* The names finish fading in at 66.667%; hold the date hidden a touch longer,
+     then sweep it in — 72%→92% of the pinned travel. The keyframe timing
+     function is easeInOutCubic, matching magicui's sweepEase. */
+  @keyframes date-sweep {
+    0%, 72% {
+      --sweep: -17%;
+      animation-timing-function: cubic-bezier(0.645, 0.045, 0.355, 1);
+    }
+    92%, 100% {
+      --sweep: 117%;
     }
   }
 
@@ -127,7 +190,7 @@
       view-timeline-inset: 100% 100%;
     }
     .animate-image {
-      animation: image-scroll-effect cubic-bezier(0.33, 1, 0.68, 1) both;
+      animation: image-scroll-effect var(--ease-out-zoom) both;
       animation-timeline: --hero-progress;
       animation-range: 0% 100%;
     }
@@ -146,6 +209,13 @@
       animation-timeline: --hero-progress;
       animation-range: 0% 100%;
     }
+    .animate-date {
+      animation-name: date-sweep;
+      animation-timing-function: linear;
+      animation-fill-mode: both;
+      animation-timeline: --hero-progress;
+      animation-range: 0% 100%;
+    }
   }
 
   /* Unsupported browsers keep the static hero until the JS enhancement initializes. */
@@ -154,7 +224,7 @@
   @media (prefers-reduced-motion: reduce) {
     .hero-scroll {
       height: 100vh;
-      height: 100svh;
+      height: 100lvh;
     }
     .hero-stage {
       position: relative !important;
@@ -162,7 +232,8 @@
     .animate-image,
     .animate-blur,
     .animate-overlay,
-    .animate-text {
+    .animate-text,
+    .animate-date {
       animation: none !important;
     }
     .animate-image {
@@ -181,7 +252,7 @@
   }
 </style>
 
-<script>
+<script is:inline>
   // Section-relative fallback for browsers without named view-timeline support.
   const supportsScrollTimeline =
     CSS.supports("view-timeline: --hero-progress block") &&
@@ -189,14 +260,15 @@
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   if (!supportsScrollTimeline && !prefersReducedMotion) {
-    const section = document.querySelector<HTMLElement>("#hero-container");
-    const img = section?.querySelector<HTMLElement>(".animate-image");
-    const blur = section?.querySelector<HTMLElement>(".animate-blur");
-    const overlay = section?.querySelector<HTMLElement>(".animate-overlay");
-    const text = section?.querySelector<HTMLElement>(".animate-text");
-    const stage = section?.querySelector<HTMLElement>(".hero-stage");
+    const section = document.querySelector("#hero-container");
+    const img = section?.querySelector(".animate-image");
+    const blur = section?.querySelector(".animate-blur");
+    const overlay = section?.querySelector(".animate-overlay");
+    const text = section?.querySelector(".animate-text");
+    const date = section?.querySelector(".animate-date");
+    const stage = section?.querySelector(".hero-stage");
 
-    if (section && img && blur && overlay && text) {
+    if (section && img && blur && overlay && text && date) {
       let ticking = false;
       let heroActive = true;
 
@@ -211,6 +283,13 @@
         );
         observer.observe(section);
       }
+
+      // Same cubic-in-out as magicui's sweepEase; matches the CSS keyframe timing.
+      const easeInOutCubic = (t) =>
+        t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2;
+      // t: 0 = hidden, 1 = fully revealed. Mirrors the date-sweep keyframes.
+      const setSweep = (t) =>
+        date.style.setProperty("--sweep", `${-17 + 134 * easeInOutCubic(t)}%`);
 
       const update = () => {
         ticking = false;
@@ -227,6 +306,10 @@
         const zoomEnd = travel / 3;
         const pauseEnd = (travel * 5) / 12;
         const blurEnd = (travel * 2) / 3;
+        // Date sweep runs 72%→92% of the timeline — after the names are fully
+        // revealed at 66.667%, plus a beat. Mirrors date-sweep keyframes.
+        const sweepStart = (travel * 18) / 25;
+        const sweepEnd = (travel * 23) / 25;
 
         if (scrolled <= zoomEnd) {
           const progress = Math.min(scrolled / zoomEnd, 1);
@@ -237,6 +320,7 @@
           overlay.style.opacity = "0";
           text.style.opacity = "0";
           text.style.transform = "translateY(40px)";
+          setSweep(0);
           return;
         }
 
@@ -246,6 +330,7 @@
           overlay.style.opacity = "0";
           text.style.opacity = "0";
           text.style.transform = "translateY(40px)";
+          setSweep(0);
           return;
         }
 
@@ -259,6 +344,11 @@
         overlay.style.opacity = `${progress * 0.3}`;
         text.style.opacity = `${progress}`;
         text.style.transform = `translateY(${40 * (1 - progress)}px)`;
+        const sweepProgress = Math.min(
+          Math.max((scrolled - sweepStart) / (sweepEnd - sweepStart), 0),
+          1,
+        );
+        setSweep(sweepProgress);
       };
 
       const scheduleUpdate = () => {
@@ -273,6 +363,7 @@
         overlay.style.opacity = "0";
         text.style.opacity = "0";
         text.style.transform = "translateY(40px)";
+        setSweep(0);
       };
 
       initialState();
