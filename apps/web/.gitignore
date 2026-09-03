@@ -17,8 +17,12 @@ pnpm-debug.log*
 .env
 .env.production
 
-# macOS-specific files
-.DS_Store
+# (local.db lives at the repo root's packages/db/; ignored from the root .gitignore)
 
-# jetbrains setting folder
-.idea/
+# Playwright scratch space
+.playwright/
+test-results/
+playwright-report/
+
+# Guest photo storage dev fallback (env.PHOTO_STORAGE_DIR default: ./var/photos)
+var/

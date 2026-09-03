@@ -16,6 +16,16 @@ export default defineConfig({
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
     },
+    {
+      // Touch device (venue-map-routes task 5.15): the venue map gates
+      // one-finger drag on `Browser.touchNative` and relies on
+      // `touch-action: pan-x pan-y` for page-scroll pass-through, which only
+      // exists on a real touch/pointer-coarse device context. A Desktop
+      // Chrome project has no touch, so the 5.6/5.11 touch assertions
+      // require this project.
+      name: "mobile-chrome",
+      use: { ...devices["Pixel 7"] },
+    },
   ],
   webServer: {
     // `astro dev` loads apps/web/.env itself, but guarantee DATABASE_URL even on

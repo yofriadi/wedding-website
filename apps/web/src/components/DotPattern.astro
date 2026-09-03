@@ -1,0 +1,70 @@
+---
+/**
+ * DotPattern — Astro SSR port of magicui's DotPattern
+ * (https://21st.dev/@dillionverma/components/dot-pattern).
+ *
+ * The original fills a measured <svg> with individually placed <circle>s so
+ * motion/glow can animate per dot. This variant renders no dots client-side;
+ * instead an SVG <pattern> tile repeats across the viewport, which is:
+ * - identical visually for the static case,
+ * - a handful of bytes instead of thousands of DOM nodes,
+ * - JS-free, so the welcome gate can paint it on first paint.
+ *
+ * The fill inherits `currentColor`, mirroring the upstream
+ * `text-neutral-400/80` default — set a text color class to retint.
+ */
+interface Props {
+  /* Horizontal spacing between dot centers. Upstream default: 16px.
+     20px matches the spaced-out hero treatments on 21st.dev demos. */
+  width?: number;
+  /* Vertical spacing between dot centers. Upstream default: 16px. */
+  height?: number;
+  /* Radius of each dot. Upstream default: 1. */
+  cr?: number;
+  /* Offset of the whole pattern tile, in pattern units. */
+  x?: number;
+  y?: number;
+  class?: string;
+}
+
+const { width = 20, height = 20, cr = 1, x = 0, y = 0, class: className } = Astro.props;
+
+const patternId = `dot-pattern-${Math.random().toString(36).slice(2, 10)}`;
+---
+
+<svg
+  aria-hidden="true"
+  class:list={["dot-pattern-background pointer-events-none absolute inset-0", className]}
+  width="100%"
+  height="100%"
+>
+  <defs>
+    <!-- One tile = one dot pair; `repeat` tiles it across any viewport size
+         with zero measurement (the React version re-measures on resize). -->
+    <pattern
+      id={patternId}
+      width={width}
+      height={height}
+      x={x}
+      y={y}
+      patternUnits="userSpaceOnUse"
+    >
+      <circle cx={width / 2} cy={height / 2} r={cr} fill="currentColor"></circle>
+    </pattern>
+  </defs>
+  <rect width="100%" height="100%" fill={`url(#${patternId})`}></rect>
+</svg>
+
+<style>
+  @layer base {
+    svg.dot-pattern-background {
+      /* Local value so instances override via their own text-color utility
+         (e.g. text-neutral-300). Base layer loses to any utility. */
+      color: rgb(163 163 163 / 0.4);
+    }
+
+    /* The circle carries fill=currentColor inline; CSS only needs to let
+       themed surfaces retint it by setting `color` on the svg (or parent). */
+    svg.dot-pattern-background circle { fill: currentColor; }
+  }
+</style>

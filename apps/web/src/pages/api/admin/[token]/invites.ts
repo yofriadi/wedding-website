@@ -1,8 +1,8 @@
 import type { APIRoute } from "astro";
 import { db } from "@wedding-website/db";
-import { invites } from "@wedding-website/db/schema";
+import { invites, rsvps } from "@wedding-website/db/schema";
 import { env } from "@wedding-website/env/server";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 
 const INVITE_ID_LENGTH = 12;
 const INVITE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
@@ -81,8 +81,12 @@ export const GET: APIRoute = async ({ params }) => {
         seenCount: invites.seenCount,
         openedAt: invites.openedAt,
         openedCount: invites.openedCount,
+        maxPartySize: invites.maxPartySize,
+        attending: rsvps.attending,
+        partySize: rsvps.partySize,
       })
       .from(invites)
+      .leftJoin(rsvps, eq(rsvps.inviteId, invites.id))
       .orderBy(desc(invites.createdAt));
 
     return json(200, { invites: rows });
@@ -116,6 +120,17 @@ export const POST: APIRoute = async ({ params, request }) => {
     return json(400, { error: "display_name_too_long" });
   }
 
+  const rawMaxPartySize = (payload as { maxPartySize?: unknown })?.maxPartySize;
+  const maxPartySize = rawMaxPartySize === undefined ? 1 : rawMaxPartySize;
+  if (
+    typeof maxPartySize !== "number" ||
+    !Number.isInteger(maxPartySize) ||
+    maxPartySize < 1 ||
+    maxPartySize > 20
+  ) {
+    return json(400, { error: "invalid_max_party_size" });
+  }
+
   const now = Date.now();
 
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -128,6 +143,7 @@ export const POST: APIRoute = async ({ params, request }) => {
         createdAt: now,
         seenAt: null,
         seenCount: 0,
+        maxPartySize,
       });
 
       return json(201, {

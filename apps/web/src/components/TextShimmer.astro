@@ -4,35 +4,55 @@ interface Props {
   duration?: number;
   phrases?: string[];
   phraseIntervalMs?: number;
-} const { class: className, duration = 2, phrases, phraseIntervalMs = 2000 } = Astro.props;
+}
+const { class: className, duration = 2, phrases, phraseIntervalMs = (duration * 1000 + 800) } = Astro.props;
 
-// Shimmer paint lives on each text layer (not the host) so the crossfade can
-// fade the outgoing phrase out: with a single host-level background-clip:text,
-// a stacked span's opacity cannot modulate the clipped gradient.
-const shimmerLayerClasses = [
+// Base classes for the shimmer animation (shared between themes)
+const shimmerBaseClasses = [
   "bg-clip-text text-transparent bg-size-[200%_100%] animate-shimmer",
-  // Gradient for Dark Mode (Gray -> White -> Gray)
-  "bg-[linear-gradient(110deg,#4b5563,45%,#ffffff,55%,#4b5563)]",
 ];
 ---
 
 <text-shimmer
-  class:list={[
-    "inline-flex relative",
-    className
-  ]}
+  class={className}
   data-phrases={phrases ? JSON.stringify(phrases) : undefined}
+  data-duration-ms={String(duration * 1000)}
   data-phrase-interval-ms={String(phraseIntervalMs)}
 >
-  <span data-text class:list={shimmerLayerClasses} style={{ animationDuration: `${duration}s` }}><slot /></span>
-  <span data-text-out class:list={shimmerLayerClasses} style={{ animationDuration: `${duration}s` }} aria-hidden="true"></span>
+  <span data-text class:list={shimmerBaseClasses} style={{ animationDuration: `${duration}s` }}><slot /></span>
+  <span data-text-out class:list={shimmerBaseClasses} style={{ animationDuration: `${duration}s` }} aria-hidden="true"></span>
 </text-shimmer>
 
 <style>
+  /* The host must be the containing block for the outgoing-phrase layer.
+     Without position:relative, [data-text-out] (absolute, inset:0) resolves
+     against the nearest positioned ancestor — e.g. the fixed loading screen —
+     so the old phrase flashes at the viewport's top-left during crossfade.
+     inline-flex makes the host wrap the text box tightly so the overlay
+     lines up exactly with the live phrase. */
+  text-shimmer {
+    position: relative;
+    display: inline-flex;
+  }
+
   text-shimmer [data-text-out] {
     position: absolute;
     inset: 0;
     pointer-events: none;
+  }
+
+  /* Dark mode gradient (default): Gray -> White -> Gray */
+  :global(text-shimmer [data-text]),
+  :global(text-shimmer [data-text-out]) {
+    background-image: linear-gradient(110deg, #4b5563, 45%, #ffffff, 55%, #4b5563);
+  }
+
+  /* Light mode gradient: Stone -> Dark -> Stone */
+  @media (prefers-color-scheme: light) {
+    :global(text-shimmer [data-text]),
+    :global(text-shimmer [data-text-out]) {
+      background-image: linear-gradient(110deg, #a8a29e, 45%, #292524, 55%, #a8a29e);
+    }
   }
 </style>
 
@@ -43,70 +63,112 @@ const shimmerLayerClasses = [
     if (customElements.get('text-shimmer')) return;
 
     class TextShimmer extends HTMLElement {
-    constructor() {
-      super();
-      this.interval = undefined;
-    }
-
-    connectedCallback() {
-      const phrasesAttr = this.dataset.phrases;
-      if (!phrasesAttr) return;
-
-      let phrases = [];
-      try {
-        phrases = JSON.parse(phrasesAttr);
-      } catch (e) {
-        console.error('TextShimmer: Failed to parse phrases', e);
-        return;
+      constructor() {
+        super();
+        this.interval = undefined;
+        this.currentAnim = undefined;
       }
 
-      if (!phrases.length) return;
+      connectedCallback() {
+        const phrasesAttr = this.dataset.phrases;
+        if (!phrasesAttr) return;
 
-      const intervalMs = Number(this.dataset.phraseIntervalMs) || 1000;
-      const textEl = this.querySelector('[data-text]');
-      const outEl = this.querySelector('[data-text-out]');
-      if (!textEl) return;
-
-      let index = 0;
-      const CROSSFADE_MS = 150;
-
-      this.interval = window.setInterval(() => {
-        index = (index + 1) % phrases.length;
-
-        if (!outEl) {
-          textEl.textContent = phrases[index];
+        let phrases = [];
+        try {
+          phrases = JSON.parse(phrasesAttr);
+        } catch (e) {
+          console.error('TextShimmer: Failed to parse phrases', e);
           return;
         }
 
-        // Crossfade instead of a hard cut: hand the outgoing phrase to the
-        // back layer and blur-fade it out while the incoming phrase fades in.
-        outEl.getAnimations().forEach((anim) => anim.cancel());
-        outEl.textContent = textEl.textContent;
-        outEl.animate(
-          [
-            { opacity: 1, filter: 'blur(0px)' },
-            { opacity: 0, filter: 'blur(2px)' }
-          ],
-          { duration: CROSSFADE_MS, easing: 'ease-out' }
-        ).finished.then(() => {
-          outEl.textContent = '';
-        }, () => { /* cancelled by a newer crossfade */ });
+        if (!phrases.length) return;
 
-        textEl.textContent = phrases[index];
-        textEl.animate(
-          [{ opacity: 0 }, { opacity: 1 }],
-          { duration: CROSSFADE_MS, easing: 'ease-out' }
-        );
-      }, intervalMs);
-    }
+        const durationMs = Number(this.dataset.durationMs) || 2000;
+        const intervalMs = Number(this.dataset.phraseIntervalMs) || (durationMs + 800);
+        const textEl = this.querySelector('[data-text]');
+        const outEl = this.querySelector('[data-text-out]');
+        if (!textEl) return;
 
-    disconnectedCallback() {
-      if (this.interval) {
-        clearInterval(this.interval);
-        this.interval = undefined;
+        const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        // Cancel continuous CSS shimmer keyframe so WAAPI can drive the shimmer per-phrase cleanly in sync
+        textEl.classList.remove('animate-shimmer');
+        if (outEl) outEl.classList.remove('animate-shimmer');
+        textEl.getAnimations().forEach((anim) => {
+          if (anim.animationName === 'shimmer') anim.cancel();
+        });
+
+        const startShimmer = () => {
+          if (reducedMotion) return;
+          if (this.currentAnim) {
+            try { this.currentAnim.cancel(); } catch {}
+          }
+          this.currentAnim = textEl.animate(
+            [
+              { backgroundPosition: '0 0' },
+              { backgroundPosition: '-200% 0' }
+            ],
+            {
+              duration: durationMs,
+              easing: 'linear',
+              fill: 'forwards'
+            }
+          );
+        };
+
+        // Start initial phrase shimmer sweep
+        startShimmer();
+
+        let index = 0;
+        const CROSSFADE_MS = 200;
+
+        this.interval = window.setInterval(() => {
+          index = (index + 1) % phrases.length;
+
+          if (!outEl) {
+            textEl.textContent = phrases[index];
+            startShimmer();
+            return;
+          }
+
+          // Crossfade: capture outgoing phrase and blur-fade it out while incoming phrase fades in
+          outEl.getAnimations().forEach((anim) => anim.cancel());
+          outEl.textContent = textEl.textContent;
+          outEl.style.backgroundPosition = '-200% 0';
+          outEl.animate(
+            reducedMotion
+              ? [{ opacity: 1 }, { opacity: 0 }]
+              : [
+                  { opacity: 1, filter: 'blur(0px)' },
+                  { opacity: 0, filter: 'blur(2px)' }
+                ],
+            { duration: CROSSFADE_MS, easing: 'ease-out' }
+          ).finished.then(() => {
+            outEl.textContent = '';
+          }, () => { /* cancelled by a newer crossfade */ });
+
+          textEl.textContent = phrases[index];
+          textEl.animate(
+            [{ opacity: 0 }, { opacity: 1 }],
+            { duration: CROSSFADE_MS, easing: 'ease-out' }
+          );
+
+          // Synchronously restart the shimmer animation on the new phrase
+          startShimmer();
+        }, intervalMs);
+      }
+
+      disconnectedCallback() {
+        if (this.interval) {
+          clearInterval(this.interval);
+          this.interval = undefined;
+        }
+        if (this.currentAnim) {
+          try { this.currentAnim.cancel(); } catch {}
+          this.currentAnim = undefined;
+        }
       }
     }
-  }
 
     customElements.define('text-shimmer', TextShimmer);
   })();

@@ -8,7 +8,14 @@
 
   /* Motion easing tokens. JS twin: EASE_OUT_EXPO = [0.16, 1, 0.3, 1] — keep in sync. */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+  /* VenueMap controls — chips, zoom links, route-option colors/transforms. */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  /* VenueMap origin-marker ping. */
+  --ease-out-standard: cubic-bezier(0, 0, 0.2, 1);
+  /* HeroZoom — the scroll-scrubbed image zoom. */
+  --ease-out-zoom: cubic-bezier(0.33, 1, 0.68, 1);
+  /* QuranVerse — the blur-reveal word entrance. */
+  --ease-blur-reveal: cubic-bezier(0.25, 0.1, 0.25, 1);
 
   --animate-shimmer: shimmer 2s linear infinite;
 

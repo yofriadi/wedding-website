@@ -1,0 +1,199 @@
+---
+import { getConfirmedGuestCount } from "../lib/rsvp";
+import SlideToConfirm from "./SlideToConfirm.astro";
+
+interface Props {
+  inviteDisplayName?: string | null;
+  rsvpAttending?: boolean | null;
+}
+
+const { inviteDisplayName = null, rsvpAttending = null } = Astro.props;
+
+const isInvitee = typeof inviteDisplayName === "string" && inviteDisplayName.length > 0;
+// A stored "attending" is the only state that renders the confirmed button;
+// "declined" and "never answered" both get the fresh one (the POST upserts over
+// a decline — the endpoint's change-of-mind semantics).
+const isConfirmed = rsvpAttending === true;
+
+// The invitee control is one button that always submits
+// { attending: true, partySize: 1 } (design D4): there is no decline path and
+// no party-size stepper in this UI, so the label carries the whole state.
+const LABEL_FRESH = "Confirm Reservation";
+const LABEL_CONFIRMED = "Reservation Confirmed";
+
+// The counter must never break the homepage: on aggregate failure render 0
+// and skip the poll script entirely.
+let confirmedCount = 0;
+let countAvailable = true;
+try {
+  confirmedCount = await getConfirmedGuestCount();
+} catch (err) {
+  console.error("[rsvp-section] count query failed:", err);
+  countAvailable = false;
+}
+
+const countDigits = String(confirmedCount);
+---
+
+<div
+  class="pt-8 space-y-4"
+  role="status"
+  aria-label={`${confirmedCount} guests confirmed`}
+>
+  <number-ticker
+    data-start-on-view
+    {...(countAvailable ? { "data-poll": true } : {})}
+    class="inline-flex text-5xl md:text-7xl font-semibold tabular-nums text-[color:var(--rsvp-fg)]"
+    >{countDigits}</number-ticker
+  >
+  <p class="text-xs tracking-widest uppercase text-[color:var(--rsvp-muted)]">
+    confirmed
+  </p>
+</div>
+
+{
+  isInvitee ? (
+    <form
+      id="rsvp-form"
+      class="pt-4 space-y-6"
+      data-rsvp-form
+    >
+      {/* tabindex="-1": the confirmed button is `disabled`, and a disabled
+          control is barred from focus, so this wrapper is what keeps the
+          section's action focused after a submit (see the form script). */}
+      <div class="flex justify-center" data-rsvp-action tabindex="-1">
+        <SlideToConfirm
+          type="submit"
+          disabled={isConfirmed}
+          aria-disabled={isConfirmed ? "true" : undefined}
+          data-rsvp-confirm
+          data-label-confirmed={LABEL_CONFIRMED}
+        >
+          {isConfirmed ? LABEL_CONFIRMED : LABEL_FRESH}
+        </SlideToConfirm>
+      </div>
+
+      <p data-rsvp-error class="hidden text-sm text-[color:var(--rsvp-error)]" role="alert" />
+      {/* Always rendered (never display:none) so it is a live region the
+          first time it is written to. */}
+      <p data-rsvp-note class="text-sm text-[color:var(--rsvp-muted)]" aria-live="polite" />
+    </form>
+  ) : (
+    <div class="pt-12">
+      <p class="text-xs tracking-widest uppercase text-[color:var(--rsvp-muted)]">
+        RSVP through your personal invitation link
+      </p>
+    </div>
+  )
+}
+
+<script>
+  import "./number-ticker";
+
+  // Poll the public count and roll the ticker on change. No fetch on connect —
+  // the server-rendered digits are fresh. Polls only while the tab is visible.
+  const ticker = document.querySelector("number-ticker");
+  const pollEnabled = ticker instanceof HTMLElement && ticker.hasAttribute("data-poll");
+  const poll = async () => {
+    if (!pollEnabled || !ticker) return;
+    try {
+      const res = await fetch("/api/rsvp/count", { cache: "no-store" });
+      if (!res.ok) return; // keep last known value
+      const data = (await res.json()) as { count?: unknown };
+      if (typeof data.count === "number" && Number.isFinite(data.count)) {
+        const next = String(Math.max(0, Math.round(data.count)));
+        const current = ticker.getAttribute("value") ?? ticker.textContent?.trim();
+        if (next !== current) {
+          ticker.setAttribute("value", next);
+        }
+      }
+    } catch {
+      // Network failure: keep last known value.
+    }
+  };
+  if (pollEnabled) {
+    const POLL_MS = 30_000;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void poll();
+    }, POLL_MS);
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") void poll();
+    });
+    window.addEventListener("pagehide", () => window.clearInterval(timer));
+  }
+
+  // Invitee RSVP control (server-rendered; absent for anonymous visitors).
+  const form = document.querySelector("[data-rsvp-form]");
+  if (form instanceof HTMLFormElement) {
+    const confirmBtn = form.querySelector<HTMLButtonElement>("[data-rsvp-confirm]");
+    const actionWrap = form.querySelector<HTMLElement>("[data-rsvp-action]");
+    const errorEl = form.querySelector<HTMLElement>("[data-rsvp-error]");
+    const noteEl = form.querySelector<HTMLElement>("[data-rsvp-note]");
+
+    // One-way by design: a confirmed invitee has no UI path back to declined.
+    let confirmed = confirmBtn?.disabled === true;
+
+    // SlideToConfirm marks its label span [data-slide-to-confirm-text]; the
+    // swap correct if the component ever paints the label on more than one layer.
+    const setLabel = (text: string) => {
+      if (!confirmBtn) return;
+      for (const layer of confirmBtn.querySelectorAll<HTMLElement>("[data-slide-to-confirm-text]")) {
+        layer.textContent = text;
+      }
+    };
+
+    const showError = (message: string) => {
+      if (noteEl) noteEl.textContent = "";
+      if (errorEl) {
+        errorEl.textContent = message;
+        errorEl.classList.remove("hidden");
+      }
+    };
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      if (!confirmBtn || confirmed) return;
+      if (errorEl) {
+        errorEl.textContent = "";
+        errorEl.classList.add("hidden");
+      }
+      if (noteEl) noteEl.textContent = "";
+      try {
+        const res = await fetch("/api/rsvp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          cache: "no-store",
+          body: JSON.stringify({ attending: true, partySize: 1 }),
+        });
+        if (!res.ok) {
+          // The body is fixed and always valid, so this is a server-side or
+          // session problem; nothing the guest can adjust.
+          showError("Couldn't save your RSVP. Please try again.");
+          return;
+        }
+        // State first (D12): confirmed + aria-disabled close the double-submit
+        // window before any motion starts; the disabled attr lands last so the
+        // button stays pressable through the settle-pop.
+        confirmed = true;
+        confirmBtn.setAttribute("aria-disabled", "true");
+
+        // The morph — black flood, parked rim, handle check, confetti — is
+        // owned by SlideToConfirm and began when the slide armed, before the fetch
+        // resolved. This side only swaps the words and locks the control.
+        const confirmedText = confirmBtn.dataset.labelConfirmed || "Reservation Confirmed";
+        setLabel(confirmedText);
+        confirmBtn.disabled = true;
+
+        // The pressed control is being replaced as the section's action, so
+        // focus has to land somewhere in the section rather than on <body>.
+        // `disabled` bars the button itself from being focusable, hence the
+        // wrapper. (The rim keeps rotating either way.)
+        actionWrap?.focus({ preventScroll: true });
+        if (noteEl) noteEl.textContent = "Your reservation is confirmed.";
+        void poll();
+      } catch {
+        showError("Couldn't save your RSVP. Please try again.");
+      }
+    });
+  }
+</script>

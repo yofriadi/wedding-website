@@ -12,10 +12,25 @@ function lazyClient(): Client {
   let cached: Client | undefined;
   return new Proxy({} as Client, {
     get(_target, prop) {
-      cached ??= createClient({
-        url: env.DATABASE_URL,
-        ...(env.DATABASE_AUTH_TOKEN ? { authToken: env.DATABASE_AUTH_TOKEN } : {}),
-      });
+      if (!cached) {
+        cached = createClient({
+          url: env.DATABASE_URL,
+          ...(env.DATABASE_AUTH_TOKEN ? { authToken: env.DATABASE_AUTH_TOKEN } : {}),
+        });
+        // SQLite defaults to foreign_keys=OFF, which makes the FK clauses in
+        // the schema decorative. The local sqlite3 client pins one connection
+        // for its lifetime (only transaction()/reconnect() swap it) and the
+        // pragma is per-connection, so issuing it once here covers every
+        // future statement on this client.
+        //
+        // Remote (http/ws) libsql enforces FKs server-side and the pragma is
+        // a no-op there. A failure here surfaces through the normal client
+        // error path (503 at the route layer); it never leaves a connection
+        // silently running with FKs off.
+        void cached.execute("PRAGMA foreign_keys=ON").catch((err: unknown) => {
+          console.error("[db] foreign_keys pragma failed:", err);
+        });
+      }
       const value = Reflect.get(cached, prop, cached);
       return typeof value === "function" ? value.bind(cached) : value;
     },

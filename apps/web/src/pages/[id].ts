@@ -65,9 +65,11 @@ export const GET: APIRoute = async ({ params, cookies }) => {
       inviteExists = false;
     }
   }
-  const existing = cookies.get(INVITE_COOKIE_NAME);
-
-  if (!existing && inviteExists) {
+  // Opening an invite link is an explicit identity statement: bind (or
+  // rebind) the cookie to THIS invite, even if a stale/unknown cookie is
+  // already present — otherwise a dead cookie from an earlier visit would
+  // keep masking the greeting for every future invite link this guest opens.
+  if (inviteExists) {
     const days = env.INVITE_COOKIE_DAYS;
     cookies.set(INVITE_COOKIE_NAME, id, {
       httpOnly: false,
