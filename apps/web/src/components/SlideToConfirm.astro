@@ -1,0 +1,694 @@
+---
+/**
+ * SlideToConfirm — slide-to-confirm RSVP control with a confetti payoff.
+ *
+ * Interaction and presentation are an Astro port of radiumcoders'
+ * SlideToDetonate (21st.dev/@radiumcoders/components/slide-to-detonate,
+ * source: github.com/radiumcoders/Evil-Buttons): a flat hairline track whose
+ * centered label fades as a solid handle is dragged across it; releasing with
+ * the handle parked at the far end arms the action (fires the real form
+ * submit), releasing anywhere short of it springs the handle back. Where the
+ * reference self-resets, this control is one-way (the wedding RSVP has no
+ * undo), so its "detonation" is permanent — and celebrated instead of reset.
+ *
+ * The celebration (the deliberate tweak): once fully slid, the whole track
+ * fills solid black behind the handle as the label swaps to "Reservation
+ * Confirmed", while a canvas-confetti burst fires from the pill's center, in
+ * the spirit of magicui.design/docs/components/confetti (the ConfettiButton
+ * origin-from-button math, with the stars demo's staggered multi-shot
+ * volley).
+ *
+ * Implementation notes:
+ *  - The drag is hand-rolled pointer-capture math in the inline script (the
+ *    site already ships `motion` for the springs); there is no React island.
+ *    The same script owns the confirmed morph — class, label and confetti —
+ *    so a successful submit is presentation-complete without RsvpSection
+ *    having to choreograph it. RsvpSection still disables the control (D12)
+ *    and moves focus.
+ *  - Palette contract kept from the previous implementation: two polarity
+ *    tokens carry the theme and every painted color derives from them, so
+ *    light mode is dark mode mirrored by construction. The handle and label
+ *    are the INVERSE of the page; the track stays flat — a translucent
+ *    hairline of ink over the page ground, no gradient, no rim. The
+ *    confirmed pill is always #000 with near-white text in BOTH themes — on
+ *    a light page that is the same inverse polarity it already had; on a
+ *    dark page the flip is the point (the state change reads as an event,
+ *    not a dim). The confetti palette flips with the device theme too (hues
+ *    stay, lightness inverts), so the burst reads against the page it lands
+ *    on.
+ *  - Pointer interaction is slide-only — this is a slider, not a button: a
+ *    tap or a short drag NEVER confirms (its trailing click is swallowed
+ *    before it can submit); only a release with the handle parked at the far
+ *    end arms, and a pointercancel can only spring back. Keyboard and AT
+ *    never see a drag: their activation (Enter/Space/screen-reader press —
+ *    a click with no pointer) counts as a full slide, because a keyboard
+ *    can't drag.
+ *  - `prefers-reduced-motion` skips the springs and the volley (one quiet
+ *    tick of confetti) and makes the morph instant. `forced-colors` drops to
+ *    system colors throughout.
+ *  - The label keeps `data-slide-to-confirm-text` because RsvpSection
+ *    rewrites it after a successful confirmation.
+ */
+import type { HTMLAttributes } from "astro/types";
+
+// The element stays a native <button> (type, disabled, form semantics) even
+// though the pointer interaction is a slide — keyboard and AT need a real
+// activation target, and every native attribute passes through.
+type Props = HTMLAttributes<"button">;
+
+const {
+  type = "submit",
+  class: className = "",
+  disabled = false,
+  "aria-disabled": ariaDisabled,
+  ...rest
+} = Astro.props satisfies Props;
+---
+
+<button
+  class:list={["slide-to-confirm", className]}
+  type={type}
+  disabled={disabled}
+  aria-disabled={ariaDisabled}
+  data-slide-to-confirm
+  {...rest}
+>
+  <span class="slide-to-confirm__label" data-slide-to-confirm-text><slot /></span>
+  <span class="slide-to-confirm__handle" data-slide-to-confirm-handle aria-hidden="true">
+    <svg
+      class="slide-to-confirm__icon slide-to-confirm__icon--chevrons"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.25"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <path d="m6 17 5-5-5-5"></path>
+      <path d="m13 17 5-5-5-5"></path>
+    </svg>
+    <svg
+      class="slide-to-confirm__icon slide-to-confirm__icon--check"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2.25"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <path d="M20 6 9 17l-5-5" pathLength="1"></path>
+    </svg>
+  </span>
+</button>
+
+<style>
+  .slide-to-confirm {
+    /* ---- palette: the track's ground, the handle's solid, and the ink ----
+       Mirrored by construction: dark page (the fallback) → a dark-gray track
+       with a light handle and light ink; light page → a light-gray track with
+       a dark handle and dark ink. No rule below hard-codes a color… except
+       the confirmed fill, which is pure #000 in both themes by design (see
+       the header comment). */
+    --slide-to-confirm-track: #262626;
+    --slide-to-confirm-surface: #fafafa;
+    --slide-to-confirm-ink: #fafafa;
+    /* The handle's glyph reads AGAINST the handle, so it is the handle's own
+       opposite — never the ink (the ink matches the handle on one theme and
+       would paint the icon invisible). */
+    --slide-to-confirm-handle-ink: #0a0a0a;
+
+    /* The confirmed fill: solid black with near-white text in both themes. */
+    --slide-to-confirm-confirmed: #000;
+    --slide-to-confirm-confirmed-label: #fafafa;
+
+    --slide-to-confirm-radius: 50px;
+    --slide-to-confirm-height: 58px;
+    /* The handle fills the pill vertically, inset from the track edge; its
+       width matches that height so it reads as a circle. */
+    --slide-to-confirm-handle-width: 50px;
+    --slide-to-confirm-inset: 4px;
+    --slide-to-confirm-duration-morph: 380ms;
+    /* The reference's flat `px-14` (3.5rem) is the ceiling, not the value: at
+       that padding the confirmed label overflows a 320–375px viewport, so both
+       the padding and the type shrink fluidly and reach the reference figures
+       from ~500px up. The label stays on one line at every width. */
+    --slide-to-confirm-pad-x: clamp(0.75rem, 4vw, 3.5rem);
+    /* The reference's typography verbatim: 14px, medium, sentence case,
+       normal tracking — no uppercase treatment. */
+    --slide-to-confirm-font-size: 0.875rem;
+    --slide-to-confirm-line-height: 1.5rem;
+    --slide-to-confirm-font-weight: 500;
+    --slide-to-confirm-letter-spacing: normal;
+    --slide-to-confirm-text-transform: none;
+
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    /* The track is a fixed canvas: the pill needs a floor width so the
+       handle, the slide and the centered label always compose (the label
+       alone can be narrower than a comfortable slide). max-width still keeps
+       a long label inside a narrow screen. */
+    min-width: 288px;
+    max-width: 100%;
+    height: var(--slide-to-confirm-height);
+    /* The flat track: a muted pill with a soft hairline, in the reference's
+       `border-border bg-muted/60 shadow-sm` spirit — no gradient, no rim,
+       nothing rotates. The hairline is specified WITHOUT color-mix: color-mix
+       background/border values animate from transparent when they first
+       become specified (Chromium's discrete color-mix interpolation), which
+       would make a server-confirmed pill fade in on page load instead of
+       rendering in its final state. */
+    border: 1px solid var(--slide-to-confirm-track);
+    border-radius: var(--slide-to-confirm-radius);
+    background-color: var(--slide-to-confirm-track);
+    box-shadow: 0 4px 12px rgb(0 0 0 / 0.15), 0 1px 3px rgb(0 0 0 / 0.1);
+    color: var(--slide-to-confirm-ink);
+    font-family: inherit;
+    font-size: var(--slide-to-confirm-font-size);
+    font-weight: var(--slide-to-confirm-font-weight);
+    line-height: var(--slide-to-confirm-line-height);
+    letter-spacing: var(--slide-to-confirm-letter-spacing);
+    text-transform: var(--slide-to-confirm-text-transform);
+    /* Not a button to the pointer: the whole pill is a drag surface, so the
+       cursor says grab, not click (a tap does nothing — see the click
+       listener). */
+    cursor: grab;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    /* The drag owns horizontal moves anywhere on the pill (the pill is small
+       enough that losing page-scroll over it is a fair trade). */
+    touch-action: none;
+    /* House press contract (D9): the CTA presses like every other button.
+       Only the press is transitioned here — the morph's fill/border/shadow
+       transitions live on the confirmed class itself, so a server-confirmed
+       pill has no reason to animate on page load. */
+    transition: transform 160ms ease-out;
+  }
+
+  .slide-to-confirm:not(.slide-to-confirm--confirmed):active {
+    transform: scale(0.97);
+  }
+
+  .slide-to-confirm--dragging {
+    cursor: grabbing;
+  }
+
+  /* Light theme: swap the polarity and nothing else. Every color above derives
+     from these three, so the light presentation is the dark one mirrored — a
+     light-gray track with a dark handle and dark ink against a white page. */
+  @media (prefers-color-scheme: light) {
+    .slide-to-confirm {
+      --slide-to-confirm-track: #f5f5f5;
+      --slide-to-confirm-surface: #0a0a0a;
+      --slide-to-confirm-ink: #0a0a0a;
+      --slide-to-confirm-handle-ink: #fafafa;
+    }
+  }
+
+  /* A confirmed RSVP renders `disabled` and keeps the full presentation —
+     the fill and the check are the state. Only the pointer affordance is
+     dropped. */
+  .slide-to-confirm:disabled {
+    cursor: default;
+  }
+
+  /* The ground outside the pill is the ink color, so the focus ring has to be
+     the surface to be visible at all. `:focus-visible` only, so a pointer
+     press stays clean. */
+  .slide-to-confirm:focus-visible {
+    outline: 2px solid var(--slide-to-confirm-surface);
+    outline-offset: 3px;
+  }
+
+  /* The label sits above the handle so the slide never covers the words; the
+     script fades it out as the handle crosses (JS sets
+     --slide-to-confirm-label-opacity). Its box is the WHOLE track — the words
+     center on the pill itself, never nudged aside for the handle or the
+     check (the glyphs pass under them; pointer-events are off). No color
+     transition here — it lives on the confirmed class (see the note there). */
+  .slide-to-confirm__label {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 var(--slide-to-confirm-pad-x);
+    white-space: nowrap;
+    color: var(--slide-to-confirm-ink);
+    opacity: var(--slide-to-confirm-label-opacity, 1);
+    pointer-events: none;
+  }
+
+  /* ---- the handle: the one solid piece, in the page's inverse ---- */
+  .slide-to-confirm__handle {
+    position: absolute;
+    top: var(--slide-to-confirm-inset);
+    bottom: var(--slide-to-confirm-inset);
+    left: var(--slide-to-confirm-inset);
+    z-index: 1;
+    width: var(--slide-to-confirm-handle-width);
+    display: grid;
+    place-items: center;
+    border-radius: calc(var(--slide-to-confirm-radius) - var(--slide-to-confirm-inset));
+    background-color: var(--slide-to-confirm-surface);
+    color: var(--slide-to-confirm-handle-ink);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+    /* Draggable by pointer; the offset is --slide-to-confirm-x, driven by the
+       script. An element offset (left/top style) would force layout every
+       pointermove, so the offset rides on the transform custom property —
+       compositor-only. No transitions here: the morph's live on the confirmed
+       class, so a server-confirmed handle has no reason to animate on page
+       load. */
+    transform: translateX(var(--slide-to-confirm-x, 0px));
+    cursor: grab;
+    will-change: transform;
+  }
+
+  .slide-to-confirm--dragging .slide-to-confirm__handle {
+    cursor: grabbing;
+  }
+
+  .slide-to-confirm:disabled .slide-to-confirm__handle {
+    cursor: default;
+  }
+
+  .slide-to-confirm__icon {
+    grid-area: 1 / 1;
+    width: 20px;
+    height: 20px;
+  }
+
+  /* ---- the icon morph: one cell, two glyphs ----
+     Both svgs share the same grid cell so the swap is a morph, not a
+     display toggle: on confirm the chevrons ride OUT in the slide's
+     direction while the check draws itself in (pathLength="1" normalizes
+     the stroke, so the dashoffset reveal runs 1 → 0). Idle, the check is
+     present but fully unstroked (dashoffset 1) rather than display:none —
+     a from-display:none swap would have no before-value to transition
+     from, and the draw would snap instead of travel. */
+  .slide-to-confirm__icon--check {
+    transform: scale(0.85);
+  }
+
+  .slide-to-confirm__icon--check path {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+
+  /* ---- confirmed: the whole track fills black ----
+     The morph transitions are declared HERE, not on the base rules: the class
+     only ever appears in the same frame the values change (user confirm), so
+     declaring the transitions on the base would hand every server-confirmed
+     render a pointless page-load fade (and, with color-mix colors, a
+     from-transparent artifact). */
+  .slide-to-confirm--confirmed {
+    background-color: var(--slide-to-confirm-confirmed);
+    border-color: var(--slide-to-confirm-confirmed);
+    box-shadow: none;
+    transition:
+      background-color var(--slide-to-confirm-duration-morph) ease-out,
+      border-color var(--slide-to-confirm-duration-morph) ease-out,
+      box-shadow var(--slide-to-confirm-duration-morph) ease-out;
+  }
+
+  .slide-to-confirm--confirmed .slide-to-confirm__label {
+    color: var(--slide-to-confirm-confirmed-label);
+    transition: color var(--slide-to-confirm-duration-morph) ease-out;
+    /* Same full-track box as idle: the words stay centered on the pill,
+     clear of the check parked at the far end. */
+  }
+
+  /* The handle turns black-on-black with the track: one solid pill, only the
+     check reads, in the confirmed near-white. */
+  .slide-to-confirm--confirmed .slide-to-confirm__handle {
+    background-color: var(--slide-to-confirm-confirmed);
+    color: var(--slide-to-confirm-confirmed-label);
+    box-shadow: none;
+    transition:
+      background-color var(--slide-to-confirm-duration-morph) ease-out,
+      color var(--slide-to-confirm-duration-morph) ease-out,
+      box-shadow var(--slide-to-confirm-duration-morph) ease-out;
+  }
+
+  .slide-to-confirm--confirmed .slide-to-confirm__icon--chevrons {
+    opacity: 0;
+    transform: translateX(8px);
+    transition:
+      opacity 180ms ease-out,
+      transform 180ms ease-out;
+  }
+
+  /* The check follows just behind the chevrons' exit: a slight pop up to
+     full size while the stroke draws in on the house expo curve — arrival,
+     not flicker. */
+  .slide-to-confirm--confirmed .slide-to-confirm__icon--check {
+    transform: scale(1);
+    transition: transform 320ms cubic-bezier(0.16, 1, 0.3, 1) 140ms;
+  }
+
+  .slide-to-confirm--confirmed .slide-to-confirm__icon--check path {
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 320ms cubic-bezier(0.16, 1, 0.3, 1) 140ms;
+  }
+
+  /* Reduced motion: no springs, no morph travel — the confirmed state still
+     reads, just without the journey. The confirmed rules above have higher
+     specificity, so repeat the reset at their level too. */
+  @media (prefers-reduced-motion: reduce) {
+    .slide-to-confirm,
+    .slide-to-confirm__handle,
+    .slide-to-confirm__label,
+    .slide-to-confirm__icon--check,
+    .slide-to-confirm__icon--check path,
+    .slide-to-confirm--confirmed,
+    .slide-to-confirm--confirmed .slide-to-confirm__handle,
+    .slide-to-confirm--confirmed .slide-to-confirm__icon--chevrons,
+    .slide-to-confirm--confirmed .slide-to-confirm__icon--check,
+    .slide-to-confirm--confirmed .slide-to-confirm__icon--check path {
+      transition: none;
+    }
+  }
+
+  /* Forced-colors: authored translucency is dropped by the palette swap, so
+     every part takes system colors and the confirmed state stays
+     distinguishable as inverted system colors. */
+  @media (forced-colors: active) {
+    .slide-to-confirm {
+      background-color: transparent;
+      border-color: ButtonBorder;
+      box-shadow: none;
+    }
+
+    .slide-to-confirm:focus-visible {
+      outline: 3px solid Highlight;
+      outline-offset: 2px;
+    }
+
+    .slide-to-confirm__handle {
+      background-color: ButtonFace;
+      color: ButtonText;
+      border: 1px solid ButtonBorder;
+      box-shadow: none;
+    }
+
+    .slide-to-confirm__label {
+      color: ButtonText;
+    }
+
+    .slide-to-confirm--confirmed {
+      background-color: ButtonText;
+      border-color: ButtonText;
+    }
+
+    .slide-to-confirm--confirmed .slide-to-confirm__label,
+    .slide-to-confirm--confirmed .slide-to-confirm__handle {
+      color: ButtonFace;
+    }
+
+    .slide-to-confirm--confirmed .slide-to-confirm__handle {
+      background-color: ButtonText;
+      border-color: ButtonText;
+    }
+
+    .slide-to-confirm:disabled .slide-to-confirm__label,
+    .slide-to-confirm:disabled .slide-to-confirm__handle {
+      color: GrayText;
+    }
+  }
+</style>
+
+<script>
+  import { animate } from "motion";
+  import confetti from "canvas-confetti";
+
+  // JS twin of the CSS --ease-out-expo token; keep in sync.
+  const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
+
+  // The SlideToDetonate geometry, taken literally: the handle must be parked
+  // at the FAR END to arm (setX clamps the drag to the track, so a drag to or
+  // past the end reaches exactly range), and a springy return when let go
+  // anywhere short of it. A tap or a partial slide never confirms.
+  const ARM_THRESHOLD = 1;
+
+  const setupSlider = (btn: HTMLButtonElement) => {
+    const handle = btn.querySelector<HTMLElement>("[data-slide-to-confirm-handle]");
+    const label = btn.querySelector<HTMLElement>("[data-slide-to-confirm-text]");
+    if (!handle || !label) return;
+
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    // The distance the handle can travel: the pill's inner width minus the
+    // handle and its (symmetric) insets, read off the layout so the CSS owns
+    // every number. Measured lazily on the first pointerdown (the pill may be
+    // inside an unlaid-out container at connect time) and re-measured on
+    // resize so rotation/viewport changes stay honest.
+    let range = 0;
+    const measure = () => {
+      range = Math.max(0, btn.clientWidth - handle.offsetWidth - handle.offsetLeft * 2);
+    };
+    measure();
+    if (typeof ResizeObserver !== "undefined") {
+      new ResizeObserver(measure).observe(btn);
+    } else {
+      window.addEventListener("resize", measure);
+    }
+
+    let confirmed = btn.disabled || btn.classList.contains("slide-to-confirm--confirmed");
+    // Set by a threshold-crossing release so that gesture's own click is
+    // allowed through to the submit (see the click listener).
+    let armedViaDrag = false;
+    let x = 0;
+    // The settle/confirm spring, kept so a new gesture can stop it — motion's
+    // default when overlapping animations on one value race (stop wins).
+    let ride: { stop: () => void } | null = null;
+    let dragging = false;
+    let pointerId: number | null = null;
+    let startClientX = 0;
+    let startX = 0;
+
+    const setX = (next: number) => {
+      x = Math.min(Math.max(next, 0), range);
+      handle.style.setProperty("--slide-to-confirm-x", `${x}px`);
+      // Idle label fades as the handle crosses the track (reference: opacity
+      // 1 → 0 over the first 70% of the slide).
+      const progress = range > 0 ? x / range : 0;
+      label.style.setProperty(
+        "--slide-to-confirm-label-opacity",
+        String(1 - Math.min(progress / 0.7, 1)),
+      );
+    };
+
+    // The reference's settle spring (stiffness 500 / damping 38). Motion
+    // animates a plain number; each tick re-renders offset + label fade.
+    // onComplete pins the exact endpoint, so a release a hair short of the
+    // end can never freeze where it let go — the parked position IS the far
+    // end (and only the far end arms).
+    const rideTo = (to: number) => {
+      ride?.stop();
+      if (reducedMotion) {
+        setX(to);
+        return;
+      }
+      ride = animate(x, to, {
+        type: "spring",
+        stiffness: 500,
+        damping: 38,
+        onUpdate: (v) => setX(v),
+        onComplete: () => setX(to),
+      });
+    };
+
+
+    // The MagicUI ConfettiButton origin math: burst from the button's center,
+    // expressed as a fraction of the viewport. The palette flips with the
+    // device theme — hues stay, lightness inverts — so the volley reads
+    // against the page it lands on, same mirrored-by-construction contract as
+    // the pill. Volley shape is the magicui stars demo: three staggered shots
+    // of a large shape plus a few small circles.
+    const fireConfetti = () => {
+      const rect = btn.getBoundingClientRect();
+      const origin = {
+        x: (rect.left + rect.width / 2) / window.innerWidth,
+        y: (rect.top + rect.height / 2) / window.innerHeight,
+      };
+      const light = window.matchMedia("(prefers-color-scheme: light)").matches;
+      const colors = light
+        ? ["#b45309", "#be123c", "#1d4ed8", "#047857", "#111111"]
+        : ["#fcd34d", "#fda4af", "#93c5fd", "#6ee7b7", "#fafafa"];
+      const defaults = {
+        origin,
+        colors,
+        spread: 70,
+        ticks: 200,
+        gravity: 1,
+        decay: 0.94,
+        startVelocity: 38,
+        zIndex: 9999,
+      };
+      if (reducedMotion) {
+        // One quiet tick — the state change is the celebration.
+        void confetti({ ...defaults, particleCount: 40, startVelocity: 22 });
+        return;
+      }
+      const shoot = () => {
+        void confetti({ ...defaults, particleCount: 50, scalar: 1.1, shapes: ["star"] });
+        void confetti({ ...defaults, particleCount: 14, scalar: 0.7, shapes: ["circle"] });
+      };
+      shoot();
+      window.setTimeout(shoot, 120);
+      window.setTimeout(shoot, 240);
+    };
+
+    // Fully slid: the whole track fills black behind the handle, the label
+    // re-enters in the confirmed near-white, and the volley fires. RsvpSection
+    // catches the same gesture's submit event, so the fetch, the disable
+    // (D12) and the focus move stay exactly where they were.
+    const confirm = () => {
+      if (confirmed) return;
+      confirmed = true;
+      btn.classList.add("slide-to-confirm--confirmed");
+      btn.classList.remove("slide-to-confirm--dragging");
+
+      // The label was faded by the slide; the confirmed words rise back in
+      // (color flips via the class transition). RsvpSection has already
+      // swapped the text by now — it runs on submit, which fires first.
+      const labelIn = () => {
+        label.style.setProperty("--slide-to-confirm-label-opacity", "1");
+        if (reducedMotion) return;
+        animate(
+          label,
+          { opacity: [0, 1], transform: ["translateY(6px)", "translateY(0px)"] },
+          { duration: 0.25, ease: EASE_OUT_EXPO },
+        );
+      };
+      if (reducedMotion) {
+        setX(range);
+        labelIn();
+      } else {
+        // The handle springs the rest of the way home and STAYS there — the
+        // check parked at the far end is part of the confirmed composition.
+        rideTo(range);
+        // The fill and the words follow just behind it, so the pill reads as
+        // going black rather than switching color.
+        window.setTimeout(labelIn, 120);
+        // Gentle settle-pop on the pill (a settle, not a bounce).
+        animate(btn, { scale: [1, 1.04, 1] }, { duration: 0.35, ease: EASE_OUT_EXPO });
+      }
+      fireConfetti();
+    };
+
+    btn.addEventListener("pointerdown", (event) => {
+      if (confirmed || btn.disabled) return;
+      // Left button / touch / pen only.
+      if (event.pointerType === "mouse" && event.button !== 0) return;
+      measure();
+      dragging = true;
+      pointerId = event.pointerId;
+      startClientX = event.clientX;
+      startX = x;
+      btn.classList.add("slide-to-confirm--dragging");
+      // Synthetic pointer events (tests) have no active pointer to capture;
+      // real ones always do. Without capture a pointerup off-pill would
+      // strand the drag, hence capture-or-nothing, not capture-or-crash.
+      try {
+        btn.setPointerCapture(pointerId);
+      } catch {
+        /* no active pointer: dragging still works via the move/up pair */
+      }
+      event.preventDefault();
+    });
+
+    btn.addEventListener("pointermove", (event) => {
+      if (!dragging || event.pointerId !== pointerId) return;
+      setX(startX + (event.clientX - startClientX));
+    });
+
+    // A release is the only way a drag confirms, and only a FULL slide arms:
+    // the threshold compares against where the handle ACTUALLY is, so a tap,
+    // a nudge, or a 30–40% pull all spring home — only the handle parked at
+    // the far end confirms on release.
+    const release = (event: PointerEvent) => {
+      if (!dragging || event.pointerId !== pointerId) return;
+      dragging = false;
+      pointerId = null;
+      btn.classList.remove("slide-to-confirm--dragging");
+      if (range > 0 && x >= range * ARM_THRESHOLD) {
+        // The pointerup's own click follows immediately; mark it as this
+        // gesture's so the click listener lets it through to the submit.
+        armedViaDrag = true;
+        confirm();
+      } else {
+        rideTo(0);
+      }
+    };
+    btn.addEventListener("pointerup", release);
+    // A cancel (scroll takeover, browser gesture) is NOT a release: the only
+    // honest outcome is the spring home. Confirming here is how a half-slide
+    // would "immediately confirm".
+    btn.addEventListener("pointercancel", (event) => {
+      if (!dragging || event.pointerId !== pointerId) return;
+      dragging = false;
+      pointerId = null;
+      btn.classList.remove("slide-to-confirm--dragging");
+      rideTo(0);
+    });
+
+    // Pointer activation is slide-only — a tap is NEVER an activation: this
+    // is a slider, not a button. The only pointer path through is an armed
+    // full slide, whose release (a frame ago) flagged its own trailing click.
+    // Keyboard and AT activation — Enter/Space/screen-reader press, a click
+    // with no pointer, so `detail === 0` — counts as a full slide, because a
+    // keyboard can't drag. Every other click is swallowed: a tap, a short
+    // drag's trailing click, or a press while the handle is away from home
+    // mid-gesture.
+    btn.addEventListener("click", (event) => {
+      if (confirmed) {
+        if (!armedViaDrag) event.preventDefault(); // confirmed and idle: inert
+        armedViaDrag = false;
+        return;
+      }
+      if (btn.disabled || event.detail !== 0 || x > 0) {
+        event.preventDefault();
+        return;
+      }
+      confirm();
+      // No preventDefault on the arming paths: a submit button's click
+      // dispatches the form's submit event, which RsvpSection turns into the
+      // RSVP POST.
+    });
+
+    // The server can render the control already confirmed (returning guest):
+    // park the handle at the far end with no motion and no volley — the state
+    // is old news, not a fresh celebration. The morph transitions only exist
+    // on the confirmed class, so adding the class would fade the fill in from
+    // its idle values (a page-load artifact on a state that isn't fresh):
+    // suppress them for the one frame the class lands in.
+    if (confirmed) {
+      // The icons' morph transitions live on the confirmed class too, so
+      // they are suppressed alongside the rest for the one frame.
+      const iconBits = handle.querySelectorAll<SVGElement>(".slide-to-confirm__icon, .slide-to-confirm__icon path");
+      btn.style.transition = "none";
+      handle.style.transition = "none";
+      label.style.transition = "none";
+      for (const bit of iconBits) bit.style.transition = "none";
+      btn.classList.add("slide-to-confirm--confirmed");
+      measure();
+      setX(range);
+      label.style.setProperty("--slide-to-confirm-label-opacity", "1");
+      requestAnimationFrame(() => {
+        btn.style.transition = "";
+        handle.style.transition = "";
+        label.style.transition = "";
+        for (const bit of iconBits) bit.style.transition = "";
+      });
+    }
+  };
+
+  for (const btn of document.querySelectorAll<HTMLButtonElement>("[data-slide-to-confirm]")) {
+    setupSlider(btn);
+  }
+</script>

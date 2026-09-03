@@ -1,0 +1,55 @@
+---
+// SlideToConfirm isolation harness (rsvp-star-confirm task 1.4).
+//
+// This route exists so the slider can be checked standalone and so
+// tests/fixtures/slide-to-confirm.html can be regenerated:
+//   1. pnpm dev  +  node scripts/make-slide-to-confirm-fixture.mjs
+// It deliberately does NOT use Layout/global.css: the fixture must carry only
+// the component's own CSS, since the committed HTML inlines exactly what this
+// page serves.
+import SlideToConfirm from "../components/SlideToConfirm.astro";
+
+// Dev-only harness: production must not ship a component test page. The
+// committed fixture is generated from this route while `astro dev` is up.
+if (!import.meta.env.DEV) {
+  return new Response(null, { status: 404 });
+}
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SlideToConfirm fixture</title>
+    <style is:inline>
+      html {
+        color-scheme: light dark;
+        background: #0a0a0a;
+      }
+      @media (prefers-color-scheme: light) {
+        html {
+          background: #ffffff;
+        }
+      }
+      body {
+        margin: 0;
+        padding: 3rem 1.5rem;
+        display: grid;
+        gap: 2.5rem;
+        justify-items: center;
+        font-family: ui-sans-serif, system-ui, sans-serif;
+        font-size: 14px;
+        font-weight: 500;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+      }
+    </style>
+  </head>
+  <body>
+    <SlideToConfirm id="slide-fresh" type="button">Confirm Reservation</SlideToConfirm>
+    <SlideToConfirm id="slide-confirmed" type="button" disabled aria-disabled="true">
+      Reservation Confirmed
+    </SlideToConfirm>
+  </body>
+</html>
