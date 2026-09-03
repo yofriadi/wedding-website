@@ -1,24 +1,6 @@
-# motion-tokens Specification
+# motion-tokens Spec Delta
 
-## Purpose
-
-Requirements for shared motion tokens (easing/duration) as the single source of motion timing values across components, so house curves are defined once and never hand-typed at call sites.
-
-## Requirements
-
-### Requirement: Motion easing and duration values live in shared tokens
-
-Motion easing curves used by more than one component SHALL be defined once as shared tokens (CSS custom properties in the global theme, with a matching JS constant per script where `animate()` needs numeric arrays), rather than hand-typed at each call site.
-
-#### Scenario: Adding a new animated component
-
-- **WHEN** a component needs the house ease-out curve
-- **THEN** it references the shared token/constant instead of re-typing `cubic-bezier(0.16, 1, 0.3, 1)`, and no component outside the token definition contains a literal copy of that bezier
-
-#### Scenario: Token and constant agree
-
-- **WHEN** the CSS token and the JS constant for the house ease-out curve are compared
-- **THEN** they are the same four values, by contract documented in the token definition
+## MODIFIED Requirements
 
 ### Requirement: Token set covers the house curves
 
@@ -33,6 +15,8 @@ The shared motion token set SHALL include the house ease-out curve (`cubic-bezie
 
 - **WHEN** a curve has exactly one consumer (e.g. the welcome gate's drawer curve)
 - **THEN** it lives as a named local constant at that call site rather than a global token
+
+## ADDED Requirements
 
 ### Requirement: JS easing twins share one name
 
