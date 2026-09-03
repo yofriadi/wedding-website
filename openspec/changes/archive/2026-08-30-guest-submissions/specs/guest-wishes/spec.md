@@ -27,7 +27,7 @@ The system SHALL enforce at most one submission per invite, via a database-level
 
 ### Requirement: Wish text validation
 
-Wish text, when provided, SHALL be trimmed server-side, SHALL be 1–500 characters after trim, and SHALL be rejected otherwise with `400`.
+Wish text, when provided, SHALL be trimmed server-side, SHALL be 1–30 characters after trim, and SHALL be rejected otherwise with `400`.
 
 #### Scenario: Blank wish text rejected
 
@@ -36,7 +36,7 @@ Wish text, when provided, SHALL be trimmed server-side, SHALL be 1–500 charact
 
 #### Scenario: Overlong wish rejected
 
-- **WHEN** trimmed wish text exceeds 500 characters
+- **WHEN** trimmed wish text exceeds 30 characters
 - **THEN** the response is `400` and no row is created
 
 ### Requirement: Submission requires content

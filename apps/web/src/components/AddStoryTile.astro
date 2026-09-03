@@ -1,0 +1,42 @@
+---
+/**
+ * AddStoryTile (guest-submissions 4.1/4.5/D5)
+ *
+ * Invite-only entry tile for the one-screen submission flow. Rendered by
+ * index.astro when the invite cookie merely LOOKS right at SSR time (a
+ * cheap shape check); the rail's client script is the real gate — it keeps
+ * the tile visible only when the payload proves a server-resolved invite
+ * (`inviteValid`) with no prior submission (`mine` null). A stale cookie
+ * therefore shows the tile briefly, then hides it after the fetch.
+ *
+ * The tile itself is static markup + styles; the flow's client logic lives in
+ * scripts/add-story-flow.ts (imported by index.astro so the modal can portal
+ * to body and the two scripts share one module instance).
+ */
+---
+
+<div id="add-story-root" class="hidden" data-add-story-root>
+  <button
+    type="button"
+    data-add-story-open
+    class="relative flex flex-col items-center gap-2 group cursor-pointer bg-transparent border-none outline-none active:scale-[0.97] transition-transform duration-160 ease-out"
+    aria-label="Add your story"
+  >
+    <div
+      class="relative flex items-center justify-center border border-dashed border-[color:var(--memories-tile-border)] rounded-[12px] bg-[color:var(--memories-tile-bg)] hover:border-[color:var(--memories-tile-hover-border)] transition-colors"
+      style="width: 112px; height: 200px;"
+    >
+      <svg viewBox="0 0 24 24" class="w-8 h-8 text-[color:var(--memories-tile-icon)]" aria-hidden="true">
+        <path
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M12 5v14M5 12h14"
+        />
+      </svg>
+    </div>
+    <span class="text-xs text-[color:var(--memories-label)] truncate max-w-[80px]">Add story</span>
+  </button>
+</div>

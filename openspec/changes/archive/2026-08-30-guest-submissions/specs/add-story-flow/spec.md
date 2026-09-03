@@ -27,7 +27,7 @@ The story rail SHALL show an "Add Story" tile only when an invite cookie is pres
 
 ### Requirement: One-screen flow with two optional inputs
 
-The flow SHALL present wish text (optional, max 500 chars) and a photo picker (optional, up to 5 photos with client-side type/size pre-validation) on one screen; at least one input must be non-empty to submit.
+The flow SHALL present a photo picker (optional, up to 3 photos with client-side type/size pre-validation) and wish text (optional, max 30 chars, single line) on one screen; at least one input must be non-empty to submit.
 
 #### Scenario: Text-only submission
 

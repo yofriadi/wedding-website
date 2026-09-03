@@ -8,11 +8,11 @@ Guest photo uploads as part of the single submission: storage on the VM's local 
 
 ### Requirement: Photo limits
 
-Each submission SHALL include at most 5 photos, each at most 10MB, of allowed types (jpeg, png, webp, avif verified by magic bytes, not Content-Type alone); violations SHALL be rejected with `400`.
+Each submission SHALL include at most 3 photos, each at most 10MB, of allowed types (jpeg, png, webp, avif verified by magic bytes, not Content-Type alone); violations SHALL be rejected with `400`.
 
 #### Scenario: Too many photos rejected
 
-- **WHEN** a submission includes 6 photos
+- **WHEN** a submission includes 4 photos
 - **THEN** the response is `400` and nothing is stored
 
 #### Scenario: Oversized photo rejected

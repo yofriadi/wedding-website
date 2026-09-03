@@ -14,7 +14,7 @@ The invite-identity contract and deployment substrate ship in `invite-only-perso
 
 ### D1 — Data model: one submission row per invite
 
-Table `submissions`: `id TEXT pk` (12-char random, invites generator), `invite_id TEXT NOT NULL UNIQUE REFERENCES invites(id)`, `wish_text TEXT NULL` (trim; 1–500 chars when present), `created_at INTEGER NOT NULL`. Table `submission_photos`: `id TEXT pk`, `submission_id TEXT NOT NULL REFERENCES submissions(id)`, `key TEXT NOT NULL`, `position INTEGER NOT NULL` (0–4), `created_at INTEGER NOT NULL`. A submission MUST contain at least one of wish_text / photos (API-enforced). `UNIQUE(invite_id)` is the entire post-once enforcement. T2 resolved: one post total, containing either or both.
+Table `submissions`: `id TEXT pk` (12-char random, invites generator), `invite_id TEXT NOT NULL UNIQUE REFERENCES invites(id)`, `wish_text TEXT NULL` (trim; 1–30 chars when present), `created_at INTEGER NOT NULL`. Table `submission_photos`: `id TEXT pk`, `submission_id TEXT NOT NULL REFERENCES submissions(id)`, `key TEXT NOT NULL`, `position INTEGER NOT NULL` (0–2), `created_at INTEGER NOT NULL`. A submission MUST contain at least one of wish_text / photos (API-enforced). `UNIQUE(invite_id)` is the entire post-once enforcement. T2 resolved: one post total, containing either or both.
 
 #### D1a — No names stored on submissions
 
@@ -22,7 +22,7 @@ No display_name is copied onto submissions. Rendering reads only wish text/photo
 
 ### D2 — Endpoints (cookie-gated via invite-session)
 
-- `POST /api/submissions`: multipart `{ wishText?, photos? }`. Cookie required. Validates: wishText 1–500 after trim; photos ≤5, each ≤10MB, magic-byte types jpeg/png/webp/avif; at least one of text/photos. UNIQUE violation → `409 { error: "already_posted" }`. Success `201`. `no-store`.
+- `POST /api/submissions`: multipart `{ wishText?, photos? }`. Cookie required. Validates: wishText 1–30 after trim; photos ≤3, each ≤10MB, magic-byte types jpeg/png/webp/avif; at least one of text/photos. UNIQUE violation → `409 { error: "already_posted" }`. Success `201`. `no-store`.
 - `GET /api/submissions`: cookie required. Returns `{ mine, wall }` — `mine` is `{ id, wishText, photos: [{ photoUrl }] }` (photo entries ordered by position) or `null`; `wall.wishes` is `[{ text }]` newest-first; `wall.stories` is an array of submissions newest-first, each `{ photos: [{ photoUrl }] }` (positions are per-submission and NOT exposed on the wall). No name fields anywhere. `no-store`.
 - Photo URLs are app-served routes (see D4a), not static file paths.
 
@@ -52,7 +52,7 @@ Per-invite: 1 submission (UNIQUE) + 5 photos + 10MB each ≈ hard cap 50MB per i
 
 ### D5 — Add-story flow (UI)
 
-The story rail gains an invite-only "Add Story" tile (visible only when cookie present AND `mine` is null). Tap → one screen with wish text (optional, 500 chars) and photo picker (optional, ≤5, client-side pre-validation). Submit → `POST /api/submissions` → on 201: tile disappears, marquee swaps per D3, rail shows own photos; on 409: already-posted state; on 400: inline field errors; network failure: flow stays open with retry.
+The story rail gains an invite-only "Add Story" tile (visible only when cookie present AND `mine` is null). Tap → one screen with photo picker first (optional, ≤3, client-side pre-validation) and single-line wish text below (optional, 30 chars). Submit → `POST /api/submissions` → on 201: tile disappears, marquee swaps per D3, rail shows own photos; on 409: already-posted state; on 400: inline field errors; network failure: flow stays open with retry.
 
 ### D6 — Backup & archive duty (VM expires Oct 18)
 

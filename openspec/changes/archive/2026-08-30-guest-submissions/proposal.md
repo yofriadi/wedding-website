@@ -11,7 +11,7 @@ Guests currently experience the wedding site read-only. The couple wants guests 
 - **No author attribution displayed**: wishes and stories render without names — no "— Sarah", no family names. A caller's own submission is identifiable only to themselves via the session contract.
 - **Invite-only visibility**: all real guest content (wishes, stories) and the add-story flow render only for cookie holders. Public visitors see demo/teaser states.
 - **Post-once per invite**: each invite may create exactly one submission (wish text and/or photos belong to that single submission). `UNIQUE(invite_id)` at the DB level; second attempts and races → `409`.
-- **Photo pipeline on local disk**: upload endpoint accepting up to 5 images per submission (≤10MB each, magic-byte validated), streamed to a VM content directory at server-generated keys; served back through a cookie-gated app photo route (never a public static dir).
+- **Photo pipeline on local disk**: upload endpoint accepting up to 3 images per submission (≤10MB each, magic-byte validated), streamed to a VM content directory at server-generated keys; served back through a cookie-gated app photo route (never a public static dir).
 - **Backup & archive duty**: nightly cron backs up the SQLite database and photos directory off-box; final archive before VM expiry (Oct 18; 15-day recycle-bin grace).
 
 ## Non-goals
