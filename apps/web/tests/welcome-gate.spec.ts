@@ -111,6 +111,61 @@ test.describe("welcome gate", () => {
     expect(metric.posts).toBe(1);
   });
 
+  test("hero holds its zoomed-in state across the reveal (no end-state flash)", async ({
+    page,
+  }) => {
+    test.slow();
+
+    await page.goto("/");
+    await waitForLoaderDismissed(page);
+    await expect(page.locator("#welcome-gate")).toBeVisible();
+
+    // The scroll lock is root-only. Locking <body> too makes body a scroll
+    // container with no scrollable overflow, which deactivates the hero's
+    // view-timeline: HeroZoom then falls back to its static base styles (the
+    // fully revealed, zoomed-OUT hero) and the swipe uncovers that end state
+    // before snapping back to scale(2.8).
+    expect(await page.evaluate(() => document.body.style.overflow)).toBe("");
+
+    // Sample the hero every frame from armed, through the dismissal, until well
+    // after the gate is gone. At scroll zero the hero must never leave its
+    // initial state: scale(2.8) with the names/date still hidden.
+    const samples = await page.evaluate(async () => {
+      const img = document.querySelector<HTMLElement>("#hero-container .animate-image")!;
+      const text = document.querySelector<HTMLElement>("#hero-container .animate-text")!;
+      const seen: Array<{ scale: number; textOpacity: number; scrollY: number }> = [];
+      let done = false;
+
+      const tick = () => {
+        const m = new DOMMatrixReadOnly(getComputedStyle(img).transform);
+        seen.push({
+          scale: m.a,
+          textOpacity: Number(getComputedStyle(text).opacity),
+          scrollY: window.scrollY,
+        });
+        if (!done) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+
+      await new Promise((r) => setTimeout(r, 100));
+      window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+      await new Promise((r) => setTimeout(r, 900));
+      done = true;
+      return seen;
+    });
+
+    expect(samples.length).toBeGreaterThan(10);
+    expect(await page.locator("#welcome-gate").count()).toBe(0);
+    expect(await page.evaluate(() => window.scrollY)).toBe(0);
+
+    // Every frame at scroll zero: fully zoomed in, overlay copy still hidden.
+    for (const s of samples) {
+      expect(s.scrollY).toBe(0);
+      expect(s.scale).toBeCloseTo(2.8, 2);
+      expect(s.textOpacity).toBe(0);
+    }
+  });
+
   test("short drag springs back and stays armed; keydown then dismisses", async ({ page }) => {
     test.slow();
     const metric = countOpenMetricPosts(page);
@@ -196,7 +251,15 @@ test.describe("welcome gate", () => {
     expect(metric.posts).toBe(0); // anonymous
   });
 
-  test("desktop wheel dismisses the gate without firing the metric", async ({ page }) => {
+  test("desktop wheel dismisses the gate without firing the metric", async ({
+    page,
+    browserName,
+    isMobile,
+  }) => {
+    // Desktop-pointer-only behavior: the mobile-chrome Playwright project
+    // (venue-map-routes 5.15) also runs this suite, but a synthesized wheel
+    // event is meaningless from a touch device profile.
+    test.skip(isMobile === true, `desktop-pointer behavior (${browserName})`);
     test.slow();
     const metric = countOpenMetricPosts(page);
 

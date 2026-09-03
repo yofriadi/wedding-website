@@ -1,6 +1,7 @@
 ---
 import { existsSync } from "node:fs";
 import TextShimmer from "./TextShimmer.astro";
+import DotPattern from "./DotPattern.astro";
 
 interface Props {
   displayName?: string | null;
@@ -8,9 +9,12 @@ interface Props {
 
 const { displayName = null } = Astro.props;
 
-// Couple-supplied gate background slot (same exists-check pattern as the story
-// teasers): the light neutral fallback ships until an asset lands here.
-const GATE_BG_SRC = "/gate/gate-bg.webp";
+// Couple-supplied gate background slot. AVIF is preferred in the markup,
+// with WebP retained as the compatibility fallback. The existence check uses
+// the AVIF variant so the gate only renders when the local asset is deployed.
+const GATE_BG_SRC = "/gate/gate-bg";
+const GATE_BG_AVIF = `${GATE_BG_SRC}.avif`;
+const GATE_BG_WEBP = `${GATE_BG_SRC}.webp`;
 
 function gateBgAssetExists(src: string) {
   // Dev: this component lives under src/components (public/ is ../../public).
@@ -23,7 +27,7 @@ function gateBgAssetExists(src: string) {
   return candidates.some((url) => existsSync(url));
 }
 
-const hasGateBg = gateBgAssetExists(GATE_BG_SRC);
+const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
 ---
 
 <!--
@@ -31,32 +35,54 @@ const hasGateBg = gateBgAssetExists(GATE_BG_SRC);
   (z-50) so the loader fade IS the black->bright transition, above all page
   content. The greeting is rendered server-side, verbatim (auto-escaped).
 -->
-<div id="welcome-gate" class="fixed inset-0 z-40 bg-[#f7f4ef] text-neutral-800">
+<div id="welcome-gate" class="gate-surface fixed inset-0 z-40">
   <div class="absolute inset-0" aria-hidden="true">
     {
       hasGateBg && (
-        <img
-          src={GATE_BG_SRC}
-          alt=""
-          class="block h-full w-full object-cover"
-          fetchpriority="high"
-          decoding="async"
-        />
+        <picture>
+          <source src={GATE_BG_AVIF} type="image/avif" />
+          <source src={GATE_BG_WEBP} type="image/webp" />
+          <img
+            src={GATE_BG_WEBP}
+            alt=""
+            class="block h-full w-full object-cover"
+            fetchpriority="high"
+            decoding="async"
+          />
+        </picture>
       )
     }
   </div>
 
+  {
+    !hasGateBg && (
+      <DotPattern class="h-full w-full text-neutral-400/40" />
+    )
+  }
+
+  <!-- Audio notice: top edge opposite of swipe prompt -->
+  <div class="absolute inset-x-0 top-12 flex justify-center px-6 md:top-16">
+    <p class="gate-audio-hint flex items-center gap-1.5 text-xs font-normal tracking-wider opacity-75">
+      <span>Music will play upon opening</span>
+    </p>
+  </div>
+
+  <!-- Greeting: just the invitee's name, centered as text on the patterned
+       surface. Anonymous visitors render the element empty (spec: no placeholder). -->
   <div class="relative flex h-full items-center justify-center px-6">
     <div
       id="gate-greeting"
-      class="max-w-3xl text-balance text-center font-serif text-3xl font-light tracking-wide md:text-5xl"
+      class="gate-guest-name max-w-3xl text-balance text-center font-serif text-3xl font-light tracking-wide md:text-5xl"
     >
       {displayName}
     </div>
   </div>
 
-  <div class="absolute inset-x-0 bottom-10 flex justify-center">
-    <TextShimmer class="text-xs font-medium uppercase tracking-[0.3em] sm:text-sm" duration={2.4}>
+  <div class="absolute inset-x-0 bottom-24 flex justify-center md:bottom-28">
+    <TextShimmer
+      class="text-xl font-medium tracking-tight"
+      duration={2}
+    >
       Swipe up to open
     </TextShimmer>
   </div>
@@ -76,6 +102,7 @@ const hasGateBg = gateBgAssetExists(GATE_BG_SRC);
     }
   </style>
 </noscript>
+
 
 <style>
   #welcome-gate {
@@ -106,12 +133,62 @@ const hasGateBg = gateBgAssetExists(GATE_BG_SRC);
     }
   }
 
-  /* TextShimmer's stock gradient is tuned for dark surfaces; the gate is a
-     light surface, so retint the shimmer layers. :global because the spans
-     live in TextShimmer's scope. */
+  /* Device theme, Vercel style: near-black in dark mode, white in light.
+     Pure CSS so it live-follows an OS theme flip; the surface variables sit
+     on .gate-surface so a couple-supplied background image above could still
+     override the paint. */
+  :root {
+    --gate-bg: #0a0a0a;            /* dark fallback (neutral-950) */
+    --gate-fg: #ededed;            /* Vercel foreground on black */
+    --gate-dots: #3f3f46;          /* neutral-700 */
+    --gate-hint: #a1a1aa;          /* neutral-400 */
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --gate-bg: #ffffff;
+      --gate-fg: #0a0a0a;
+      --gate-dots: #d4d4d4;          /* neutral-300 */
+      --gate-hint: #71717a;          /* neutral-500 */
+    }
+  }
+
+  .gate-surface {
+    background-color: var(--gate-bg);
+    color: var(--gate-fg);
+  }
+
+  .gate-audio-hint {
+    color: var(--gate-hint);
+  }
+
+  /* The pattern SVG lives in DotPattern's scope, so only the #welcome-gate
+     ancestor carries this component's scope hash. */
+  #welcome-gate :global(svg.dot-pattern-background circle) {
+    fill: var(--gate-dots);
+  }
+
+  /* Swipe hint = the loading screen's cycling-phrases shimmer, verbatim:
+     same classes/size/duration on the element and the same two gradients
+     here — white-centered in dark mode, dark-centered in light. */
   #welcome-gate :global(text-shimmer [data-text]),
   #welcome-gate :global(text-shimmer [data-text-out]) {
-    background-image: linear-gradient(110deg, #a8a29e, 45%, #292524, 55%, #a8a29e);
+    background-image: linear-gradient(110deg, #4b5563, 45%, #ffffff, 55%, #4b5563);
+  }
+
+  @media (prefers-color-scheme: light) {
+    #welcome-gate :global(text-shimmer [data-text]),
+    #welcome-gate :global(text-shimmer [data-text-out]) {
+      background-image: linear-gradient(110deg, #a8a29e, 45%, #292524, 55%, #a8a29e);
+    }
+  }
+
+  /* --- Greeting text ------------------------------------------------------ */
+
+  /* The name is plain centered text on the patterned surface; utilities on the
+     element handle font/size/centering. This just guards long names. */
+  .gate-guest-name {
+    overflow-wrap: anywhere;              /* long names wrap instead of clipping */
   }
 </style>
 
@@ -139,15 +216,33 @@ const hasGateBg = gateBgAssetExists(GATE_BG_SRC);
     var COMMIT_MS = 400;
     var SPRING_MS = 250;
     var STALE_VELOCITY_MS = 100;
+    // iOS-like drawer curve for both non-tracking transitions (commit sweep and
+    // snap-back) — a full-viewport physical surface earns more than bare ease-out.
+    var GATE_EASE = 'cubic-bezier(0.32, 0.72, 0, 1)';
 
+    // Root-only scroll lock, deliberately NOT `<body>` as well.
+    //
+    // Overflow propagation (CSS Overflow §3.5): the root's `hidden` is applied to
+    // the viewport and the root itself computes to `visible`. With `<body>` also
+    // set to `hidden` there is nothing left to propagate, so body keeps its own
+    // `hidden` and becomes a scroll container whose scrollable overflow is zero.
+    // The hero then resolves its nearest scroll container to that non-scrollable
+    // body, its `view-timeline` goes INACTIVE, the animation stops applying, and
+    // HeroZoom falls back to its static base styles — which are the fully revealed
+    // (zoomed-OUT) hero. That is the frame the swipe uncovers, snapping back to
+    // scale(2.8) once the lock is released.
+    //
+    // Locking the root alone leaves the viewport as the hero's scroll container
+    // (still scrollable overflow, just not user-scrollable), so the hero holds its
+    // scroll-zero state through the whole reveal. Touch is held by the gate's own
+    // `touch-action: none` + non-passive `preventDefault()` in onTouchMove, which
+    // is what actually stops iOS panning regardless of this lock.
     function lockScroll() {
       document.documentElement.style.overflow = 'hidden';
-      document.body.style.overflow = 'hidden';
     }
 
     function unlockScroll() {
       document.documentElement.style.overflow = '';
-      document.body.style.overflow = '';
     }
 
     // Keep the content behind the gate out of the a11y/focus tree while armed,
@@ -230,7 +325,7 @@ const hasGateBg = gateBgAssetExists(GATE_BG_SRC);
         finishReveal();
       };
 
-      gate.style.transition = 'transform ' + COMMIT_MS + 'ms ease-out';
+      gate.style.transition = 'transform ' + COMMIT_MS + 'ms ' + GATE_EASE;
       gate.style.transform = 'translateY(-100%)';
       gate.addEventListener('transitionend', finish, { once: true });
       // Safety net: transitionend can be dropped (hidden tab, interrupted).
@@ -280,7 +375,7 @@ const hasGateBg = gateBgAssetExists(GATE_BG_SRC);
         e.stopPropagation();
         commit();
       } else {
-        gate.style.transition = 'transform ' + SPRING_MS + 'ms ease-out';
+        gate.style.transition = 'transform ' + SPRING_MS + 'ms ' + GATE_EASE;
         gate.style.transform = 'translateY(0)';
       }
     }
@@ -288,7 +383,7 @@ const hasGateBg = gateBgAssetExists(GATE_BG_SRC);
     function onTouchCancel() {
       if (!tracking) return;
       tracking = false;
-      gate.style.transition = 'transform ' + SPRING_MS + 'ms ease-out';
+      gate.style.transition = 'transform ' + SPRING_MS + 'ms ' + GATE_EASE;
       gate.style.transform = 'translateY(0)';
     }
 
@@ -358,6 +453,23 @@ const hasGateBg = gateBgAssetExists(GATE_BG_SRC);
     }
     window.scrollTo(0, 0);
 
-    arm();
+    // Arm only after the loading screen has faded and been removed. Do not
+    // poll with queueMicrotask here: a self-rescheduling microtask starves the
+    // event loop, so the loader's timer/module code can never run and the
+    // browser remains permanently stuck before DOMContentLoaded.
+    const loader = document.getElementById('loading-screen');
+    if (!loader) {
+      arm();
+    } else {
+      const loaderParent = loader.parentNode;
+      const observer = new MutationObserver(function () {
+        if (loader.isConnected) return;
+        observer.disconnect();
+        arm();
+      });
+      observer.observe(loaderParent || document.documentElement, {
+        childList: true,
+      });
+    }
   })();
 </script>

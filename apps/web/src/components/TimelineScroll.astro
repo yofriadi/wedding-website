@@ -1,7 +1,7 @@
 ---
 ---
 
-<section id="timeline-section" class="timeline-section relative w-full bg-white" data-progressive-section>
+<section id="timeline-section" class="timeline-section relative w-full bg-[color:var(--timeline-bg)]" data-progressive-section>
   <div class="timeline-stage sticky top-0 w-full overflow-hidden">
     
     <!-- 1. Bottom Layer: Title (Black text on White bg) -->
@@ -13,7 +13,7 @@
       <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
         <div class="relative h-4 w-4">
           <div class="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 whitespace-nowrap text-center">
-            <h2 class="max-w-[18ch] text-center font-serif tracking-wide text-neutral-950 text-4xl md:text-6xl px-6">
+            <h2 class="max-w-[18ch] text-center font-serif tracking-wide text-[color:var(--timeline-ink)] text-4xl md:text-6xl px-6">
               Mula-mula
             </h2>
           </div>
@@ -25,11 +25,11 @@
     <!-- z-10: Above bottom title, below top circle overlay -->
     <div
       id="timeline-track"
-      class="relative z-10 h-[250vh] w-[1100vw] will-change-transform"
-      style="transform: translate(0vw, 0vh); width: 1100vw;"
+      class="relative z-10 h-[250vh] w-[1720vw] will-change-transform"
+      style="transform: translate(0vw, 0vh); width: 1720vw;"
     >
       <!-- SVG connectors live INSIDE the track -->
-      <svg class="absolute inset-0 h-full w-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
+      <svg class="absolute inset-0 z-40 h-full w-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
         <path id="line-1" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0" />
         <path id="line-2" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0" />
         <path id="line-3" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0" />
@@ -44,16 +44,16 @@
       <!-- Adjusted to 50vw/50% to match shrinking circle center -->
       <div
         id="node-1"
-        class="timeline-node absolute opacity-0"
-        style="left: 50vw; transform: translate(-50%, -50%);"
+        class="timeline-node absolute z-30 opacity-0"
+        style="left: 50vw; visibility: hidden; transform: translate(-50%, -50%);"
       >
         <div
           id="dot-1"
-          class="relative h-4 w-4 rounded-full bg-neutral-950"
+          class="relative h-4 w-4 rounded-full bg-[color:var(--timeline-dot)]"
         >
           <div
             id="node-1-label"
-            class="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 whitespace-nowrap text-center text-neutral-950"
+            class="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 whitespace-nowrap text-center text-[color:var(--timeline-ink)]"
           >
             <h2 class="max-w-[18ch] text-center font-serif tracking-wide text-inherit text-4xl md:text-6xl px-6">Mula-mula</h2>
           </div>
@@ -63,95 +63,103 @@
       <!-- Node 2 (middle) -->
       <div
         id="node-2"
-        class="timeline-node absolute"
-        style="left: 150vw; transform: translate(-50%, -50%);"
+        class="timeline-node absolute z-30"
+        style="left: 260vw; transform: translate(-50%, -50%);"
       >
         <div
           id="dot-2"
-          class="h-5 w-5 rounded-full bg-neutral-950"
+          class="h-5 w-5 rounded-full bg-[color:var(--timeline-dot)]"
           style="transform: scale(0.6); transform-origin: center;"
         ></div>
 
         <!-- Date above the node -->
-        <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+16px)] whitespace-nowrap">
-          <div data-node2-date style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
-            <div class="font-serif text-2xl text-neutral-950">Februari 2025</div>
-          </div>
-        </div>
-
-        <!-- Photo and Text below the node -->
-        <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+24px)] flex flex-col items-center">
-          <div data-node2-photo style="opacity: 0; transform: translateY(18px);">
-            <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-neutral-200 shadow-xl ring-1 ring-black/10">
-              <img data-src="/13.webp" alt="Februari 2025" width="540" height="960" class="h-full w-full object-cover" decoding="async" />
+        <div data-node2-pin class="absolute inset-0">
+          <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+16px)] whitespace-nowrap">
+            <div data-node2-date style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
+              <div class="font-serif text-2xl text-[color:var(--timeline-ink)]">Februari 2025</div>
             </div>
           </div>
 
-          <div data-node2-desc class="mt-4 w-[320px]" style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
-            <p class="text-sm leading-relaxed text-neutral-600 text-pretty">
-              Menjadi bulan pertama kami bertemu dan berkenalan. Sebatas teman, dikenalkan oleh Rahadian,
-              kakak Aci. Tidak dekat, tidak berlebihan.
-            </p>
+          <!-- Photo and Text below the node -->
+          <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+24px)] flex flex-col items-center">
+            <div data-node2-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
+              <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
+                <picture><source data-src="/13.avif" type="image/avif" /><img data-src="/13.webp" alt="Februari 2025" width="540" height="960" class="h-full w-full object-cover" decoding="async" /></picture>
+              </div>
+            </div>
+
+            <div data-node2-desc class="mt-4 w-[320px]" style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
+              <p class="text-sm leading-relaxed text-[color:var(--timeline-muted)] text-pretty">
+                Menjadi bulan pertama kami bertemu dan berkenalan. Sebatas teman, dikenalkan oleh Rahadian,
+                kakak Aci. Tidak dekat, tidak berlebihan.
+              </p>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- Node 3 (right, end) -->
-      <!-- Adjusted left to 275vw to be further from Node 2 and connect at 80% viewport width -->
+      <!-- Uniform 210vw gaps: the 280vw original scaled to 3/4, with the node
+           verticals compressed to match, so every connector keeps the same broad
+           S-curve and slope. -->
       <div
         id="node-3"
-        class="timeline-node absolute"
-        style="left: 275vw; transform: translate(-50%, -50%);"
+        class="timeline-node absolute z-30"
+        style="left: 470vw; transform: translate(-50%, -50%);"
       >
-        <!-- Photo and Date above the node -->
-        <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)] flex flex-col items-center">
-          <div data-node3-photo style="opacity: 0; transform: translateY(18px);">
-            <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-neutral-200 shadow-xl mb-4 ring-1 ring-black/10">
-              <img data-src="/13.webp" alt="5 April 2025" width="540" height="960" class="h-full w-full object-cover" decoding="async" />
+        <div data-node3-pin class="absolute inset-0">
+          <!-- Photo and Date above the node -->
+          <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)] flex flex-col items-center">
+            <div data-node3-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
+              <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl mb-4 ring-1 ring-[color:var(--timeline-photo-ring)]">
+                <picture><source data-src="/13.avif" type="image/avif" /><img data-src="/13.webp" alt="5 April 2025" width="540" height="960" class="h-full w-full object-cover" decoding="async" /></picture>
+              </div>
+            </div>
+            <div data-node3-date style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
+              <div class="whitespace-nowrap font-serif text-2xl text-[color:var(--timeline-ink)]">
+                5 April 2025
+              </div>
             </div>
           </div>
-          <div data-node3-date style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
-            <div class="whitespace-nowrap font-serif text-2xl text-neutral-950">
-              5 April 2025
-            </div>
+
+          <!-- Text below the node -->
+          <div data-node3-desc class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+24px)] w-[320px]" style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
+            <p class="text-sm leading-relaxed text-[color:var(--timeline-muted)] text-center text-pretty">
+              Menjadi bulan pertama kami bertemu dan berkenalan. Sebatas teman, dikenalkan oleh Rahadian, kakak Aci. Tidak dekat, tidak berlebihan.
+            </p>
           </div>
         </div>
 
-        <div id="dot-3" class="h-5 w-5 rounded-full bg-neutral-950" style="transform: scale(0.6); transform-origin: center;"></div>
-
-        <!-- Text below the node -->
-        <div data-node3-desc class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+24px)] w-[320px]" style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
-          <p class="text-sm leading-relaxed text-neutral-600 text-center text-pretty">
-            Menjadi bulan pertama kami bertemu dan berkenalan. Sebatas teman, dikenalkan oleh Rahadian, kakak Aci. Tidak dekat, tidak berlebihan.
-          </p>
-        </div>
+        <div id="dot-3" class="h-5 w-5 rounded-full bg-[color:var(--timeline-dot)]" style="transform: scale(0.6); transform-origin: center;"></div>
       </div>
 
       <!-- Node 4 -->
       <div
         id="node-4"
-        class="timeline-node absolute"
-        style="left: 379vw; transform: translate(-50%, -50%);"
+        class="timeline-node absolute z-30"
+        style="left: 680vw; transform: translate(-50%, -50%);"
       >
-        <div id="dot-4" class="h-5 w-5 rounded-full bg-neutral-950" style="transform: scale(0.6); transform-origin: center;"></div>
+        <div id="dot-4" class="h-5 w-5 rounded-full bg-[color:var(--timeline-dot)]" style="transform: scale(0.6); transform-origin: center;"></div>
 
-        <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)]">
-          <div data-node4-photo style="opacity: 0; transform: translateY(18px);">
-            <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-neutral-200 shadow-xl ring-1 ring-black/10">
-              <img data-src="/0.webp" alt="28 Juni 2025" width="960" height="720" class="h-full w-full object-cover" decoding="async" />
+        <div data-node4-pin class="absolute inset-0">
+          <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)]">
+            <div data-node4-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
+              <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
+                <picture><source data-src="/0.avif" type="image/avif" /><img data-src="/0.webp" alt="28 Juni 2025" width="960" height="720" class="h-full w-full object-cover" decoding="async" /></picture>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+22px)] w-[320px] flex flex-col items-center">
-          <div data-node4-date style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
-            <div class="font-serif text-2xl text-neutral-950">28 Juni 2025</div>
-          </div>
-          <div data-node4-desc style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
-            <p class="mt-2 text-sm leading-relaxed text-neutral-600 text-center text-pretty">
-              Kali pertama kami jalan berdua saja. Aci pikir, perbedaan hobi dan interest akan menjadi hambatan dari merasa nyaman.
-              Namun ternyata, candaan dan obrolan mengalir dengan baik. Bahkan diamnya saja menyenangkan.
-            </p>
+          <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+22px)] w-[320px] flex flex-col items-center">
+            <div data-node4-date style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
+              <div class="font-serif text-2xl text-[color:var(--timeline-ink)]">28 Juni 2025</div>
+            </div>
+            <div data-node4-desc style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
+              <p class="mt-2 text-sm leading-relaxed text-[color:var(--timeline-muted)] text-center text-pretty">
+                Kali pertama kami jalan berdua saja. Aci pikir, perbedaan hobi dan interest akan menjadi hambatan dari merasa nyaman.
+                Namun ternyata, candaan dan obrolan mengalir dengan baik. Bahkan diamnya saja menyenangkan.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -159,28 +167,32 @@
       <!-- Node 5 -->
       <div
         id="node-5"
-        class="timeline-node absolute"
-        style="left: 488vw; transform: translate(-50%, -50%);"
+        class="timeline-node absolute z-30"
+        style="left: 890vw; transform: translate(-50%, -50%);"
       >
-        <div id="dot-5" class="h-5 w-5 rounded-full bg-neutral-950" style="transform: scale(0.6); transform-origin: center;"></div>
+        <div id="dot-5" class="h-5 w-5 rounded-full bg-[color:var(--timeline-dot)]" style="transform: scale(0.6); transform-origin: center;"></div>
 
-        <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)]">
-          <div data-node5-photo style="opacity: 0; transform: translateY(18px);">
-            <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-neutral-200 shadow-xl ring-1 ring-black/10">
-              <img data-src="/0.webp" alt="26 Oktober 2025" width="960" height="720" class="h-full w-full object-cover" decoding="async" />
+        <div data-node5-pin class="absolute inset-0">
+          <!-- Photo above the node -->
+          <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)]">
+            <div data-node5-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
+              <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
+                <picture><source data-src="/0.avif" type="image/avif" /><img data-src="/0.webp" alt="26 Oktober 2025" width="960" height="720" class="h-full w-full object-cover" decoding="async" /></picture>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+22px)] w-[320px] flex flex-col items-center">
-          <div data-node5-date style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
-            <div class="font-serif text-2xl text-neutral-950">26 Oktober 2025</div>
-          </div>
-          <div data-node5-desc style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
-            <p class="mt-2 text-sm leading-relaxed text-neutral-600 text-center text-pretty">
-              Pertama kali kami saling mengungkapkan rasa ketertarikan. Sepulangnya dari kafe, Adi langsung mengajak Aci bertemu Mama Nur.
-              Salah satu bentuk yang menunjukkan keseriusan untuk melanjutkan ke jenjang berikutnya.
-            </p>
+          <!-- Date and Text below the node -->
+          <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+22px)] w-[320px] flex flex-col items-center">
+            <div data-node5-date style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
+              <div class="font-serif text-2xl text-[color:var(--timeline-ink)]">26 Oktober 2025</div>
+            </div>
+            <div data-node5-desc style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
+              <p class="mt-2 text-sm leading-relaxed text-[color:var(--timeline-muted)] text-center text-pretty">
+                Pertama kali kami saling mengungkapkan rasa ketertarikan. Sepulangnya dari kafe, Adi langsung mengajak Aci bertemu Mama Nur.
+                Salah satu bentuk yang menunjukkan keseriusan untuk melanjutkan ke jenjang berikutnya.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -188,28 +200,30 @@
       <!-- Node 6 -->
       <div
         id="node-6"
-        class="timeline-node absolute"
-        style="left: 597vw; transform: translate(-50%, -50%);"
+        class="timeline-node absolute z-30"
+        style="left: 1100vw; transform: translate(-50%, -50%);"
       >
-        <div id="dot-6" class="h-5 w-5 rounded-full bg-neutral-950" style="transform: scale(0.6); transform-origin: center;"></div>
+        <div id="dot-6" class="h-5 w-5 rounded-full bg-[color:var(--timeline-dot)]" style="transform: scale(0.6); transform-origin: center;"></div>
 
-        <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)]">
-          <div data-node6-photo style="opacity: 0; transform: translateY(18px);">
-            <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-neutral-200 shadow-xl ring-1 ring-black/10">
-              <img data-src="/0.webp" alt="1 November 2025" width="960" height="720" class="h-full w-full object-cover" decoding="async" />
+        <div data-node6-pin class="absolute inset-0">
+          <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)]">
+            <div data-node6-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
+              <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
+                <picture><source data-src="/0.avif" type="image/avif" /><img data-src="/0.webp" alt="1 November 2025" width="960" height="720" class="h-full w-full object-cover" decoding="async" /></picture>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+22px)] w-[320px] text-center">
-          <div data-node6-date style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
-            <div class="font-serif text-2xl text-neutral-950">1 November 2025</div>
-          </div>
-          <div data-node6-desc style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
-            <p class="mt-2 text-sm leading-relaxed text-neutral-600 text-pretty">
-              Foto berdua kami yang pertama. Kami mulai sore di hari hujan itu dengan bercerita. Tentang diri, tentang pertemanan kami,
-              tentang kisah yang lalu, dan rencana-rencana masa depan kami.
-            </p>
+          <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+22px)] w-[320px] text-center">
+            <div data-node6-date style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
+              <div class="font-serif text-2xl text-[color:var(--timeline-ink)]">1 November 2025</div>
+            </div>
+            <div data-node6-desc style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
+              <p class="mt-2 text-sm leading-relaxed text-[color:var(--timeline-muted)] text-pretty">
+                Foto berdua kami yang pertama. Kami mulai sore di hari hujan itu dengan bercerita. Tentang diri, tentang pertemanan kami,
+                tentang kisah yang lalu, dan rencana-rencana masa depan kami.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -217,28 +231,32 @@
       <!-- Node 7 -->
       <div
         id="node-7"
-        class="timeline-node absolute"
-        style="left: 706vw; transform: translate(-50%, -50%);"
+        class="timeline-node absolute z-30"
+        style="left: 1310vw; transform: translate(-50%, -50%);"
       >
-        <div id="dot-7" class="h-5 w-5 rounded-full bg-neutral-950" style="transform: scale(0.6); transform-origin: center;"></div>
+        <div id="dot-7" class="h-5 w-5 rounded-full bg-[color:var(--timeline-dot)]" style="transform: scale(0.6); transform-origin: center;"></div>
 
-        <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)]">
-          <div data-node7-photo style="opacity: 0; transform: translateY(18px);">
-            <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-neutral-200 shadow-xl ring-1 ring-black/10">
-              <img data-src="/0.webp" alt="29-30 November 2025" width="960" height="720" class="h-full w-full object-cover" decoding="async" />
+        <div data-node7-pin class="absolute inset-0">
+          <!-- Photo above the node -->
+          <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)]">
+            <div data-node7-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
+              <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
+                <picture><source data-src="/0.avif" type="image/avif" /><img data-src="/0.webp" alt="29-30 November 2025" width="960" height="720" class="h-full w-full object-cover" decoding="async" /></picture>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+22px)] w-[320px] text-center">
-          <div data-node7-date style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
-            <div class="font-serif text-2xl text-neutral-950">29-30 November 2025</div>
-          </div>
-          <div data-node7-desc style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
-            <p class="mt-2 text-sm leading-relaxed text-neutral-600 text-pretty">
-              Aci membawa Adi ke rumah Solo. Mengenalkan kepada orang tua Aci, saudara Aci, keluarga besar. Go public!
-              Ditandai dengan unggahan story media sosial. Tanpa penjelasan, cukup foto kami berdua.
-            </p>
+          <!-- Date and Text below the node -->
+          <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+22px)] w-[320px] text-center">
+            <div data-node7-date style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
+              <div class="font-serif text-2xl text-[color:var(--timeline-ink)]">29-30 November 2025</div>
+            </div>
+            <div data-node7-desc style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
+              <p class="mt-2 text-sm leading-relaxed text-[color:var(--timeline-muted)] text-pretty">
+                Aci membawa Adi ke rumah Solo. Mengenalkan kepada orang tua Aci, saudara Aci, keluarga besar. Go public!
+                Ditandai dengan unggahan story media sosial. Tanpa penjelasan, cukup foto kami berdua.
+              </p>
+            </div>
           </div>
         </div>
       </div>
@@ -246,50 +264,70 @@
       <!-- Node 8 -->
       <div
         id="node-8"
-        class="timeline-node absolute"
-        style="left: 815vw; transform: translate(-50%, -50%);"
+        class="timeline-node absolute z-30"
+        style="left: 1520vw; transform: translate(-50%, -50%);"
       >
-        <div class="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 whitespace-nowrap text-center">
-            <div data-node8-date style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
-              <div class="font-serif text-2xl text-neutral-950">11 April 2026</div>
+        <div data-node8-pin class="absolute inset-0">
+          <div class="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 whitespace-nowrap text-center">
+              <div data-node8-date style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
+                <div class="font-serif text-2xl text-[color:var(--timeline-ink)]">11 April 2026</div>
+              </div>
+          </div>
+
+          <!-- Photo and Text stay on the authored right side of the dot. -->
+          <div class="absolute left-[50vw] -translate-x-1/2 top-4 flex flex-col items-center w-[260px]">
+            <div data-node8-photo style="opacity: 0; transform: scale(0.6); transform-origin: 0% 0%;">
+              <div class="h-45 w-full overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl mb-4 ring-1 ring-[color:var(--timeline-photo-ring)]">
+                <picture><source data-src="/0.avif" type="image/avif" /><img data-src="/0.webp" alt="Lamaran" width="960" height="720" class="h-full w-full object-cover" decoding="async" /></picture>
+              </div>
             </div>
-        </div>
-        <div id="dot-8" class="h-5 w-5 rounded-full bg-neutral-950" style="transform: scale(0.6); transform-origin: center;"></div>
-        
-        <!-- Photo and Text on the right side of the node -->
-        <div class="absolute left-[50vw] -translate-x-1/2 top-4 flex flex-col items-center w-[260px]">
-          <div data-node8-photo style="opacity: 0; transform: translateY(18px);">
-            <div class="h-45 w-full overflow-hidden rounded-xl bg-neutral-200 shadow-xl mb-4 ring-1 ring-black/10">
-              <img data-src="/0.webp" alt="Lamaran" width="960" height="720" class="h-full w-full object-cover" decoding="async" />
+            <div data-node8-desc style="opacity: 0; transform: scale(0.6); transform-origin: 0% 0%;">
+              <p class="text-sm leading-relaxed text-[color:var(--timeline-muted)] text-center text-pretty">
+                Momentum besar bagi kami sebagai langkah awal dalam menjalin hubungan yang lebih serius. Lamaran.
+              </p>
             </div>
           </div>
-          <div data-node8-desc style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
-            <p class="text-sm leading-relaxed text-neutral-600 text-center text-pretty">
-              Momentum besar bagi kami sebagai langkah awal dalam menjalin hubungan yang lebih serius. Lamaran.
-            </p>
-          </div>
         </div>
+        <div id="dot-8" class="h-5 w-5 rounded-full bg-[color:var(--timeline-dot)]" style="transform: scale(0.6); transform-origin: center;"></div>
       </div>
 
-      <!-- Node 9 Anchor (for path calc) -->
+      <!-- Node 9 Anchor: restore the original 150vw turn-to-turn spacing, then
+           leave the drama to the much longer final vertical leg. -->
       <div
         id="dot-9-anchor"
         class="absolute"
-        style="left: 965vw; width: 20px; height: 20px; transform: translate(-50%, -50%); visibility: hidden;"
+        style="left: 1670vw; width: 20px; height: 20px; transform: translate(-50%, -50%); visibility: hidden;"
       ></div>
+      <!-- Node 9 label (black twin): never revealed in the animated run — the
+           expansion sweep's white twin is the title's only appearance. This copy
+           exists for the reduced-motion story, where CSS forces it visible. -->
+      <div
+        id="node-9-label-bottom"
+        class="timeline-node absolute z-30"
+        style="left: 1670vw; transform: translate(-50%, -50%);"
+      >
+        <div class="relative h-5 w-5">
+          <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+24px)] whitespace-nowrap text-center">
+            <div data-node9-date-bottom style="opacity: 0; transform: scale(0.9); transform-origin: 50% 0%;">
+              <div class="max-w-[18ch] font-serif tracking-wide text-[color:var(--timeline-ink)] text-4xl md:text-6xl px-6">10 October 2026</div>
+              <div class="max-w-[18ch] font-serif tracking-wide text-[color:var(--timeline-ink)] text-4xl md:text-6xl px-6">Menikah</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 3. Top Layer: Overlay (Black BG + White Title) -->
     <!-- z-30: Topmost. Shrinks via clip-path. Visible inside the circle. -->
     <div
       id="timeline-circle-overlay"
-      class="absolute inset-0 z-30 pointer-events-none bg-neutral-950"
-      style="clip-path: circle(150% at 50% 50%);"
+      class="absolute inset-0 z-30 pointer-events-none bg-[color:var(--timeline-overlay)]"
+      style="clip-path: circle(100vmax at 50% 50%);"
     >
       <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
         <div class="relative h-4 w-4">
           <div class="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 whitespace-nowrap text-center">
-            <h2 class="max-w-[18ch] text-center font-serif tracking-wide text-white text-4xl md:text-6xl px-6">
+            <h2 class="max-w-[18ch] text-center font-serif tracking-wide text-[color:var(--timeline-overlay-ink)] text-4xl md:text-6xl px-6">
               Mula-mula
             </h2>
           </div>
@@ -298,34 +336,43 @@
     </div>
 
     <!-- 4. Expansion Overlay (End) -->
-    <!-- z-40: Above everything. Expands from dot-9 to fill screen. -->
+    <!-- z-40: full-stage black layer revealed by a clip-path circle growing from
+         dot 9 — the exact inverse of the opening shrink. The white title inside
+         sits beneath the dot, hidden until the growing circle's edge reaches it.
+         Authored FULLY OPEN on purpose: this is the pre-JS fallback state. The
+         module that wires the scrub (it imports `motion`) only executes after
+         the bundle arrives — on a cold first load that can be seconds after the
+         page is already scrollable, and until then a closed circle here would
+         make the finale title read as a missing node. `animate()` snaps it to
+         keyframe 0 (circle(0px)) the instant initTimeline() runs. -->
     <div
       id="timeline-circle-expansion"
-      class="absolute z-40 pointer-events-none"
-      style="width: 200vmax; height: 200vmax; left: 50%; transform: translate(-50%, -50%);"
+      class="absolute inset-0 z-40 pointer-events-none bg-[color:var(--timeline-overlay)]"
+      style="clip-path: circle(100vmax at 50% 50%);"
     >
-      <div
-        id="timeline-circle-expansion-fill"
-        class="h-full w-full rounded-full bg-neutral-950"
-        style="transform: scale(0.001);"
-      ></div>
+      <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+        <div class="relative h-5 w-5">
+          <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+24px)] whitespace-nowrap text-center">
+            <div class="max-w-[18ch] font-serif tracking-wide text-[color:var(--timeline-overlay-ink)] text-4xl md:text-6xl px-6">10 October 2026</div>
+            <div class="max-w-[18ch] font-serif tracking-wide text-[color:var(--timeline-overlay-ink)] text-4xl md:text-6xl px-6">Menikah</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- 5. Final Node Overlay -->
-    <!-- z-50: Above the expansion fill. -->
+    <!-- z-50: visible above the growing black circle until it becomes the fill. -->
     <div
       id="node-9"
       class="timeline-node absolute z-50 pointer-events-none"
       style="left: 0; top: 0; width: 100%; height: 100%; transform: translate(0vw, 0vh); will-change-transform;"
     >
-      <div style="position: absolute; left: 965vw; transform: translate(-50%, -50%);">
-        <div class="absolute left-1/2 -translate-x-1/2 top-[calc(45%)] whitespace-nowrap text-center">
-          <div data-node9-date style="opacity: 0; transform: translateY(12px) scale(0.98); transform-origin: center;">
-            <div class="font-serif text-2xl md:text-3xl text-white">10 October 2026</div>
-            <div class="font-serif text-2xl md:text-3xl text-white">Menikah</div>
-          </div>
-        </div>
-        <div id="dot-9" class="h-5 w-5 rounded-full bg-neutral-950" style="transform: scale(0.6); transform-origin: center;"></div>
+      <div style="position: absolute; left: 1670vw; transform: translate(-50%, -50%);">
+        <div
+          id="dot-9"
+          class="h-5 w-5 rounded-full bg-[color:var(--timeline-overlay-dot)]"
+          style="opacity: 0; transform: scale(0.6); transform-origin: center;"
+        ></div>
       </div>
     </div>
 
@@ -333,30 +380,91 @@
 </section>
 
 <style>
-  /* Scroll runway: vh fallback, svh so mobile browser chrome cannot shift the scrub. */
-  .timeline-section {
-    height: 1200vh;
-    height: 1200svh;
+  /* Theme tokens (WeddingFAQ precedent). The timeline swaps colors BETWEEN
+     themes: light OS renders the dark world (black canvas, white ink, white
+     circle overlays), dark OS renders the authored light world (white
+     canvas, black ink, black circle overlays). The shrink/expansion
+     animation stays visible in both — each overlay contrasts its canvas. */
+  #timeline-section {
+    --timeline-bg: #0a0a0a;
+    --timeline-ink: #ffffff; /* headings, dates */
+    --timeline-muted: #a3a3a3; /* neutral-400: story paragraphs */
+    --timeline-dot: #ffffff;
+    --timeline-line: #ffffff; /* SVG connectors (CSS stroke beats the
+                                stroke="black" presentation attribute) */
+    --timeline-photo-frame: #262626; /* neutral-800: behind photos */
+    --timeline-photo-ring: rgba(255, 255, 255, 0.14); /* white/14 hairline */
+    --timeline-overlay: #ffffff; /* shrinking/expanding circle layers */
+    --timeline-overlay-ink: #0a0a0a; /* titles inside the circles */
+    --timeline-overlay-dot: #ffffff; /* finale dot rides the overlay (z-50) */
   }
 
-  /* Stage: vh fallback, svh so mobile browser chrome cannot clip the pinned stage. */
+  @media (prefers-color-scheme: dark) {
+    #timeline-section {
+      --timeline-bg: #ffffff;
+      --timeline-ink: #0a0a0a;
+      --timeline-muted: #525252; /* neutral-600 */
+      --timeline-dot: #0a0a0a;
+      --timeline-line: #0a0a0a;
+      --timeline-photo-frame: #e5e5e5; /* neutral-200 */
+      --timeline-photo-ring: rgba(0, 0, 0, 0.1); /* black/10 hairline */
+      --timeline-overlay: #0a0a0a;
+      --timeline-overlay-ink: #ffffff;
+      --timeline-overlay-dot: #0a0a0a;
+    }
+  }
+
+  /* SVG connectors: stroke presentation attributes cannot use var(), so the
+     color is applied here instead (CSS declarations beat presentation
+     attributes without needing !important). */
+  #timeline-track path[id^="line-"] {
+    stroke: var(--timeline-line);
+  }
+
+  /* Pinned runway: 210vw story gaps (the 280vw original cut by a quarter, with
+     the node verticals compressed to match so no connector steepens), the same
+     compact 150vw finale jog, a deeper final node, and a deliberately extended
+     descent. Scrollable = 1713vh: intro 66 + horizontal 1317 + jog 104 +
+     descent 150 + expansion 65 + tail 11 — only the horizontal phase shrank,
+     so every other beat keeps its original scroll density.
+
+     lvh, not svh: `lvh` is the viewport with browser chrome HIDDEN, which is the
+     only state this section is ever seen in — it starts ~17 viewports down, so the
+     URL bar has long since retracted. svh would leave the stage ~70px short of the
+     screen for the entire pinned run. Never dvh: it re-resolves as the chrome
+     moves, changing the scrub length mid-scroll. */
+  .timeline-section {
+    height: 1813vh;
+    height: 1813lvh;
+  }
+
+  /* Stage: vh fallback, lvh so the pinned stage fills the chrome-hidden viewport. */
   .timeline-stage {
     height: 100vh;
-    height: 100svh;
+    height: 100lvh;
   }
 
-  /* Node vertical positions, keyed by id so each can carry its vh -> svh fallback pair. */
-  #node-1 { top: 50vh; top: 50svh; }
-  #node-2 { top: 30vh; top: 30svh; }
-  #node-3 { top: 70vh; top: 70svh; }
-  #node-4 { top: 45vh; top: 45svh; }
-  #node-5 { top: 65vh; top: 65svh; }
-  #node-6 { top: 35vh; top: 35svh; }
-  #node-7 { top: 55vh; top: 55svh; }
-  #node-8 { top: 25vh; top: 25svh; }
-  #dot-9-anchor { top: 133vh; top: 133svh; }
-  #node-9 > div { top: 133vh; top: 133svh; }
-  #timeline-circle-expansion { top: 50vh; top: 50svh; }
+  /* Node vertical positions, keyed by id so each can carry its vh -> lvh fallback pair.
+     Verticals follow the 3/4 horizontal cut so no connector steepens: each leg's
+     rise/fall is ~0.75 of the original (within ~1vh of exact — node 1 stays the
+     circle center at 50 and node 8 stays the 25 the untouched finale is built on,
+     which forces 6.25vh of the original drop back into the profile). Net effect:
+     the old track shape at 3/4 scale, same broad S-curves, same slopes. */
+  #node-1 { top: 50vh; top: 50lvh; }
+  #node-2 { top: 34vh; top: 34lvh; }
+  #node-3 { top: 64vh; top: 64lvh; }
+  #node-4 { top: 44vh; top: 44lvh; }
+  #node-5 { top: 59vh; top: 59lvh; }
+  #node-6 { top: 35vh; top: 35lvh; }
+  #node-7 { top: 49vh; top: 49lvh; }
+  #node-8 { top: 25vh; top: 25lvh; }
+  /* Keep the proven 180lvh finale on mobile. Wider viewports place it a little
+     deeper for more clearance beneath the right turn and a longer descent. */
+  #dot-9-anchor, #node-9 > div, #node-9-label-bottom { top: 180vh; top: 180lvh; }
+  @media (min-width: 768px) {
+    #dot-9-anchor, #node-9 > div, #node-9-label-bottom { top: 188vh; top: 188lvh; }
+  }
+
 
   /* Reduced motion: readable vertical story instead of the pinned scrub sequence. */
   @media (prefers-reduced-motion: reduce) {
@@ -368,7 +476,6 @@
       height: auto !important;
       overflow: visible !important;
     }
-    #title-layer-bottom,
     #timeline-track > svg,
     #timeline-circle-overlay,
     #timeline-circle-expansion {
@@ -397,6 +504,14 @@
       flex-direction: column;
       align-items: center;
     }
+    /* Tailwind v4 compiles -translate-x-1/2 to the standalone `translate`
+       property, which the `transform: none` resets above cannot cancel. Without
+       this the reflowed story keeps every centered label shifted half its own
+       width to the left — the wide nowrap finale title ends up off-screen. */
+    .timeline-node,
+    .timeline-node * {
+      translate: none !important;
+    }
     /* Per-node content blocks were art-directed as absolutes; reflow them as flow items. */
     .timeline-node > div {
       position: static !important;
@@ -420,12 +535,23 @@
     /* Node 1 / node 9 wrap their dot in an extra positioning div; neutralize the */
     /* remaining absolutely-positioned label wrappers inside them. */
     #node-1 > div > div,
-    #node-9 > div > div {
+    #node-9 > div > div,
+    #node-9-label-bottom > div > div {
       position: static !important;
       transform: none !important;
       width: auto !important;
       margin: 0 0 1rem !important;
       text-align: center;
+    }
+    /* Content wrappers are static in animated mode; flatten them in the
+       reduced-motion document flow. */
+    [data-node2-pin], [data-node3-pin], [data-node4-pin], [data-node5-pin],
+    [data-node6-pin], [data-node7-pin], [data-node8-pin],
+    [data-node2-pin] > *, [data-node3-pin] > *, [data-node4-pin] > *,
+    [data-node5-pin] > *, [data-node6-pin] > *, [data-node7-pin] > *,
+    [data-node8-pin] > * {
+      position: static !important;
+      transform: none !important;
     }
     /* Dot date/photo/desc stacks keep their column flow and spacing. */
     .timeline-node > div {
@@ -441,12 +567,17 @@
     [data-node6-photo], [data-node6-date], [data-node6-desc],
     [data-node7-photo], [data-node7-date], [data-node7-desc],
     [data-node8-photo], [data-node8-date], [data-node8-desc],
-    [data-node9-date] {
+    [data-node9-date-bottom] {
       opacity: 1 !important;
       transform: none !important;
     }
     #node-1 {
       opacity: 1 !important;
+      visibility: visible !important;
+    }
+    #dot-9 {
+      opacity: 1 !important;
+      transform: none !important;
     }
   }
 </style>
@@ -456,6 +587,63 @@
 
   // JS twin of the CSS --ease-out-expo token; keep in sync.
   const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
+
+  // 210vw story gaps (the 280vw original at 3/4, verticals compressed to match)
+  // drive the horizontal cruise; the finale keeps the compact 150vw jog before its
+  // extended descent. Progress fractions are the phase scroll lengths (see the CSS
+  // runway comment) over the 1713vh scrollable distance.
+  const INTRO_END = 0.0386;
+  // Finale camera route: stop the diagonal halfway across the short 150vw jog,
+  // finish the jog horizontally, then spend the longest phase moving straight
+  // down. This mirrors line 8's V-H-V turns instead of cutting diagonally to dot 9.
+  const FINALE_TURN = 0.8074;  // first turn, directly below dot 8
+  const FINALE_MID = 0.8392;   // halfway between the two turns
+  const FINALE_CORNER = 0.8681; // second turn, directly above dot 9
+  const VERT_END = 0.956;      // long final descent complete
+  // Grow the instant the line lands on dot 9 — a real hold here read as a dead
+  // scroll gap between the connection and the outward burst. 0.004 (~7vh) is a
+  // sub-tick beat so a slow scroll still shows one completed-connection frame.
+  const EXPANSION_START = VERT_END + 0.004;
+  const EXPANSION_END = 0.994;
+
+  const CONNECT_X = 80;
+  const FINALE_ELBOW_T = 0.25;
+  const FINALE_NODE_Y = window.matchMedia("(min-width: 768px)").matches ? 188 : 180;
+  const FINALE_TURN_Y = 25 + (FINALE_NODE_Y - 25) * FINALE_ELBOW_T;
+  const PAN_END_X = -1620;                  // 1670vw dot centered at 50vw
+  const PAN_TURN_Y = 50 - FINALE_TURN_Y;    // first/second turn centered vertically
+  const PAN_END_Y = 50 - FINALE_NODE_Y;     // final dot centered vertically
+
+  const PAN_KEYFRAMES: Array<{ t: number; x: number; y: number }> = [
+    { t: 0, x: 0, y: 0 },
+    { t: INTRO_END, x: 0, y: 0 },
+    { t: FINALE_TURN, x: -1470, y: 0 },
+    { t: FINALE_MID, x: -1545, y: PAN_TURN_Y },
+    { t: FINALE_CORNER, x: PAN_END_X, y: PAN_TURN_Y },
+    { t: VERT_END, x: PAN_END_X, y: PAN_END_Y },
+    { t: 1, x: PAN_END_X, y: PAN_END_Y }
+  ];
+
+  // Inverse of panVw over the horizontal ramp: progress at which the track
+  // has panned to targetX (vw).
+  function progressAtPanX(targetX: number): number {
+    for (let i = 1; i < PAN_KEYFRAMES.length; i++) {
+      const a = PAN_KEYFRAMES[i - 1];
+      const b = PAN_KEYFRAMES[i];
+      const lo = Math.min(a.x, b.x);
+      const hi = Math.max(a.x, b.x);
+      if (targetX >= lo && targetX <= hi && b.x !== a.x) {
+        return a.t + ((targetX - a.x) / (b.x - a.x)) * (b.t - a.t);
+      }
+    }
+    return targetX <= PAN_KEYFRAMES[PAN_KEYFRAMES.length - 1].x ? 1 : 0;
+  }
+
+  // Reveal beats in progress units, sized against the 1713vh runway so the pop
+  // keeps its original scroll length (~21.5vh, ~24vw of pan) on the shorter track.
+  const REVEAL_WINDOW = 0.0126;
+  const STAGGER_DATE = 0.0025;
+  const STAGGER_DESC = 0.005;
 
   let cleanupFns: Array<() => void> = [];
   let resizeTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -478,7 +666,7 @@
     const section = document.getElementById("timeline-section");
     const titleLayerBottom = document.getElementById("title-layer-bottom");
     const circleOverlay = document.getElementById("timeline-circle-overlay");
-    const circleExpansionFill = document.getElementById("timeline-circle-expansion-fill");
+    const circleExpansion = document.getElementById("timeline-circle-expansion");
     const track = document.getElementById("timeline-track");
 
     const node1 = document.getElementById("node-1");
@@ -489,7 +677,6 @@
     const node6 = document.getElementById("node-6");
     const node7 = document.getElementById("node-7");
     const node8 = document.getElementById("node-8");
-    const node9 = document.getElementById("node-9");
 
     const dot1 = document.getElementById("dot-1");
     const dot2 = document.getElementById("dot-2");
@@ -516,7 +703,7 @@
       !section ||
       !titleLayerBottom ||
       !circleOverlay ||
-      !circleExpansionFill ||
+      !circleExpansion ||
       !track ||
       !node1 ||
       !node2 ||
@@ -526,7 +713,6 @@
       !node6 ||
       !node7 ||
       !node8 ||
-      !node9 ||
       !dot1 ||
       !dot2 ||
       !dot3 ||
@@ -548,8 +734,30 @@
       return;
     }
 
+    // Content remains in each node's authored coordinate space. Only the reveal
+    // transforms animate; no node or wrapper follows/counters the viewport.
+    const ORIGIN_Y: Record<number, Record<string, "top" | "bottom">> = {
+      2: { date: "bottom", photo: "top", desc: "top" },
+      3: { photo: "bottom", date: "bottom", desc: "top" },
+      4: { photo: "bottom", date: "top", desc: "top" },
+      5: { photo: "bottom", date: "top", desc: "top" },
+      6: { photo: "bottom", date: "top", desc: "top" },
+      7: { photo: "bottom", date: "top", desc: "top" },
+      8: { date: "bottom", photo: "top", desc: "top" }
+    };
+
+    const applyRevealOrigins = () => {
+      for (const [nodeNum, origins] of Object.entries(ORIGIN_Y)) {
+        for (const [part, y] of Object.entries(origins)) {
+          const el = document.querySelector<HTMLElement>(`[data-node${nodeNum}-${part}]`);
+          if (el) el.style.transformOrigin = `50% ${y}`;
+        }
+      }
+    };
+
     // Accurate path calculation using getBoundingClientRect to handle all transforms/nesting
     const updatePaths = () => {
+      applyRevealOrigins();
       const trackRect = track.getBoundingClientRect();
 
       const getCenter = (el: HTMLElement) => {
@@ -572,48 +780,77 @@
         getCenter(dot9Anchor!)
       ];
 
-      const setElbow = (line: SVGPathElement, a: { x: number; y: number }, b: { x: number; y: number }, t: number) => {
-        const midX = a.x + (b.x - a.x) * t;
-        const d = `M ${a.x} ${a.y} H ${midX} V ${b.y} H ${b.x}`;
+      // Use the 5-April connector as the single shape language for lines 1–7:
+      // one broad S with horizontal tangents and no short turn/straight-tail mix.
+      type Pt = { x: number; y: number };
+
+      const setSmooth = (line: SVGPathElement, a: Pt, b: Pt) => {
+        const midX = (a.x + b.x) / 2;
+        const d = `M ${a.x} ${a.y} C ${midX} ${a.y} ${midX} ${b.y} ${b.x} ${b.y}`;
         line.setAttribute("d", d);
         line.setAttribute("pathLength", "1");
         return line.getTotalLength();
       };
 
+      const setSmoothIntoNode8 = (line: SVGPathElement, a: Pt, b: Pt) => {
+        // On the narrowest layout, end the S just before node 8's centered card
+        // then approach the dot horizontally; this preserves the same curve feel
+        // without putting the stroke behind the photo.
+        if (window.innerWidth < 360) {
+          const endX = b.x - Math.max(136, window.innerWidth * 0.42);
+          const midX = (a.x + endX) / 2;
+          line.setAttribute("d", `M ${a.x} ${a.y} C ${midX} ${a.y} ${midX} ${b.y} ${endX} ${b.y} H ${b.x}`);
+        } else {
+          const midX = (a.x + b.x) / 2;
+          line.setAttribute("d", `M ${a.x} ${a.y} C ${midX} ${a.y} ${midX} ${b.y} ${b.x} ${b.y}`);
+        }
+        line.setAttribute("pathLength", "1");
+        return line.getTotalLength();
+      };
 
-      const setVHV = (line: SVGPathElement, a: { x: number; y: number }, b: { x: number; y: number }, t: number) => {
-        const midY = a.y + (b.y - a.y) * t;
+      const setFinale = (line: SVGPathElement, a: Pt, b: Pt) => {
+        // A shallow first drop leaves most of the finale for the dramatic last leg.
+        const midY = a.y + (b.y - a.y) * FINALE_ELBOW_T;
         const d = `M ${a.x} ${a.y} V ${midY} H ${b.x} V ${b.y}`;
         line.setAttribute("d", d);
         line.setAttribute("pathLength", "1");
         return line.getTotalLength();
       };
 
-      // Bend point varies per segment so the elbows don't all turn at the
-      // midpoint — the line gets a looser, less mechanical rhythm.
-      const tA = 0.42;
-      
       const lens = [
-        setElbow(line1, points[0], points[1], tA),
-        setElbow(line2, points[1], points[2], 0.6),
-        setElbow(line3, points[2], points[3], 0.5), // bend right of node 3's photo (photo edge ≈ 0.42 of the gap)
-        setElbow(line4, points[3], points[4], 0.55),
-        setElbow(line5, points[4], points[5], 0.42),
-        setElbow(line6, points[5], points[6], 0.58),
-        setElbow(line7, points[6], points[7], 0.45),
-        setVHV(line8, points[7], points[8], 0.4)
+        setSmooth(line1, points[0], points[1]),
+        setSmooth(line2, points[1], points[2]),
+        setSmooth(line3, points[2], points[3]),
+        setSmooth(line4, points[3], points[4]),
+        setSmooth(line5, points[4], points[5]),
+        setSmooth(line6, points[5], points[6]),
+        setSmoothIntoNode8(line7, points[6], points[7]),
+        setFinale(line8, points[7], points[8])
       ];
 
-      return lens;
+      return { lens, points };
     };
 
     initRaf = requestAnimationFrame(() => {
-      let lens = updatePaths();
+      let { lens, points } = updatePaths();
       if (lens.some((l) => l === 0)) {
-        lens = updatePaths();
+        ({ lens, points } = updatePaths());
       }
 
+      // Connect thresholds derived from the measured dot centers (all vw, so
+      // viewport-invariant — safe to bake into keyframes at init).
+      const nodeXVw = points.map((p) => (p.x / window.innerWidth) * 100);
+      const connect = (nodeNum: number) => progressAtPanX(-(nodeXVw[nodeNum - 1] - CONNECT_X));
+      const NODE8_CONTENT_AT = connect(8);
+
+      // Height-only `resize` events are mobile browser chrome collapsing, not a
+      // layout change: every measured coordinate here is vw/lvh-based, so the dot
+      // geometry is identical before and after. Recomputing would only burn a
+      // full rect/path pass on every URL-bar transition, mid-scroll.
+      let lastResizeWidth = window.innerWidth;
       const onResize = () => {
+        if (window.innerWidth === lastResizeWidth) return;
+        lastResizeWidth = window.innerWidth;
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {
           updatePaths();
@@ -630,23 +867,27 @@
       // ANIMATIONS
 
       // 1. Circle Shrink (Top Layer)
-      // Shrinks from full screen to a small dot (12px radius)
-      // 1a. Circle Shrink (Clip Path)
+      // Use one continuous radius interpolation: this is the exact inverse
+      // visual behavior of the final circle's outward scale, with no midpoint
+      // keyframe that can jump when the scroll runway changes.
       const bgClipAnim = animate(
         circleOverlay,
-        // Short hold at full circle so tiny scroll jitter at the boundary
-        // (e.g. mobile URL-bar resizes) cannot pulse the shrinking edge.
-        { clipPath: ["circle(150% at 50% 50%)", "circle(150% at 50% 50%)", "circle(100px at 50% 50%)", "circle(8px at 50% 50%)", "circle(8px at 50% 50%)"] },
-        { ease: "linear", times: [0, 0.003, 0.042, 0.06, 1] }
+        {
+          clipPath: [
+            "circle(100vmax at 50% 50%)",
+            "circle(8px at 50% 50%)",
+            "circle(8px at 50% 50%)"
+          ]
+        },
+        { ease: "linear", times: [0, INTRO_END, 1] }
       );
       cleanupFns.push(scroll(bgClipAnim, { target: section, offset: ["start start", "end end"] }));
 
-      // 1b. Circle Opacity (Hold then Cut)
-      // Stays fully opaque until 0.06 (when track appears), then vanishes instantly.
+      // Once the 8px-radius overlay exactly matches dot 1, hand off to the dot.
       const bgOpacityAnim = animate(
         circleOverlay,
         { opacity: [1, 1, 0, 0] },
-        { ease: "linear", times: [0, 0.06, 0.061, 1] }
+        { ease: "linear", times: [0, INTRO_END, INTRO_END + 0.001, 1] }
       );
       cleanupFns.push(scroll(bgOpacityAnim, { target: section, offset: ["start start", "end end"] }));
 
@@ -655,27 +896,25 @@
       const titleBottomFadeAnim = animate(
         titleLayerBottom,
         { opacity: [1, 1, 0, 0] },
-        { ease: "linear", times: [0, 0.06, 0.061, 1] }
+        { ease: "linear", times: [0, INTRO_END, INTRO_END + 0.001, 1] }
       );
       cleanupFns.push(scroll(titleBottomFadeAnim, { target: section, offset: ["start start", "end end"] }));
 
       // 3. Horizontal Pan + Vertical Scroll at end
-      // Keep still until 15%, then translate left.
-      // At the end, translate up to reveal more vertical line.
-            // Mobile browser chrome makes svh < vh. Node tops are svh (with vh
-            // fallback), so the final vertical pan must use the same unit or
-            // dot-9 misses the expansion-circle center on phones.
-            const vUnit = CSS.supports("height", "1svh") ? "svh" : "vh";
-            const trackTransformValues = [
-                  `translate(0vw, 0${vUnit})`,
-                  `translate(0vw, 0${vUnit})`,
-                  `translate(-765vw, 0${vUnit})`,
-                  `translate(-815vw, 0${vUnit})`,
-                  `translate(-915vw, 0${vUnit})`,
-                  `translate(-915vw, -83${vUnit})`,
-                  `translate(-915vw, -83${vUnit})`
-                ];
-            const trackTimes = [0, 0.06, 0.62, 0.66, 0.72, 0.94, 1];
+      // Constant cruise slope across the horizontal phase (no node-8 kink),
+      // vertical finale pan at the end. Keyframes come from the shared
+      // PAN_KEYFRAMES table so the inverse mappings stay in sync.
+      // Node tops are lvh (with a vh fallback), so the final vertical pan must use
+      // the same unit or dot-9 misses the expansion-circle center on phones.
+      const vUnit = CSS.supports("height", "1lvh") ? "lvh" : "vh";
+      const trackTransformValues = PAN_KEYFRAMES.map((k) => `translate(${k.x}vw, ${k.y}${vUnit})`);
+      const trackTimes = PAN_KEYFRAMES.map((k) => k.t);
+      // node-9 pans in px (it counters the track for the expansion hand-off), so
+      // resolve one `vUnit` in px from the pinned stage — whose height IS 100lvh.
+      // window.innerHeight is the *dynamic* viewport and drifts as chrome collapses,
+      // which would desync node-9 from the lvh-positioned track.
+      const stageEl = section.querySelector(".timeline-stage");
+      const vUnitPx = (stageEl ? stageEl.getBoundingClientRect().height : window.innerHeight) / 100;
       
             const trackAnim = animate(
               track,
@@ -685,23 +924,36 @@
             cleanupFns.push(scroll(trackAnim, { target: section, offset: ["start start", "end end"] }));
       
             const node9TransformAnim = animate(
-              node9,
-              { transform: trackTransformValues },
+              document.getElementById("node-9")!,
+              {
+                transform: PAN_KEYFRAMES.map((k) =>
+                  `translate(${k.x * (window.innerWidth / 100)}px, ${k.y * vUnitPx}px)`
+                )
+              },
               { ease: "linear", times: trackTimes }
             );
             cleanupFns.push(scroll(node9TransformAnim, { target: section, offset: ["start start", "end end"] }));
       
             // 4. Node 1 Reveal
-            // Appears as the circle finishes shrinking
+            // Fade the authored dot in just before the shrinking background
+            // reaches the same 8px radius, making the handoff continuous.
             const node1Anim = animate(
               node1,
               {
                 opacity: [0, 0, 1, 1],
                 transform: ["translate(-50%, -50%)", "translate(-50%, -50%)", "translate(-50%, -50%)", "translate(-50%, -50%)"]
               },
-              { ease: "linear", times: [0, 0.05, 0.06, 1] }
+              { ease: "linear", times: [0, INTRO_END, INTRO_END + 0.001, 1] }
             );
             cleanupFns.push(scroll(node1Anim, { target: section, offset: ["start start", "end end"] }));
+            cleanupFns.push(
+              scroll(
+                (progress: number) => {
+                  node1.style.visibility = progress >= INTRO_END ? "visible" : "hidden";
+                },
+                { target: section, offset: ["start start", "end end"] }
+              )
+            );
       
             // motion v13 attaches WAAPI tracks (opacity/transform) to the native
             // ViewTimeline using the requested offset, but drives JS-only tracks
@@ -721,28 +973,29 @@
             };
       
             // 5. Line 1 Animation
+            // Line-N (dot-N → dot-N+1) completes exactly at connect(N+1);
+            // line-1 starts drawing when the intro ends.
             const line1Anim = animate(
               line1,
               {
                 opacity: [0, 1, 1, 1],
                 pathLength: [0, 0, 1, 1]
               },
-              { ease: "linear", times: [0, 0.06, 0.12, 1] }
+              { ease: "linear", times: [0, INTRO_END, connect(2), 1] }
             );
             scrubWithScroll(line1Anim);
       
             // Reusable Node Animation Helper
-            // Reveals are scroll-scrubbed, not threshold-triggered bursts: each
-            // part is a paused animate() whose time is driven by scroll progress
-            // in a small window around the node's connect threshold, so partial
-            // scroll positions map to partial reveals and scrolling backward
-            // plays the reveal in reverse.
-            // The original time-based timings (dot 0.6s; photo 0.45s; date +80ms;
-            // desc +160ms) are expressed as keyframe times within one shared
-            // 0.61s timeline.
+            // Reveals are scroll-scrubbed pops: each part pops inside one
+            // REVEAL_WINDOW-wide window opening exactly at its connect
+            // threshold — nothing is visible before the line reaches the dot.
+            // Photo leads; date trails +STAGGER_DATE, desc +STAGGER_DESC.
+            // Partial scroll maps to partial pops; backward scroll reverses
+            // them. Each block's transform-origin points at its dot and is
+            // maintained by applyRevealOrigins().
             const REVEAL_TOTAL = 0.61;
 
-            function setupNodeAnimation(nodeNum: number, connectAt: number) {
+            function setupNodeAnimation(nodeNum: number, connectAt: number, contentConnectAt: number = connectAt) {
               const dot = document.getElementById(`dot-${nodeNum}`);
               const photo = document.querySelector(`[data-node${nodeNum}-photo]`);
               const date = document.querySelector(`[data-node${nodeNum}-date]`);
@@ -751,176 +1004,180 @@
               if (!dot) return;
       
               const setHidden = () => {
-                dot.style.transform = "scale(0.6)";
+                dot.style.opacity = nodeNum === 9 ? "0" : "1";
+                dot.style.transform = nodeNum === 9 ? "scale(1)" : "scale(0.6)";
                 if (photo instanceof HTMLElement) {
                   photo.style.opacity = "0";
-                  photo.style.transform = "translateY(18px)";
+                  photo.style.transform = "scale(0.6)";
                 }
                 if (date instanceof HTMLElement) {
                   date.style.opacity = "0";
-                  date.style.transform = "translateY(12px) scale(0.98)";
+                  date.style.transform = "scale(0.6)";
                 }
                 if (desc instanceof HTMLElement) {
                   desc.style.opacity = "0";
-                  desc.style.transform = "translateY(12px) scale(0.98)";
+                  desc.style.transform = "scale(0.6)";
                 }
               };
       
               setHidden();
 
-              const revealAnims: Array<{ pause(): void; time: number; duration: number }> = [];
+              const parts: Array<{ start: number; anims: Array<{ pause(): void; time: number; duration: number }> }> = [];
 
-              // Dot overshoot: scale 0.6 -> 1.35 -> 1.
-              revealAnims.push(
+              // Normal dots use the existing overshoot. The finale dot arrives
+              // at full 20px size, then becomes the seed for the expanding fill.
+              parts.push({
+                start: connectAt,
+                anims: [
+                  animate(
+                    dot,
+                    nodeNum === 9
+                      ? { opacity: [0, 1, 1], transform: ["scale(1)", "scale(1)", "scale(1)"] }
+                      : { opacity: [1, 1, 1, 1], transform: ["scale(0.6)", "scale(1.35)", "scale(1)", "scale(1)"] },
+                    nodeNum === 9
+                      ? { duration: REVEAL_TOTAL, ease: "linear", times: [0, 0.2, 1] }
+                      : { duration: REVEAL_TOTAL, ease: [EASE_OUT_EXPO, EASE_OUT_EXPO, "linear"], times: [0, 0.492, 0.984, 1] }
+                  )
+                ]
+              });
+
+              // Pop: opacity completes in the first ~40% of the window while
+              // the scale overshoots 0.6 → 1.06 and settles back to 1.
+              const popAnimate = (el: HTMLElement) =>
                 animate(
-                  dot,
-                  { transform: ["scale(0.6)", "scale(1.35)", "scale(1)", "scale(1)"] },
-                  { duration: REVEAL_TOTAL, ease: [EASE_OUT_EXPO, EASE_OUT_EXPO, "linear"], times: [0, 0.492, 0.984, 1] }
-                )
-              );
-
-              if (photo instanceof HTMLElement) {
-                revealAnims.push(
-                  animate(
-                    photo,
-                    {
-                      opacity: [0, 1, 1],
-                      transform: ["translateY(18px)", "translateY(0px)", "translateY(0px)"]
-                    },
-                    { duration: REVEAL_TOTAL, ease: [EASE_OUT_EXPO, "linear"], times: [0, 0.738, 1] }
-                  )
+                  el,
+                  {
+                    opacity: [0, 1, 1],
+                    transform: ["scale(0.6)", "scale(1.06)", "scale(1)"]
+                  },
+                  { duration: 1, ease: [EASE_OUT_EXPO, EASE_OUT_EXPO], times: [0, 0.4, 1] }
                 );
-              }
 
-              if (date instanceof HTMLElement) {
-                revealAnims.push(
-                  animate(
-                    date,
-                    {
-                      opacity: [0, 0, 1, 1, 1],
-                      transform: [
-                        "translateY(12px) scale(0.98)",
-                        "translateY(12px) scale(0.98)",
-                        "translateY(0px) scale(1.04)",
-                        "translateY(0px) scale(1)",
-                        "translateY(0px) scale(1)"
-                      ]
-                    },
-                    { duration: REVEAL_TOTAL, ease: ["linear", EASE_OUT_EXPO, EASE_OUT_EXPO, "linear"], times: [0, 0.131, 0.5, 0.869, 1] }
-                  )
-                );
-              }
+              if (photo instanceof HTMLElement) parts.push({ start: contentConnectAt, anims: [popAnimate(photo)] });
+              if (date instanceof HTMLElement) parts.push({ start: contentConnectAt + STAGGER_DATE, anims: [popAnimate(date)] });
+              if (desc instanceof HTMLElement) parts.push({ start: contentConnectAt + STAGGER_DESC, anims: [popAnimate(desc)] });
 
-              if (desc instanceof HTMLElement) {
-                revealAnims.push(
-                  animate(
-                    desc,
-                    {
-                      opacity: [0, 0, 1, 1],
-                      transform: [
-                        "translateY(12px) scale(0.98)",
-                        "translateY(12px) scale(0.98)",
-                        "translateY(0px) scale(1.03)",
-                        "translateY(0px) scale(1)"
-                      ]
-                    },
-                    { duration: REVEAL_TOTAL, ease: ["linear", EASE_OUT_EXPO, EASE_OUT_EXPO], times: [0, 0.262, 0.631, 1] }
-                  )
-                );
-              }
-
-              // Scrub the reveal around the connect threshold.
-              const windowStart = connectAt - 0.01;
-              const windowEnd = connectAt + 0.02;
-              revealAnims.forEach((anim) => anim.pause());
+              // Scrub only opacity/scale. Position stays authored on the dot and
+              // moves solely with the timeline track—never with a second transform.
+              parts.forEach((part) => part.anims.forEach((anim) => anim.pause()));
               cleanupFns.push(
                 scroll(
                   (progress: number) => {
-                    const local = Math.min(1, Math.max(0, (progress - windowStart) / (windowEnd - windowStart)));
-                    revealAnims.forEach((anim) => {
-                      anim.time = local * anim.duration;
-                    });
+                    for (const part of parts) {
+                      const local = Math.min(1, Math.max(0, (progress - part.start) / REVEAL_WINDOW));
+                      for (const anim of part.anims) anim.time = local * anim.duration;
+                    }
                   },
                   { target: section!, offset: ["start start", "end end"] }
                 )
               );
             }
       
-            // Initialize animations for Nodes 2-9
-            setupNodeAnimation(2, 0.12);
-            setupNodeAnimation(3, 0.20);
-            setupNodeAnimation(4, 0.28);
-            setupNodeAnimation(5, 0.36);
-            setupNodeAnimation(6, 0.44);
-            setupNodeAnimation(7, 0.53);
-            setupNodeAnimation(8, 0.62);
-            setupNodeAnimation(9, 0.94);
-      
-            // Line animations (continued)
-            const line2Anim = animate(
-              line2,
-              { opacity: [0, 0, 1, 1, 1], pathLength: [0, 0, 0, 1, 1] },
-              { ease: "linear", times: [0, 0.14, 0.15, 0.20, 1] }
+            // Content stays authored on each dot; node 8 intentionally keeps its side card.
+            setupNodeAnimation(2, connect(2));
+            setupNodeAnimation(3, connect(3));
+            setupNodeAnimation(4, connect(4));
+            setupNodeAnimation(5, connect(5));
+            setupNodeAnimation(6, connect(6));
+            setupNodeAnimation(7, connect(7));
+            setupNodeAnimation(8, connect(8), NODE8_CONTENT_AT);
+
+            // Form the final dot while it is still below the viewport. It then enters
+            // naturally during the long descent instead of spawning at the landing.
+            const finalDotReady = FINALE_CORNER + 0.038;
+            const finalDotAnim = animate(
+              dot9,
+              {
+                opacity: [0, 0, 1, 1],
+                transform: ["scale(0.9)", "scale(0.9)", "scale(1)", "scale(1)"]
+              },
+              {
+                ease: ["linear", EASE_OUT_EXPO, "linear"],
+                times: [0, FINALE_CORNER, finalDotReady, 1]
+              }
             );
-            scrubWithScroll(line2Anim);
+            cleanupFns.push(scroll(finalDotAnim, { target: section, offset: ["start start", "end end"] }));
+
       
-            const line3Anim = animate(
-              line3,
-              { opacity: [0, 0, 1, 1, 1], pathLength: [0, 0, 0, 1, 1] },
-              { ease: "linear", times: [0, 0.22, 0.23, 0.28, 1] }
-            );
-            scrubWithScroll(line3Anim);
+                        // Line animations (continued): line-N draws from just after node
+            // N's pop (connect(N) + 0.025) until its tip meets dot-(N+1)
+            // exactly at connect(N+1).
+            const lineDraw = (line: SVGPathElement, start: number, end: number) => {
+              const anim = animate(
+                line,
+                { opacity: [0, 0, 1, 1, 1], pathLength: [0, 0, 0, 1, 1] },
+                { ease: "linear", times: [0, start, start, end, 1] }
+              );
+              scrubWithScroll(anim);
+            };
+
+            lineDraw(line2, connect(2) + 0.025, connect(3));
+            lineDraw(line3, connect(3) + 0.025, connect(4));
+            lineDraw(line4, connect(4) + 0.025, connect(5));
+            lineDraw(line5, connect(5) + 0.025, connect(6));
+            lineDraw(line6, connect(6) + 0.025, connect(7));
+            lineDraw(line7, connect(7) + 0.025, connect(8));
       
-            const line4Anim = animate(
-              line4,
-              { opacity: [0, 0, 1, 1, 1], pathLength: [0, 0, 0, 1, 1] },
-              { ease: "linear", times: [0, 0.30, 0.31, 0.36, 1] }
-            );
-            scrubWithScroll(line4Anim);
-      
-            const line5Anim = animate(
-              line5,
-              { opacity: [0, 0, 1, 1, 1], pathLength: [0, 0, 0, 1, 1] },
-              { ease: "linear", times: [0, 0.38, 0.39, 0.44, 1] }
-            );
-            scrubWithScroll(line5Anim);
-      
-            const line6Anim = animate(
-              line6,
-              { opacity: [0, 0, 1, 1, 1], pathLength: [0, 0, 0, 1, 1] },
-              { ease: "linear", times: [0, 0.46, 0.47, 0.53, 1] }
-            );
-            scrubWithScroll(line6Anim);
-      
-            const line7Anim = animate(
-              line7,
-              { opacity: [0, 0, 1, 1, 1], pathLength: [0, 0, 0, 1, 1] },
-              { ease: "linear", times: [0, 0.55, 0.56, 0.62, 1] }
-            );
-            scrubWithScroll(line7Anim);
-      
+            // Derive draw fractions from the measured V-H-V path. The tip and
+            // camera meet at the halfway point, second turn, and final dot, so the
+            // line remains in-frame instead of outrunning the viewport.
+            const line8Start = connect(8) + 0.006;
+            const finaleMidY = points[7].y + (points[8].y - points[7].y) * FINALE_ELBOW_T;
+            const firstLeg = Math.abs(finaleMidY - points[7].y);
+            const horizontalLeg = Math.abs(points[8].x - points[7].x);
+            const firstTurnFraction = firstLeg / lens[7];
+            const halfwayFraction = (firstLeg + horizontalLeg * 0.5) / lens[7];
+            const secondTurnFraction = (firstLeg + horizontalLeg) / lens[7];
             const line8Anim = animate(
               line8,
-              { 
-                opacity: [0, 0, 1, 1, 1, 1, 1], 
-                pathLength: [0, 0, 0, 0.22, 0.54, 1, 1] 
+              {
+                opacity: [0, 0, 1, 1, 1, 1, 1, 1],
+                pathLength: [
+                  0,
+                  0,
+                  0,
+                  firstTurnFraction,
+                  halfwayFraction,
+                  secondTurnFraction,
+                  1,
+                  1
+                ]
               },
-              { 
-                ease: "linear", 
-                times: [0, 0.62, 0.625, 0.64, 0.72, 0.94, 1] 
+              {
+                ease: "linear",
+                times: [
+                  0,
+                  connect(8),
+                  line8Start,
+                  FINALE_TURN,
+                  FINALE_MID,
+                  FINALE_CORNER,
+                  VERT_END,
+                  1
+                ]
               }
             );
             scrubWithScroll(line8Anim);
       
             // 10. Circle Expansion (End)
-            // Expands from 0% (at dot 3 position) to full screen
+            // The grow begins the moment the line completes on the dot, so the
+            // connection reads as the trigger. The title stays hidden until the
+            // growing circle's edge reaches it — the clip-path sweep itself is
+            // the reveal, the inverse of the opening shrink crossing Mula-mula.
             const expansionAnim = animate(
-              circleExpansionFill,
+              circleExpansion,
               {
-                transform: ["scale(0.001)", "scale(0.001)", "scale(1)"]
+                clipPath: [
+                  "circle(0px at 50% 50%)",
+                  "circle(0px at 50% 50%)",
+                  "circle(100vmax at 50% 50%)",
+                  "circle(100vmax at 50% 50%)"
+                ]
               },
-              { ease: "linear", times: [0, 0.94, 1] }
-            );            cleanupFns.push(scroll(expansionAnim, { target: section, offset: ["start start", "end end"] }));    });
+              { ease: "linear", times: [0, EXPANSION_START, EXPANSION_END, 1] }
+            );
+            cleanupFns.push(scroll(expansionAnim, { target: section, offset: ["start start", "end end"] }));
+    });
   }
 
   document.addEventListener("astro:page-load", initTimeline);
