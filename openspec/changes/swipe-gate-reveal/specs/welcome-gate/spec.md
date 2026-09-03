@@ -8,7 +8,7 @@ A fixed welcome screen between the loading overlay and the hero: it shows the in
 
 ### Requirement: Gate surface and stacking
 
-The homepage SHALL render a fixed, viewport-covering welcome gate in the initial HTML, stacked below the loading overlay and above all page content. The gate surface SHALL be visually brighter than the black loading overlay and SHALL include a background layer able to hold a designated image asset, with a light neutral fallback when no asset is present.
+The homepage SHALL render a fixed, viewport-covering welcome gate in the initial HTML, stacked below the loading overlay and above all page content. The gate surface SHALL follow the device color scheme (dark near-black / light white, Vercel-style monochrome) via CSS only, and SHALL include a background layer able to hold a designated image asset, with a themed dot-pattern fallback when no asset is present.
 
 #### Scenario: Gate ships in initial HTML
 
@@ -18,12 +18,12 @@ The homepage SHALL render a fixed, viewport-covering welcome gate in the initial
 #### Scenario: Loader fade reveals the gate
 
 - **WHEN** the loading overlay finishes and fades out
-- **THEN** the welcome gate is what appears — a brighter surface, not the hero
+- **THEN** the welcome gate is what appears — a themed surface (never the hero)
 
 #### Scenario: Background falls back gracefully
 
 - **WHEN** no gate background image asset is available
-- **THEN** the gate renders its light neutral fallback surface with no broken-image artifact
+- **THEN** the gate renders its themed dot-pattern fallback surface with no broken-image artifact
 
 ### Requirement: Gate content layout
 

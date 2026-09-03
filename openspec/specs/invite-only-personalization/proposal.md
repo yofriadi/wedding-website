@@ -17,7 +17,7 @@ Phase 1 shipped invite links that set a `ww_invite_id` cookie, but nothing reads
 - **Guest submissions** — its own change: `guest-submissions`.
 - **RSVP** — not in scope; `invite-session` is the pattern for it.
 - **Households/group invites** — one invite = one identity.
-- **Cookie healing** — never-overwrite retained; documented limitation.
+- **Cookie healing** — revisit: `GET /:id` now rebinds `ww_invite_id` to the clicked invite (explicit identity statement supersedes a stale cookie).
 - **Fixing `playwright.config.ts` `dev:bare`** — separate concern.
 - **Cloudflare proxy fronting** — deliberately not in v1 ("simple first"); may be added later as pure infra, but must honor the `no-store` homepage header.
 

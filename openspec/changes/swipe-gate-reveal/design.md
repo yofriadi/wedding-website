@@ -21,7 +21,7 @@ Current entry sequence: black `#loading-screen` (invitee name + cycling shimmer 
 
 `WelcomeGate.astro` renders a `position: fixed; inset: 0` surface in the initial HTML, z-indexed _below_ the loader (`z-50`) and above the hero. The loader fade therefore _is_ the black→bright transition — no content swap on one surface, no extra overlay choreography. Rationale: the greeting must be SSR'd at first paint anyway (guest-greeting spec), so the gate must exist in initial HTML; stacking it under the loader gives the brightness transition for free.
 
-The gate surface is deliberately brighter than the black loader and carries a background layer with a couple-supplied image slot (asset path checked at build/request time like story teasers) over a light neutral fallback. Ship the fallback; the image is the couple's pending decision.
+The gate surface follows the device color scheme (Vercel-style monochrome) and carries a background layer with a couple-supplied image slot (asset path checked at build/request time like story teasers) over a themed dot-pattern fallback. Ship the fallback; the image is the couple's pending decision.
 
 ### D2 — Level-2 finger-tracked swipe (the interaction core)
 
