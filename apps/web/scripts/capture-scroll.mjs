@@ -4,50 +4,44 @@ import { chromium } from "playwright";
 
 const OUT_DIR = path.join(process.cwd(), ".opencode", "screenshots");
 
-// Progress stops within #timeline-section, as fractions of the scrollable
-// runway (section height − viewport height). Connect fractions are the
-// derived thresholds (TimelineScroll.astro / design D3) for 150vw-spaced
-// nodes; good enough for capture targeting.
-const STOPS = [
-  { name: "00-section-top", at: 0 },
-  { name: "01-intro-circle", at: 0.0027 },
-  { name: "02-intro-end", at: 0.0498 },
-  { name: "03-node2-connect", at: 0.1216 },
-  { name: "04-node2-popped", at: 0.135 },
-  { name: "05-node3-connect", at: 0.2114 },
-  { name: "06-node3-hold-a", at: 0.2174 },
-  { name: "07-node3-hold-b", at: 0.2244 },
-  { name: "08-node3-exiting", at: 0.245 },
-  { name: "09-node4-connect", at: 0.3011 },
-  { name: "10-node4-popped", at: 0.314 },
-  { name: "11-node5-connect", at: 0.3909 },
-  { name: "12-node5-hold-a", at: 0.3969 },
-  { name: "13-node5-hold-b", at: 0.4039 },
-  { name: "14-node5-exiting", at: 0.425 },
-  { name: "15-node6-connect", at: 0.4806 },
-  { name: "16-node6-popped", at: 0.494 },
-  { name: "17-node7-connect", at: 0.5704 },
-  { name: "18-node7-hold-a", at: 0.5764 },
-  { name: "19-node7-hold-b", at: 0.5834 },
-  { name: "20-node7-exiting", at: 0.605 },
-  { name: "21-node8-connect", at: 0.6601 },
-  { name: "22-node8-content", at: 0.673 },
-  { name: "23-node8-popped", at: 0.686 },
-  { name: "24-horiz-end", at: 0.7678 },
-  { name: "25-vertical-mid", at: 0.82 },
-  { name: "26-node9-arrive", at: 0.87 },
-  { name: "27-node9-popped", at: 0.882 },
-  { name: "28-vert-end", at: 0.9502 },
-  { name: "29-end", at: 1 },
+// ---------------------------------------------------------------------------
+// Choreography constants — mirrored from apps/web/src/components/TimelineScroll.astro.
+// Keep in sync with the component; a drift here makes the stop list target
+// the wrong moments and the probe catches it as missing/extra reveals.
+// ---------------------------------------------------------------------------
+const INTRO_END = 0.0386;
+const FINALE_TURN = 0.8074;
+const FINALE_MID = 0.8392;
+const FINALE_CORNER = 0.8681;
+const VERT_END = 0.956;
+const EXPANSION_START = VERT_END + 0.004;
+const EXPANSION_END = 0.994;
+const CONNECT_X = 80; // vw-relative offset from a dot where its connector completes
+
+// Node-9 is centered by the pan table: PAN_END_X = -1620vw at VERT_END.
+const PAN_KEYFRAMES = [
+  { t: 0, x: 0, y: 0 },
+  { t: INTRO_END, x: 0, y: 0 },
+  { t: FINALE_TURN, x: -1470, y: 0 },
+  { t: FINALE_MID, x: -1545, y: null },
+  { t: FINALE_CORNER, x: -1620, y: null },
+  { t: VERT_END, x: -1620, y: null },
+  { t: 1, x: -1620, y: null },
 ];
 
-// Pin stationarity probes: two fractions inside each pinned node's hold
-// window — the content's viewport rect must not move between them.
-const PIN_HOLDS = [
-  { node: 3, a: 0.2174, b: 0.2244 },
-  { node: 5, a: 0.3969, b: 0.4039 },
-  { node: 7, a: 0.5764, b: 0.5834 },
-];
+// Progress at which the track has panned targetX (vw). Inverse of the pan table.
+function progressAtPanX(targetX) {
+  for (let i = 1; i < PAN_KEYFRAMES.length; i++) {
+    const a = PAN_KEYFRAMES[i - 1];
+    const b = PAN_KEYFRAMES[i];
+    const lo = Math.min(a.x, b.x);
+    const hi = Math.max(a.x, b.x);
+    if (targetX >= lo && targetX <= hi && b.x !== a.x) {
+      return a.t + ((targetX - a.x) / (b.x - a.x)) * (b.t - a.t);
+    }
+  }
+  return targetX <= PAN_KEYFRAMES[PAN_KEYFRAMES.length - 1].x ? 1 : 0;
+}
 
 const WIDTHS = [320, 375, 390, 1440];
 
@@ -66,84 +60,62 @@ async function sectionGeometry(page) {
 async function scrollToProgress(page, geom, fraction) {
   const y = Math.round(geom.top + fraction * geom.scrollable);
   await page.evaluate((v) => window.scrollTo(0, v), y);
-  await page.waitForTimeout(420); // let the scrub + image decode settle
+  await page.waitForTimeout(300); // let the native ViewTimeline scrub settle
 }
 
-// ---------------------------------------------------------------------------
-// Synthetic frame shim.
-// motion v13 attaches its WAAPI tracks (transform/opacity/clip-path) to a
-// native ScrollTimeline that this Chromium build never updates — the
-// pre-change code freezes identically, so this is an environment artifact,
-// not a regression. The JS-driven scrubs (lines, reveals, pin wrappers) DO
-// work. To capture meaningful frames we cancel the frozen WAAPI animations
-// and apply their keyframe values by hand, mirroring the constants in
-// TimelineScroll.astro.
-const INTRO_END = 0.0498;
-const HORIZ_END = 0.7678;
-const VERT_END = 0.9502;
-
-async function cancelFrozenWAAPI(page) {
-  await page.evaluate(() => {
-    for (const a of document.getAnimations()) {
-      // Keep the paused, JS-scrubbed animations; drop the frozen ones.
-      if (a.playState === "running") a.cancel();
-    }
-  });
-}
-
-async function applySyntheticFrame(page, geom) {
-  // Derive the frame from the REAL scroll position so the synthetic pan
-  // matches the progress the JS scrubs see (scrollTo rounds to whole px).
-  await page.evaluate((geom) => {
-    const f = Math.min(1, Math.max(0, (window.scrollY - geom.top) / geom.scrollable));
-    const lerp = (a, b, t) => a + (b - a) * Math.min(1, Math.max(0, t));
-    const INTRO_END = 0.0498,
-      HORIZ_END = 0.7678,
-      VERT_END = 0.9502;
-    const pan =
-      f <= INTRO_END
-        ? 0
-        : f <= HORIZ_END
-          ? lerp(0, -1200, (f - INTRO_END) / (HORIZ_END - INTRO_END))
-          : -1200;
-    // Vertical finale pan runs HORIZ_END → VERT_END (mirrors PAN_KEYFRAMES).
-    const y =
-      f <= HORIZ_END
-        ? 0
-        : f <= VERT_END
-          ? lerp(0, -83, (f - HORIZ_END) / (VERT_END - HORIZ_END))
-          : -83;
-    const track = document.getElementById("timeline-track");
-    const node9 = document.getElementById("node-9");
-    const overlay = document.getElementById("timeline-circle-overlay");
-    const title = document.getElementById("title-layer-bottom");
-    const node1 = document.getElementById("node-1");
-    const fill = document.getElementById("timeline-circle-expansion-fill");
-    if (!track || !node9 || !overlay || !title || !node1 || !fill) return;
-    const unit = CSS.supports("height", "1lvh") ? "lvh" : "vh";
-    const tf = `translate(${pan}vw, ${y}${unit})`;
-    track.style.transform = tf;
-    node9.style.transform = tf;
-    let clip;
-    if (f < 0.0025) clip = "circle(150% at 50% 50%)";
-    else if (f < 0.0349) {
-      const full = Math.hypot(window.innerWidth, window.innerHeight) * 0.75; // ~ circle(150%)
-      const t = (f - 0.0025) / (0.0349 - 0.0025);
-      clip = `circle(${full + (100 - full) * t}px at 50% 50%)`;
-    } else if (f < INTRO_END) {
-      clip = `circle(${lerp(100, 8, (f - 0.0349) / (INTRO_END - 0.0349))}px at 50% 50%)`;
-    } else clip = "circle(8px at 50% 50%)";
-    overlay.style.clipPath = clip;
-    overlay.style.opacity = f < INTRO_END ? "1" : "0";
-    title.style.opacity = f < INTRO_END ? "1" : "0";
-    node1.style.opacity = String(f < 0.0415 ? 0 : lerp(0, 1, (f - 0.0415) / (INTRO_END - 0.0415)));
-    fill.style.transform = `scale(${f < VERT_END ? 0.001 : lerp(0.001, 1, (f - VERT_END) / (1 - VERT_END))})`;
-  }, geom);
+// Where is the WAAPI track now? Reads the LIVE native scroll-driven animations —
+// no synthetic frame shim, no frozen-anim cancellation. Chromium (and Safari)
+// drive motion's WAAPI tracks natively via ScrollTimeline, so computed styles
+// ARE the truth at rest.
+function liveState(page, label) {
+  return page.evaluate((label) => {
+    const clipOf = (id) => getComputedStyle(document.getElementById(id)).clipPath;
+    const clipRadius = (id) => {
+      const m = clipOf(id).match(/circle\(([\d.]+)px/);
+      return m ? Number(m[1]) : null;
+    };
+    const visible = (sel) => {
+      const el = document.querySelector(sel);
+      if (!el) return null;
+      const cs = getComputedStyle(el);
+      const r = el.getBoundingClientRect();
+      return {
+        opacity: Number(cs.opacity),
+        inViewport: r.right > 0 && r.left < innerWidth && r.bottom > 0 && r.top < innerHeight,
+      };
+    };
+    return {
+      label,
+      f: +(
+        -document.getElementById("timeline-section").getBoundingClientRect().top /
+        (document.getElementById("timeline-section").offsetHeight - innerHeight)
+      ).toFixed(4),
+      overlayClip: clipRadius("timeline-circle-overlay"),
+      expansionClip: clipRadius("timeline-circle-expansion"),
+      node1: visible("#node-1"),
+      trackX: (() => {
+        const t = document.getElementById("timeline-track");
+        return t
+          ? (new DOMMatrixReadOnly(getComputedStyle(t).transform).m41 / innerWidth) * 100
+          : null;
+      })(),
+      node9X: (() => {
+        const n = document.getElementById("node-9");
+        return n
+          ? (new DOMMatrixReadOnly(getComputedStyle(n).transform).m41 / innerWidth) * 100
+          : null;
+      })(),
+      dot9Opacity: (() => {
+        const d = document.getElementById("dot-9");
+        return d ? Number(getComputedStyle(d).opacity) : null;
+      })(),
+    };
+  }, label);
 }
 
 // Invariant: at any scroll position, content from at most ONE story node is
 // on screen (previous content must have exited before the next pops).
-async function checkExclusivity(page, label) {
+function checkExclusivity(page, label) {
   return page.evaluate((label) => {
     const selectors = [];
     for (let n = 2; n <= 8; n++) {
@@ -172,14 +144,14 @@ async function checkExclusivity(page, label) {
   }, label);
 }
 
-// Invariant: no connector path may pass through any content block. Samples
-// each path in track-local coordinates and tests against live content hulls
-// (center via rect difference — transform-invariant — sized via offsetWidth,
-// which ignores the hidden scale(0.6) and the pin wrapper's translation).
-async function checkLineClearance(page, label) {
+// Invariant: no connector path passes through any content block. On desktop
+// (≥768px) this is strict. On mobile the connectors intentionally cross the
+// photo cards (the SVG rides z-40 above the track, so the stroke paints over
+// photos); that crossing is an accepted, recorded decision — see the
+// timeline-fluid-flow-rescope change docs — so it reports as info, not a
+// violation.
+function checkLineClearance(page, label) {
   return page.evaluate((label) => {
-    // Layout-space rects (offset chain to the track) — immune to the hidden
-    // scale(0.6), the dot-facing transform-origins, and the pin translation.
     const track = document.getElementById("timeline-track");
     const layoutRect = (el) => {
       let x = el.offsetLeft;
@@ -194,15 +166,10 @@ async function checkLineClearance(page, label) {
     };
     const hulls = [];
     for (let n = 2; n <= 8; n++) {
-      const rects = [];
       for (const part of ["photo", "date", "desc"]) {
         const el = document.querySelector(`[data-node${n}-${part}]`);
         if (!el) continue;
-        rects.push(layoutRect(el));
-      }
-      // Per-block rects (NOT the union bbox — the gaps between blocks are the
-      // line's arrival corridor and must not count as occupied).
-      for (const r of rects)
+        const r = layoutRect(el);
         hulls.push({
           node: n,
           left: r.left + 6,
@@ -210,6 +177,7 @@ async function checkLineClearance(page, label) {
           top: r.top + 6,
           bottom: r.bottom - 6,
         });
+      }
     }
     const hits = [];
     for (let i = 1; i <= 8; i++) {
@@ -226,21 +194,64 @@ async function checkLineClearance(page, label) {
         }
       }
     }
-    // Strict on desktop; on narrow screens the 82vw content makes a fully
-    // clear corridor geometrically impossible (released content sweeps over
-    // the route), so hits there are reported as advisories, not violations.
     const strict = window.innerWidth >= 768;
     return { label, hits, strict, violation: strict && hits.length > 0 };
   }, label);
 }
 
-async function blockCenter(page, selector) {
-  return page.evaluate((sel) => {
-    const el = document.querySelector(sel);
-    if (!el) return null;
-    const r = el.getBoundingClientRect();
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
-  }, selector);
+// Derive the connect(N) fractions from the LIVE measured dots + pan table, so
+// the stop list tracks the authored geometry instead of hard-coding last
+// year's numbers (the old harness silently captured the wrong moments).
+async function deriveStops(page) {
+  return page
+    .evaluate((CONNECT_X) => {
+      const dots = [];
+      for (let n = 1; n <= 8; n++) {
+        const d = document.getElementById(`dot-${n}`);
+        if (!d) throw new Error(`#dot-${n} missing`);
+        const r = d.getBoundingClientRect();
+        dots.push(((r.left + r.width / 2) / innerWidth) * 100);
+      }
+      const dot9 = document.getElementById("dot-9-anchor");
+      const r9 = dot9.getBoundingClientRect();
+      dots.push(((r9.left + r9.width / 2) / innerWidth) * 100);
+      return dots;
+    }, CONNECT_X)
+    .then((dotsVw) => {
+      // connect(N): the pan at which dot N sits CONNECT_X from the viewport's
+      // left edge — i.e. track pan = -(dotXvw - CONNECT_X).
+      const connect = (n) => progressAtPanX(-(dotsVw[n - 1] - CONNECT_X));
+      const stops = [
+        { name: "00-section-top", at: 0 },
+        { name: "01-intro-mid", at: INTRO_END / 2 },
+        { name: "02-intro-end", at: INTRO_END },
+        { name: "03-node2-connect", at: connect(2) },
+        { name: "04-node2-popped", at: connect(2) + 0.02 },
+        { name: "05-node3-connect", at: connect(3) },
+        { name: "06-node3-popped", at: connect(3) + 0.02 },
+        { name: "07-node4-connect", at: connect(4) },
+        { name: "08-node4-popped", at: connect(4) + 0.02 },
+        { name: "09-node5-connect", at: connect(5) },
+        { name: "10-node5-popped", at: connect(5) + 0.02 },
+        { name: "11-node6-connect", at: connect(6) },
+        { name: "12-node6-popped", at: connect(6) + 0.02 },
+        { name: "13-node7-connect", at: connect(7) },
+        { name: "14-node7-popped", at: connect(7) + 0.02 },
+        { name: "15-node8-connect", at: connect(8) },
+        { name: "16-node8-content", at: progressAtPanX(-1520) }, // node 8's card centered
+        { name: "17-node8-popped", at: connect(8) + 0.02 },
+        { name: "18-horiz-end", at: FINALE_TURN },
+        { name: "19-vertical-mid", at: FINALE_MID },
+        { name: "20-node9-arrive", at: FINALE_CORNER },
+        { name: "21-node9-formed", at: FINALE_CORNER + 0.038 },
+        { name: "22-vert-end", at: VERT_END },
+        { name: "23-expansion-start", at: EXPANSION_START },
+        { name: "24-expansion-half", at: (EXPANSION_START + EXPANSION_END) / 2 },
+        { name: "25-expansion-end", at: EXPANSION_END },
+        { name: "26-end", at: 1 },
+      ];
+      return { stops, connect };
+    });
 }
 
 async function captureProgressStops(browser, url, width, report) {
@@ -248,54 +259,63 @@ async function captureProgressStops(browser, url, width, report) {
   const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1 });
   const page = await context.newPage();
   await page.goto(url, { waitUntil: "networkidle", timeout: 90000 });
-  await cancelFrozenWAAPI(page);
-  // The hero locks page scroll (body/html overflow: hidden) until the user's
-  // first wheel; sticky positioning does not work while locked. Real users
-  // unlock via the hero; the harness unlocks directly.
+  // The hero/gate may lock page scroll; sticky positioning needs it unlocked.
   await page.evaluate(() => {
     document.documentElement.style.overflow = "visible";
     document.body.style.overflow = "visible";
   });
+  // Dismiss loader/gate when present so screenshots show the timeline, not the
+  // entry overlays. (DOM-state probes are overlay-independent either way.)
+  await page
+    .locator("#welcome-gate")
+    .first()
+    .click({ force: true })
+    .catch(() => {});
+  await page.waitForTimeout(400);
 
   const geom = await sectionGeometry(page);
+  const { stops } = await deriveStops(page);
 
   // Warm-up pass: walk every stop so lazy images hydrate and decode once.
-  for (const stop of STOPS) await scrollToProgress(page, geom, stop.at);
+  for (const stop of stops) await scrollToProgress(page, geom, stop.at);
 
-  const pinProbes = new Map(PIN_HOLDS.map((h) => [h.node, {}]));
-
-  for (const stop of STOPS) {
+  for (const stop of stops) {
     await scrollToProgress(page, geom, stop.at);
-    await applySyntheticFrame(page, geom);
+    report.frames.push(await liveState(page, `${width}/${stop.name}`));
     const check = await checkExclusivity(page, `${width}/${stop.name}`);
     report.exclusivity.push(check);
     if (check.violation) report.violations.push(check);
     const clearance = await checkLineClearance(page, `${width}/${stop.name}`);
     report.lineClearance.push(clearance);
     if (clearance.violation) report.violations.push(clearance);
-
-    for (const hold of PIN_HOLDS) {
-      if (Math.abs(stop.at - hold.a) < 1e-9) {
-        pinProbes.get(hold.node).a = await blockCenter(page, `[data-node${hold.node}-photo]`);
-      }
-      if (Math.abs(stop.at - hold.b) < 1e-9) {
-        pinProbes.get(hold.node).b = await blockCenter(page, `[data-node${hold.node}-photo]`);
-      }
-    }
-
     await page.screenshot({ path: path.join(OUT_DIR, `local-${width}-${stop.name}.png`) });
   }
 
-  for (const [node, probe] of pinProbes) {
-    if (!probe.a || !probe.b) {
-      report.violations.push({ label: `${width}/pin-node${node}`, error: "missing probe" });
-      continue;
-    }
-    const dx = Math.abs(probe.a.x - probe.b.x);
-    const entry = { label: `${width}/pin-node${node}-stationary`, dx: Number(dx.toFixed(1)) };
-    report.pins.push(entry);
-    if (dx > 1.5) report.violations.push(entry);
-  }
+  // Node-9 hand-off probe: at VERT_END the track and node-9 must agree (the
+  // counter-pan keeps dot-9 on the expansion-circle center), and the finale
+  // dot must be fully formed before the expansion starts growing.
+  await scrollToProgress(page, geom, VERT_END);
+  const handoff = await page.evaluate(() => {
+    const m = (id) =>
+      new DOMMatrixReadOnly(getComputedStyle(document.getElementById(id)).transform);
+    const track = m("timeline-track");
+    const node9 = m("node-9");
+    const dot9 = document.getElementById("dot-9").getBoundingClientRect();
+    return {
+      trackVw: (track.m41 / innerWidth) * 100,
+      node9Vw: (node9.m41 / innerWidth) * 100,
+      dot9CenterX: dot9.left + dot9.width / 2,
+      viewportCenterX: innerWidth / 2,
+      dot9Opacity: Number(getComputedStyle(document.getElementById("dot-9")).opacity),
+    };
+  });
+  const entry = {
+    label: `${width}/node9-handoff`,
+    ...handoff,
+    centerErrorPx: Math.round(Math.abs(handoff.dot9CenterX - handoff.viewportCenterX)),
+  };
+  report.pins.push(entry);
+  if (entry.centerErrorPx > 2 || entry.dot9Opacity < 0.99) report.violations.push(entry);
 
   await context.close();
 }
@@ -312,33 +332,86 @@ async function captureReducedMotion(browser, url, report) {
       document.documentElement.style.overflow = "visible";
       document.body.style.overflow = "visible";
     });
+    await page
+      .locator("#welcome-gate")
+      .first()
+      .click({ force: true })
+      .catch(() => {});
+    await page.waitForTimeout(400);
 
     const audit = await page.evaluate(() => {
       const section = document.getElementById("timeline-section");
-      const wrappers = Array.from(
-        document.querySelectorAll("[data-node3-pin], [data-node5-pin], [data-node7-pin]"),
-      );
+      const titleBottom = document.getElementById("title-layer-bottom");
+      const finale = document.querySelector("[data-node9-date-bottom]");
       const blocks = Array.from(
         document.querySelectorAll(
-          "[data-node2-photo],[data-node3-photo],[data-node4-photo],[data-node5-photo],[data-node6-photo],[data-node7-photo],[data-node8-photo]",
+          "[data-node2-photo],[data-node3-photo],[data-node4-photo],[data-node5-photo],[data-node6-photo],[data-node7-photo],[data-node8-photo],[data-node9-date-bottom]",
         ),
       );
+      const inFlow = (el) => getComputedStyle(el).position === "static";
+      // Probe the H2's own rect, not the container's: the container can be an
+      // empty padded box while the escaped h2 paints over the previous section
+      // (exactly the regression the old container-only probe sailed past).
+      const introHeading = titleBottom?.querySelector("h2");
+      const introHeadingRect = introHeading?.getBoundingClientRect();
+      const firstNode = document
+        .querySelector("#timeline-track > .timeline-node")
+        .getBoundingClientRect();
       return {
         sectionHeight: section.offsetHeight,
         viewport: window.innerHeight,
-        wrappersStatic: wrappers.every((w) => getComputedStyle(w).position === "static"),
-        wrapperChildrenStatic: wrappers.every((w) =>
-          Array.from(w.children).every((c) => getComputedStyle(c).position === "static"),
-        ),
+        // The overlays/SVG must actually be display:none under reduced motion —
+        // a merged-away selector group once left a 64px opaque slab in the story.
+        overlaysHidden:
+          getComputedStyle(document.querySelector("#timeline-track > svg")).display === "none" &&
+          getComputedStyle(document.getElementById("timeline-circle-overlay")).display === "none" &&
+          getComputedStyle(document.getElementById("timeline-circle-expansion")).display === "none",
+        overlaysZeroHeight:
+          document.querySelector("#timeline-track > svg").getBoundingClientRect().height === 0 &&
+          document.getElementById("timeline-circle-overlay").getBoundingClientRect().height === 0 &&
+          document.getElementById("timeline-circle-expansion").getBoundingClientRect().height === 0,
+        introHeadingInFlow: !introHeading || inFlow(introHeading),
+        introHeadingOnTop: introHeadingRect ? introHeadingRect.bottom <= firstNode.top + 4 : null,
+        introHeadingVisibleInStory:
+          introHeadingRect && introHeadingRect.top >= section.getBoundingClientRect().top - 4,
+        introHeadingHasTextPixels: introHeading
+          ? introHeading.scrollWidth > 0 && introHeading.scrollHeight > 0
+          : null,
+        finaleTitle: finale
+          ? (() => {
+              const r = finale.getBoundingClientRect();
+              return {
+                visible: Number(getComputedStyle(finale).opacity) === 1,
+                centered: r.left >= -2 && r.right <= innerWidth + 2,
+                afterNode8:
+                  r.top >=
+                  document.querySelector("[data-node8-photo]").getBoundingClientRect().bottom,
+              };
+            })()
+          : null,
         allPhotosVisible: blocks.every((b) => parseFloat(getComputedStyle(b).opacity) === 1),
+        wrappersStatic: Array.from(
+          document.querySelectorAll("[data-node3-pin],[data-node5-pin],[data-node7-pin]"),
+        ).every((w) => getComputedStyle(w).position === "static"),
       };
     });
     report.reducedMotion.push({ width, ...audit });
+    const finaleOk =
+      audit.finaleTitle?.visible && audit.finaleTitle?.centered && audit.finaleTitle?.afterNode8;
     if (
-      audit.sectionHeight > audit.viewport * 4 ||
+      // Content-driven height, not the ~18×-viewport scrub runway. 6× leaves
+      // room for the desktop story's taller photos (measured ≈4.2×) while
+      // still catching an un-reflowed runway instantly.
+      audit.sectionHeight > audit.viewport * 6 ||
+      !audit.overlaysHidden ||
+      !audit.overlaysZeroHeight ||
       !audit.wrappersStatic ||
-      !audit.wrapperChildrenStatic ||
-      !audit.allPhotosVisible
+      !audit.allPhotosVisible ||
+      !audit.introHeadingInFlow ||
+      !audit.introHeadingOnTop ||
+      !audit.introHeadingVisibleInStory ||
+      !audit.introHeadingHasTextPixels ||
+      !finaleOk
     ) {
       report.violations.push({ label: `${width}/reduced-motion`, ...audit });
     }
@@ -351,31 +424,12 @@ async function captureReducedMotion(browser, url, report) {
   }
 }
 
-// Reference captures from the Linearity "About us" page (their horizontal
-// pan timeline). Runs only when WITH_LINEARITY=1 — it is an external fetch.
-async function captureLinearity(browser) {
-  const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
-  const page = await context.newPage();
-  await page.goto("https://www.linearity.io/about-us/", { waitUntil: "networkidle" });
-  await page.waitForSelector("#sticky-scroll-container", { timeout: 15000 });
-
-  const steps = [0, 700, 1400, 2100, 2800, 3500, 4200, 4900, 5600, 6300];
-  for (let i = 0; i < steps.length; i++) {
-    const delta = i === 0 ? 0 : 700;
-    if (delta) await page.mouse.wheel(0, delta);
-    await page.waitForTimeout(1200);
-    await page.screenshot({
-      path: path.join(OUT_DIR, `linearity-${String(i).padStart(2, "0")}.png`),
-    });
-  }
-  await context.close();
-}
-
 async function main() {
   await mkdir(OUT_DIR, { recursive: true });
   const browser = await chromium.launch();
 
   const report = {
+    frames: [],
     exclusivity: [],
     lineClearance: [],
     pins: [],
@@ -383,12 +437,11 @@ async function main() {
     violations: [],
   };
 
-  if (process.env.WITH_LINEARITY) {
-    await captureLinearity(browser);
-    console.log("Linearity reference captures done.");
-  }
-
-  const url = "http://localhost:4321/";
+  // The homepage (not /timeline-test): the bare test page has no Layout/global
+  // CSS, so the Tailwind positioning classes the choreography relies on do not
+  // exist there and every probe reads garbage. Run against the real page and
+  // dismiss the entry gate instead.
+  const url = process.env.TIMELINE_URL || "http://localhost:4321/";
   for (const width of WIDTHS) {
     await captureProgressStops(browser, url, width, report);
     console.log(`Progress-stop captures done for ${width}px.`);
@@ -409,7 +462,7 @@ async function main() {
     process.exit(1);
   }
   console.log(
-    `\nNo violations. ${report.exclusivity.length} exclusivity checks, ${report.lineClearance.length} line-clearance checks, ${report.pins.length} pin probes passed.`,
+    `\nNo violations. ${report.exclusivity.length} exclusivity checks, ${report.lineClearance.length} line-clearance checks, ${report.pins.length} hand-off probes passed.`,
   );
   console.log(`Report: ${reportPath}`);
 }

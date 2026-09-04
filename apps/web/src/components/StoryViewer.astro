@@ -56,7 +56,7 @@ const isStaticWebp = (src?: string) =>
       <div class="absolute inset-0 rounded-[12px] overflow-hidden bg-[color:var(--memories-frame)] ring-1 ring-[color:var(--memories-frame-ring)]">
           <picture>
             {isStaticWebp(lastStory?.src) && (
-              <source data-src={lastStory?.src?.replace(/\.webp$/, ".avif")} type="image/avif" />
+              <source data-srcset={lastStory?.src?.replace(/\.webp$/, ".avif")} type="image/avif" />
             )}
             <img
               data-src={lastStory?.src}
@@ -115,7 +115,7 @@ const isStaticWebp = (src?: string) =>
                 <div class="w-8 h-8 rounded-full overflow-hidden bg-white/10 ring-1 ring-white/10">
                   <picture>
                     {isStaticWebp(avatar) && (
-                      <source data-src={avatar?.replace(/\.webp$/, ".avif")} type="image/avif" />
+                      <source data-srcset={avatar?.replace(/\.webp$/, ".avif")} type="image/avif" />
                     )}
                     <img
                       data-src={avatar}

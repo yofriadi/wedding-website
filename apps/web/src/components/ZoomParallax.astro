@@ -111,7 +111,7 @@ const ROW_H = 20;     // 20lvh per row (5 rows = the stage); vertical geometry l
           `}
         >
           <picture>
-            <source data-src={`${picture.src.replace(/\.webp$/, ".avif")}`} type="image/avif" />
+            <source data-srcset={`${picture.src.replace(/\.webp$/, ".avif")}`} type="image/avif" />
             <img
               data-src={picture.src}
               alt={picture.alt}

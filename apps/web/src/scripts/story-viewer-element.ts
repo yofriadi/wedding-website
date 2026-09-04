@@ -385,13 +385,22 @@ if (!customElements.get("story-viewer")) {
         isOpen = true;
         // The modal is portaled to <body>, outside every [data-progressive-section],
         // so the section preloader never reaches this img — hydrate on first open.
+        // <source> selects formats via srcset (src on <source> is inert), so the
+        // AVIF source authors data-srcset and is hydrated to srcset — same as the
+        // page-level hydrator in index.astro.
         if (avatarImg?.dataset.src) {
           avatarImg
             .closest("picture")
-            ?.querySelectorAll<HTMLSourceElement>("source[data-src]")
+            ?.querySelectorAll<HTMLSourceElement>("source[data-srcset], source[data-src]")
             .forEach((source) => {
-              source.src = source.dataset.src!;
-              source.removeAttribute("data-src");
+              if (source.dataset.srcset) {
+                source.srcset = source.dataset.srcset;
+                source.removeAttribute("data-srcset");
+              }
+              if (source.dataset.src) {
+                source.src = source.dataset.src;
+                source.removeAttribute("data-src");
+              }
             });
           avatarImg.src = avatarImg.dataset.src;
           avatarImg.removeAttribute("data-src");
