@@ -2,7 +2,9 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "playwright";
 
-const OUT_DIR = path.join(process.cwd(), ".opencode", "screenshots");
+// Harness output: PNGs land in .artifacts/capture-scroll (gitignored — a full
+// 4-width run is ~5.5MB); report.json is committed as the run's evidence.
+const OUT_DIR = path.join(process.cwd(), ".artifacts", "capture-scroll");
 
 // ---------------------------------------------------------------------------
 // Choreography constants — mirrored from apps/web/src/components/TimelineScroll.astro.

@@ -60,7 +60,12 @@ coverage
 # Playwright scratch space (dev-server DB, reports)
 test-results/
 playwright-report/
+
 .playwright/
+
+# Scroll-capture harness PNG output (~5.5MB per run); report.json is tracked
+apps/web/.artifacts/capture-scroll/*
+!apps/web/.artifacts/capture-scroll/report.json
 
 # Misc
 *.tgz
@@ -76,3 +81,6 @@ skills-lock.json
 
 # Original full-res media sources (kept local, not deployed)
 /originals/
+
+# Guest photo storage (guest-submissions D4): dev fallback root is ./var/photos
+/var/
