@@ -2,8 +2,9 @@ import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { chromium } from "playwright";
 
-// Harness output: PNGs land in .artifacts/capture-scroll (gitignored — a full
-// 4-width run is ~5.5MB); report.json is committed as the run's evidence.
+// Harness output: .artifacts/capture-scroll (gitignored — PNGs are ~5.5MB per
+// run and report.json regenerates every run; evidence belongs in the commit
+// message / PR, regenerate any time with `node scripts/capture-scroll.mjs`)
 const OUT_DIR = path.join(process.cwd(), ".artifacts", "capture-scroll");
 
 // ---------------------------------------------------------------------------

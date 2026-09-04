@@ -63,9 +63,10 @@ playwright-report/
 
 .playwright/
 
-# Scroll-capture harness PNG output (~5.5MB per run); report.json is tracked
-apps/web/.artifacts/capture-scroll/*
-!apps/web/.artifacts/capture-scroll/report.json
+# Scroll-capture harness output (PNGs ~5.5MB per run + report.json, both
+# regenerated on every run — evidence lives in commit messages / PR review,
+# regenerate any time with `node scripts/capture-scroll.mjs`)
+apps/web/.artifacts/capture-scroll/
 
 # Misc
 *.tgz
