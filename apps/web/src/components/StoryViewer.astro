@@ -140,7 +140,13 @@ const isStaticWebp = (src?: string) =>
               </div>
             </div>
           ) : (
-            <span class="text-white/60 text-xs" aria-hidden="true">Guest story</span>
+            <Fragment>
+              {/* Unnamed tile (mocks, and null-first-name entries): empty
+                  attribution slot, no placeholder text
+                  (retire-wishes-story-intro D7); the span is a zero-width
+                  spacer so justify-between keeps the close button right. */}
+              <span class="text-white/60 text-xs" aria-hidden="true" />
+            </Fragment>
           )}
 
           <div class="flex items-center gap-2">

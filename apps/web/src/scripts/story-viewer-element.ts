@@ -232,6 +232,8 @@ if (!customElements.get("story-viewer")) {
         const picture = document.createElement("picture");
         const img = document.createElement("img");
         img.src = story.src;
+        const author = viewer.getAttribute("data-username") || usernameEl?.textContent?.trim();
+        img.alt = author ? `${author}'s story` : "Guest story";
         // Prefer the AVIF sidecar for static assets; guest uploads have none.
         if (isStaticWebpAsset(story.src)) {
           const avif = document.createElement("source");

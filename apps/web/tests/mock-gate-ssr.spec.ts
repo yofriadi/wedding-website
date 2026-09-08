@@ -10,11 +10,15 @@ import { dismissWelcomeGate } from "./helpers";
 // story-rail-mocks D4 (adversarial-review findings) + story-rail-attribution
 // D1/D6: the SSR mock gate's BOTH branches, asserted on the SERVED HTML (no
 // client JS involved):
-//   empty wall  → three mock tiles for everyone (fail-open gate), and they are
-//                 the rail's ONLY story-viewers (demos + teasers retired);
+//   empty wall  → three mock tiles for everyone (fail-open gate), the rail's
+//                 ONLY mock/real story-viewers (demos + teasers retired);
 //   real photo  → zero mock tiles for everyone (public and invitee alike) and
-//                 zero <story-viewer> elements at all — real tiles are
-//                 client-injected by guest-rail.ts (D6).
+//                 no rail story-viewers — real tiles are client-injected by
+//                 guest-rail.ts (D6).
+// In BOTH branches the served HTML also holds exactly ONE extra
+// <story-viewer>: the always-present, hidden example-story intro
+// (retire-wishes-story-intro D3), which lives OUTSIDE [data-story-rail], carries
+// no data-mock, and is never gated or evicted.
 //
 // The suite's shared dev server reads the shared scratch DB that every other
 // test assumes is empty, so this file runs its OWN `astro dev` on a private
@@ -211,8 +215,12 @@ test("empty wall SSR-renders three mocks; one real photo removes them for everyo
 
   // story-rail-attribution D1: those three mocks are the rail's ONLY story
   // tiles — the ten demo StoryViewers and the static teaser <img>s are
-  // retired, so the served HTML holds exactly three <story-viewer> elements.
-  expect(emptyHtml.split("<story-viewer").length - 1).toBe(3);
+  // retired. The served HTML holds four <story-viewer> elements: the three
+  // rail mocks plus the always-present hidden example intro
+  // (retire-wishes-story-intro D3).
+  expect(emptyHtml.split("<story-viewer").length - 1).toBe(4);
+  // Exactly one of them is the intro, and it sits outside the rail.
+  expect(emptyHtml.split("data-story-intro").length - 1).toBe(1);
 
   // Seed the first real guest photo.
   await seedOnePhoto();
@@ -225,7 +233,6 @@ test("empty wall SSR-renders three mocks; one real photo removes them for everyo
   const submissionsBody = (await submissionsRes.json()) as {
     mine: unknown;
     wall: {
-      wishes: unknown[];
       stories: { photos: unknown[]; firstName: string | null; createdAt: number }[];
     };
   };
@@ -245,19 +252,20 @@ test("empty wall SSR-renders three mocks; one real photo removes them for everyo
   const publicHtml = await (await fetch(baseUrl)).text();
   expect(mockOccurrences(publicHtml)).toBe(0);
   expect(publicHtml).toContain("data-story-rail"); // the rail itself still renders
-  // story-rail-attribution D6: with a real photo the SSR HTML holds NO story
-  // tiles at all — the mocks are gated off and the real wall tiles are
+  // story-rail-attribution D6: with a real photo the SSR HTML holds NO mock or
+  // real story tiles — the mocks are gated off and the real wall tiles are
   // injected client-side after the payload fetch (the rail's reserved
-  // min-height covers the gap). This is the assertion that would catch a
-  // demo-tile regression.
-  expect(publicHtml).not.toContain("<story-viewer");
+  // min-height covers the gap). The ONLY <story-viewer> left is the hidden
+  // example intro (retire-wishes-story-intro D3), outside the rail.
+  expect(publicHtml.split("<story-viewer").length - 1).toBe(1);
+  expect(publicHtml.split("data-story-intro").length - 1).toBe(1);
 
   // Invitee (the seeded submitter): same SSR decision.
   const inviteeHtml = await (
     await fetch(baseUrl, { headers: { Cookie: `ww_invite_id=${SEEDED_INVITE}` } })
   ).text();
   expect(mockOccurrences(inviteeHtml)).toBe(0);
-  expect(inviteeHtml).not.toContain("<story-viewer");
+  expect(inviteeHtml.split("<story-viewer").length - 1).toBe(1); // the intro only
 });
 
 test("anonymous photo file fetch succeeds with public cache headers", async () => {

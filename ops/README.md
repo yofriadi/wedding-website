@@ -105,7 +105,7 @@ The VM expires **Oct 18**; the recycle-bin grace runs out **~Nov 2**. Around
 - **Renew the VM** for another term (cost: the current VM's monthly rate,
   owner: whoever holds the provider account), or
 - **Archive to a static memorial** (Cloudflare Pages, free): export the final
-  wishes/photos into static HTML during the last week and publish.
+  photos into static HTML during the last week and publish.
 
 Either way, run the final archive (backup.sh + restore-drill.sh) **before
 Oct 18**. The grace window is a backstop, not the plan.
@@ -115,5 +115,5 @@ Oct 18**. The grace window is a backstop, not the plan.
 1. `./ops/backup.sh` one last time.
 2. `./ops/restore-drill.sh` — verify.
 3. Copy `$BACKUP_DEST` (the whole tree) somewhere durable: the couple's
-   laptop, plus object storage if available. This is the memorial: the DB has
-   every wish; the photos dir has every photo.
+   laptop, plus object storage if available. This is the memorial: the photos
+   dir has every photo.

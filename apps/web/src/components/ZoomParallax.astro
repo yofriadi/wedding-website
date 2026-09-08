@@ -13,15 +13,15 @@
 const pictures = [
   // 1. Top Right Portrait (single right column)
   { 
-    src: "/10.webp", 
+    src: "/top-right-portrait.webp", 
     alt: "Portrait Top Right",
     grid: { col: 2, row: 0, w: 1, h: 2 },
     scale: 9, // Fast (Outer edge)
-    iw: 576, ih: 1024
+    iw: 591, ih: 1280
   },
   // 2. Top Left Landscape (two columns on left)
   { 
-    src: "/3.webp", 
+    src: "/landscape-top-left.webp", 
     alt: "Landscape Top Left",
     grid: { col: 0, row: 0, w: 2, h: 1 },
     scale: 7, // Medium-Fast (Top edge)
@@ -29,7 +29,7 @@ const pictures = [
   },
   // 3. Mid Left Landscape (two columns on left)
   { 
-    src: "/4.webp", 
+    src: "/landscape-mid-left.webp", 
     alt: "Landscape Mid Left",
     grid: { col: 0, row: 1, w: 2, h: 1 },
     scale: 5, // Slow (Inner ring)
@@ -37,7 +37,7 @@ const pictures = [
   },
   // 4. Mid Left Square
   { 
-    src: "/14.webp", 
+    src: "/square-mid-left.webp", 
     alt: "Square Mid Left",
     grid: { col: 0, row: 2, w: 1, h: 1 },
     scale: 8, // Fast (Side edge)
@@ -45,7 +45,7 @@ const pictures = [
   },
   // 5. CENTER HERO - The Focus (keeps 9:16 portrait aspect)
   { 
-    src: "/1.webp", 
+    src: "/center-focus.webp", 
     alt: "CENTER FOCUS",
     isCenter: true,
     grid: { col: 1, row: 2, w: 1, h: 1 }, 
@@ -54,7 +54,7 @@ const pictures = [
   },
   // 6. Mid Right Square
   { 
-    src: "/6.webp", 
+    src: "/square-mid-right.webp", 
     alt: "Square Mid Right",
     grid: { col: 2, row: 2, w: 1, h: 1 },
     scale: 8, // Fast (Side edge)
@@ -62,7 +62,7 @@ const pictures = [
   },
   // 7. Bottom Left Portrait
   { 
-    src: "/15.webp", 
+    src: "/portrait-bottom-left.webp", 
     alt: "Portrait Bottom Left",
     grid: { col: 0, row: 3, w: 1, h: 2 },
     scale: 9, // Fast (Corner)
@@ -70,7 +70,7 @@ const pictures = [
   },
   // 8. Mid Bottom Landscape
   { 
-    src: "/18.webp", 
+    src: "/landscape-mid-bottom.webp", 
     alt: "Landscape Mid Bottom",
     grid: { col: 1, row: 3, w: 2, h: 1 },
     scale: 5, // Slow (Inner ring)
@@ -78,7 +78,7 @@ const pictures = [
   },
   // 9. Bottom Right Landscape
   { 
-    src: "/7.webp", 
+    src: "/landscape-bottom-right.webp", 
     alt: "Landscape Bottom Right",
     grid: { col: 1, row: 4, w: 2, h: 1 },
     scale: 7, // Medium-Fast (Bottom edge)
@@ -129,15 +129,11 @@ const ROW_H = 20;     // 20lvh per row (5 rows = the stage); vertical geometry l
 </div>
 
 <script>
-  import { animate, inView, scroll } from "motion";
+  import { animate, scroll } from "motion";
 
   // Cleanup storage
   let cleanupFns: Array<() => void> = [];
   let resizeTimeout: number | undefined;
-  // The blur reveal is a one-shot that must outlive init's cleanup pass: if the
-  // pending timer lived in cleanupFns, a re-init between the inView fire and the
-  // reveal would cancel it and strand the images in their hidden (.js) state.
-  let revealTimer: ReturnType<typeof setTimeout> | undefined;
   // Viewport width the current bindings were measured against. Height-only
   // `resize` events are mobile browser chrome collapsing, not a layout change:
   // every length here is vw/svh-based, so re-initializing on them would only
@@ -162,20 +158,6 @@ const ROW_H = 20;     // 20lvh per row (5 rows = the stage); vertical geometry l
 
     const stage = container.querySelector(".zoom-stage") as HTMLElement | null;
     if (!stage) return;
-
-    // Reveal lifecycle, tracked on the stage element (not in this closure) so it
-    // survives a re-init and resets with the DOM on client navigation:
-    //   absent      - images hidden by .js, waiting for the stage to scroll in
-    //   "scheduled" - inView fired; the stagger is queued or running
-    //   "done"      - images stay visible; nothing left to bind
-    const revealState = stage.dataset.zoomReveal;
-
-    // JS is running and motion is allowed: hide the images for the reveal. Done
-    // here (not in markup) so no-JS / reduced-motion never see hidden images.
-    // Once the reveal has played the class stays off for good — a later init
-    // must never re-hide and re-blur the grid.
-    stage.classList.toggle("js", revealState !== "done");
-
     // Cleanup previous scroll bindings
     cleanupFns.forEach(fn => fn());
     cleanupFns = [];
@@ -251,47 +233,6 @@ const ROW_H = 20;     // 20lvh per row (5 rows = the stage); vertical geometry l
         cleanupFns.push(cleanup);
       }
     });
-
-    // Blur Fade reveal (Magic UI): each image fades from opacity 0 + blur(6px)
-    // with a small upward settle, staggered per image. Triggered once, the first
-    // time 10% of the stage scrolls into view, then held back by a short delay
-    // so the grid settles before the reveal plays. Reduced-motion users never
-    // reach this (initZoomParallax returned early), so their static grid stays
-    // fully visible.
-    if (!revealState) {
-      const images = Array.from(container.querySelectorAll<HTMLElement>(".zoom-image"));
-      const REVEAL_DELAY_MS = 400; // wait after the stage scrolls into view
-
-      const stopReveal = inView(stage, () => {
-        // Marked before the delay and never cleared. An IntersectionObserver
-        // always delivers an initial observation for an element already on
-        // screen, so any re-init that re-bound inView while the stage was still
-        // in view — the end of the runway, scrolling up and down as the URL bar
-        // collapses — replayed the whole reveal. Element state makes that
-        // impossible: the observer is only ever bound while the state is unset.
-        stage.dataset.zoomReveal = "scheduled";
-        clearTimeout(revealTimer);
-        revealTimer = setTimeout(() => {
-          const finished = images.map((img, i) =>
-            animate(
-              img,
-              { opacity: [0, 1], y: [-6, 0], filter: ["blur(6px)", "blur(0px)"] },
-              { delay: i * 0.25, duration: 0.5, ease: "easeOut" }
-            ).finished.catch(() => {})
-          );
-          // Drop the hiding class only after every image has committed its
-          // revealed inline styles, so the tail of the stagger never flashes.
-          void Promise.all(finished).then(() => {
-            stage.dataset.zoomReveal = "done";
-            stage.classList.remove("js");
-          });
-        }, REVEAL_DELAY_MS);
-      }, { amount: 0.1 });
-
-      // The observer is a binding (dispose on re-init); the timer is not — it
-      // lives at module scope so an in-flight reveal survives one.
-      cleanupFns.push(stopReveal);
-    }
   }
 
   function handleResize() {
@@ -316,16 +257,6 @@ const ROW_H = 20;     // 20lvh per row (5 rows = the stage); vertical geometry l
 </script>
 
 <style>
-  /* Blur Fade reveal: images start hidden/blurred only while this component's JS
-     is waiting to play it. The class is added from the script (never in markup),
-     so no-JS and reduced-motion paths keep images fully visible — and it is
-     removed for good once the reveal completes, so a later init can't re-hide
-     the grid and replay it. */
-  .zoom-stage.js .zoom-image {
-    opacity: 0;
-    filter: blur(6px);
-  }
-
   /* Runway + stage sized in lvh, not svh: lvh is the viewport with browser
      chrome HIDDEN, which is the state a pinned sequence is actually watched in —
      every mobile browser retracts its URL bar on the first downward scroll. At

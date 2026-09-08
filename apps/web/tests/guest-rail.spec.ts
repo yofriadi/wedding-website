@@ -1,5 +1,5 @@
 import { test, expect, type Page, type Route } from "@playwright/test";
-import { dismissWelcomeGate, skipUnlessEmptyWall } from "./helpers";
+import { dismissWelcomeGate, seedStoryIntroSeen, skipUnlessEmptyWall } from "./helpers";
 
 // Guest rail + add-story flow (guest-submissions 3.4/3.5/4.1/4.2/4.3) plus
 // first-name attribution on real tiles (story-rail-attribution D3/D4).
@@ -7,6 +7,10 @@ import { dismissWelcomeGate, skipUnlessEmptyWall } from "./helpers";
 // No-seed convention: client behavior is tested by routing /api/submissions,
 // so nothing here depends on server DB state. The empty-wall cases rely on the
 // scratch DB holding no photos — the SSR gate then renders the three mocks.
+//
+// Photo-only submissions (retire-wishes-story-intro): the flow has no wish
+// input, and the tile's FIRST tap plays the example-story intro — tests that
+// exercise the flow itself seed `seedStoryIntroSeen` to skip it.
 
 const INVITE_ID = "Playwright01";
 
@@ -27,9 +31,9 @@ interface Attribution {
 }
 
 interface Payload {
-  mine: ({ id: string; wishText: string | null; photos: Photo[] } & Attribution) | null;
+  mine: ({ id: string; photos: Photo[] } & Attribution) | null;
   inviteValid?: boolean;
-  wall: { wishes: { text: string }[]; stories: ({ photos: Photo[] } & Attribution)[] };
+  wall: { stories: ({ photos: Photo[] } & Attribution)[] };
 }
 
 function routeSubmissions(payload: Payload) {
@@ -78,7 +82,7 @@ test.describe("story rail guest tiles", () => {
       "**/api/submissions",
       routeSubmissions({
         mine: null,
-        wall: { wishes: [], stories: storyPayload(["/thumb-1.webp"]) },
+        wall: { stories: storyPayload(["/thumb-1.webp"]) },
       }),
     );
 
@@ -111,10 +115,7 @@ test.describe("story rail guest tiles", () => {
     page.on("request", (req) => {
       if (new URL(req.url()).pathname === "/api/submissions") requests.push(req.url());
     });
-    await page.route(
-      "**/api/submissions",
-      routeSubmissions({ mine: null, wall: { wishes: [], stories: [] } }),
-    );
+    await page.route("**/api/submissions", routeSubmissions({ mine: null, wall: { stories: [] } }));
 
     await skipUnlessEmptyWall(page);
     await gotoRail(page);
@@ -128,7 +129,7 @@ test.describe("story rail guest tiles", () => {
     await expect(page.locator(`${RAIL} [data-mock]`)).toHaveCount(3);
   });
 
-  test("invitee + no submission: add-story tile visible, opens the flow", async ({
+  test("invitee + no submission: add-story tile visible, opens the photo-only flow", async ({
     page,
     context,
   }) => {
@@ -137,16 +138,17 @@ test.describe("story rail guest tiles", () => {
     ]);
     await page.route(
       "**/api/submissions",
-      routeSubmissions({ mine: null, inviteValid: true, wall: { wishes: [], stories: [] } }),
+      routeSubmissions({ mine: null, inviteValid: true, wall: { stories: [] } }),
     );
+    await seedStoryIntroSeen(page);
 
     await gotoRail(page);
 
     const tile = page.locator("[data-add-story-root]");
     await expect(tile).toBeVisible();
 
-    // One-screen flow opens: centered title, photo picker on top, wish near
-    // the bottom above the actions.
+    // One-screen flow opens: centered title, photo picker, actions. Photos are
+    // the only input (retire-wishes-story-intro): no wish field anywhere.
     await page.locator("[data-add-story-open]").click();
     const flow = page.locator("#add-story-flow");
     await expect(flow).toBeVisible();
@@ -154,17 +156,10 @@ test.describe("story rail guest tiles", () => {
     await expect(flow.locator("text=up to 3")).toBeVisible();
     await expect(page.locator("[data-photo-input]")).toBeAttached();
     await expect(page.locator("text=Choose photos")).toBeVisible();
-    // No "Wish" label: the input is labeled aria-only, with the counter
-    // inside on the far right.
-    await expect(page.locator("[data-wish-input]")).toBeVisible();
-    await expect(page.locator("label[for='wish-text']")).toHaveCount(0);
-    await expect(page.locator("[data-wish-count]")).toHaveText("0 / 30");
-    const wishBox = await page.locator("[data-wish-input]").boundingBox();
-    const countBox = await page.locator("[data-wish-count]").boundingBox();
-    expect(countBox!.x + countBox!.width).toBeLessThanOrEqual(wishBox!.x + wishBox!.width);
-    expect(countBox!.x).toBeGreaterThan(wishBox!.x + wishBox!.width - 80);
-    // Photos come before the wish in the DOM.
-    expect((await page.locator("[data-photo-input]").boundingBox())!.y).toBeLessThan(wishBox!.y);
+    await expect(page.locator("[data-wish-input]")).toHaveCount(0);
+    await expect(page.locator("[data-wish-count]")).toHaveCount(0);
+    await expect(page.locator("[data-wish-error]")).toHaveCount(0);
+    await expect(page.locator("#wish-text")).toHaveCount(0);
 
     // Full-screen: the panel spans the viewport.
     const flowBox = await flow.boundingBox();
@@ -175,7 +170,7 @@ test.describe("story rail guest tiles", () => {
     await expect(page.locator("[data-flow-cancel]")).toBeVisible();
     await expect(page.locator("[data-flow-close]")).toHaveCount(0);
 
-    // Empty submit disabled.
+    // Empty submit disabled — a photo is now the only thing that enables it.
     await expect(page.locator("[data-flow-submit]")).toBeDisabled();
   });
 
@@ -186,9 +181,9 @@ test.describe("story rail guest tiles", () => {
     await page.route(
       "**/api/submissions",
       routeSubmissions({
-        mine: { id: "AAAAAAAAAAAA", wishText: "mine", photos: [] },
+        mine: { id: "AAAAAAAAAAAA", photos: [] },
         inviteValid: true,
-        wall: { wishes: [], stories: [] },
+        wall: { stories: [] },
       }),
     );
 
@@ -208,7 +203,7 @@ test.describe("story rail guest tiles", () => {
     // would open and every submit would 403.
     await page.route(
       "**/api/submissions",
-      routeSubmissions({ mine: null, inviteValid: false, wall: { wishes: [], stories: [] } }),
+      routeSubmissions({ mine: null, inviteValid: false, wall: { stories: [] } }),
     );
 
     await gotoRail(page);
@@ -229,7 +224,7 @@ test.describe("story rail guest tiles", () => {
       "**/api/submissions",
       routeSubmissions({
         mine: null,
-        wall: { wishes: [], stories: storyPayload(["/thumb-1.webp", "/thumb-2.webp"]) },
+        wall: { stories: storyPayload(["/thumb-1.webp", "/thumb-2.webp"]) },
       }),
     );
 
@@ -269,10 +264,13 @@ test.describe("story rail guest tiles", () => {
     expect(wrappersAreRailChildren).toBe(true);
 
     // story-rail-attribution D1: the demo and teaser populations are retired,
-    // so a non-empty wall leaves ONLY the real guest tiles — nothing named
-    // "demo" exists to order against any more.
+    // so a non-empty wall leaves ONLY the real guest tiles in the rail —
+    // nothing named "demo" exists to order against any more. Scoped to the
+    // rail: the example-story intro viewer lives outside it and never joins
+    // rail ordering (retire-wishes-story-intro D3/D6).
     const order = await page.evaluate(() => {
-      return Array.from(document.querySelectorAll("story-viewer")).map((el) => {
+      const rail = document.querySelector("[data-story-rail]");
+      return Array.from(rail?.querySelectorAll("story-viewer") ?? []).map((el) => {
         if (el.hasAttribute("data-guest")) return "guest";
         if (el.hasAttribute("data-mock")) return "mock";
         return "other";
@@ -298,7 +296,6 @@ test.describe("story rail guest tiles", () => {
       routeSubmissions({
         mine: null,
         wall: {
-          wishes: [],
           stories: [
             {
               photos: [{ photoUrl: "/thumb-null-orig", thumbnailUrl: "/thumb-null.webp" }],
@@ -325,15 +322,21 @@ test.describe("story rail guest tiles", () => {
       expect(await tile.locator("[data-username]").count()).toBe(0);
     }
 
-    // The modal keeps the attribution-free placeholder even though the first
-    // entry DOES carry a createdAt: a null firstName wins the whole layout.
+    // The modal's attribution slot is EMPTY for an unnamed entry — no "Guest
+    // story" text (retire-wishes-story-intro D7) — even though the first entry
+    // DOES carry a createdAt: a null firstName wins the whole layout. The
+    // close button stays right-aligned.
     await tiles.first().locator("[data-open]").click();
     const modal = page.locator('body > [data-modal][aria-hidden="false"]');
     await expect(modal).toHaveCount(1);
-    await expect(modal.locator("text=Guest story")).toBeVisible();
+    await expect(modal.getByText("Guest story")).toHaveCount(0);
     expect(await modal.locator("[data-username]").count()).toBe(0);
     expect(await modal.locator("[data-timestamp]").count()).toBe(0);
     expect(await modal.locator("[data-avatar]").count()).toBe(0);
+
+    const closeBox = await modal.locator("[data-close]").boundingBox();
+    const panelBox = await modal.locator("[data-panel]").boundingBox();
+    expect(closeBox!.x).toBeGreaterThan(panelBox!.x + panelBox!.width / 2);
   });
 
   test("hand-off flows from the first guest tile to the second (wall tiles chain)", async ({
@@ -347,7 +350,7 @@ test.describe("story rail guest tiles", () => {
       "**/api/submissions",
       routeSubmissions({
         mine: null,
-        wall: { wishes: [], stories: storyPayload(["/thumb-1.webp", "/thumb-2.webp"]) },
+        wall: { stories: storyPayload(["/thumb-1.webp", "/thumb-2.webp"]) },
       }),
     );
     // The guest originals must actually load: the readiness hand-off gates on
@@ -402,7 +405,7 @@ test.describe("story rail guest tiles", () => {
       "**/api/submissions",
       routeSubmissions({
         mine: null,
-        wall: { wishes: [], stories: storyPayload(["/thumb-1.webp"]) },
+        wall: { stories: storyPayload(["/thumb-1.webp"]) },
       }),
     );
 
@@ -420,8 +423,7 @@ test.describe("story rail guest tiles", () => {
 
     // Author header (story-rail-attribution D4): the poster's first name and a
     // relative timestamp — and NO avatar circle, because a guest tile has
-    // none to show (the old attribution-free "Guest story" label is now the
-    // null-firstName fallback only).
+    // none to show (an unnamed entry gets the EMPTY attribution slot instead).
     await expect(modal.locator("[data-username]")).toHaveText("Lita");
     await expect(modal.locator("[data-timestamp]")).toContainText(/ago/);
     expect(await modal.locator("[data-avatar]").count()).toBe(0);
@@ -431,7 +433,7 @@ test.describe("story rail guest tiles", () => {
 
   // story-rail-mocks 3.5: mocks are the DEFAULT test condition (scratch DB is
   // empty → the SSR gate fails open) — these cover gate-render, live eviction,
-  // wish-only persistence, and the disconnect-path cleanup.
+  // and the disconnect-path cleanup.
   test("invitee + empty wall: three unnamed mocks are the rail's only tiles", async ({
     page,
     context,
@@ -439,10 +441,7 @@ test.describe("story rail guest tiles", () => {
     await context.addCookies([
       { name: "ww_invite_id", value: INVITE_ID, domain: "localhost", path: "/" },
     ]);
-    await page.route(
-      "**/api/submissions",
-      routeSubmissions({ mine: null, wall: { wishes: [], stories: [] } }),
-    );
+    await page.route("**/api/submissions", routeSubmissions({ mine: null, wall: { stories: [] } }));
 
     await skipUnlessEmptyWall(page);
     await gotoRail(page);
@@ -461,10 +460,12 @@ test.describe("story rail guest tiles", () => {
     await expect(page.locator('body > [data-modal][aria-hidden="false"]')).toHaveCount(1);
 
     // DOM order: nothing precedes or follows the mocks — the demo and teaser
-    // populations are retired, so the rail's story-viewers are exactly these
-    // three (the add-story tile is not a story-viewer).
+    // populations are retired, so the RAIL's story-viewers are exactly these
+    // three (the add-story tile is not a story-viewer, and the example intro
+    // viewer lives outside the rail).
     const order = await page.evaluate(() => {
-      return Array.from(document.querySelectorAll("story-viewer")).map((el) => {
+      const rail = document.querySelector("[data-story-rail]");
+      return Array.from(rail?.querySelectorAll("story-viewer") ?? []).map((el) => {
         if (el.hasAttribute("data-guest")) return "guest";
         if (el.hasAttribute("data-mock")) return "mock";
         return "other";
@@ -489,12 +490,11 @@ test.describe("story rail guest tiles", () => {
       routeSubmissions({
         mine: {
           id: "AAAAAAAAAAAA",
-          wishText: null,
           photos: [{ photoUrl: "/x-orig-own", thumbnailUrl: "/thumb-own.webp" }],
           firstName: "Yofri",
           createdAt: Date.now() - 30 * 60 * 1000,
         },
-        wall: { wishes: [], stories: [] },
+        wall: { stories: [] },
       }),
     );
 
@@ -516,10 +516,8 @@ test.describe("story rail guest tiles", () => {
     await context.addCookies([
       { name: "ww_invite_id", value: INVITE_ID, domain: "localhost", path: "/" },
     ]);
-    await page.route(
-      "**/api/submissions",
-      routeSubmissions({ mine: null, wall: { wishes: [], stories: [] } }),
-    );
+    await page.route("**/api/submissions", routeSubmissions({ mine: null, wall: { stories: [] } }));
+    await seedStoryIntroSeen(page);
 
     await skipUnlessEmptyWall(page);
     await gotoRail(page);
@@ -533,7 +531,7 @@ test.describe("story rail guest tiles", () => {
         await route.fulfill({
           status: 201,
           contentType: "application/json",
-          body: JSON.stringify({ id: "BBBBBBBBBBBB", wishText: null, photos: [] }),
+          body: JSON.stringify({ id: "BBBBBBBBBBBB", photos: [] }),
         });
       } else {
         await route.fulfill({
@@ -542,14 +540,12 @@ test.describe("story rail guest tiles", () => {
           body: JSON.stringify({
             mine: {
               id: "BBBBBBBBBBBB",
-              wishText: null,
               photos: [{ photoUrl: "/x-orig-mine", thumbnailUrl: "/thumb-mine.webp" }],
               firstName: "Yofri",
               createdAt: Date.now() - 5 * 60 * 1000,
             },
             inviteValid: true,
             wall: {
-              wishes: [],
               stories: storyPayload(["/thumb-a.webp"]),
             },
           }),
@@ -580,52 +576,6 @@ test.describe("story rail guest tiles", () => {
     expect(labels).toEqual(["Lita", "Yofri"]);
   });
 
-  test("wish-only post keeps mocks and removes no guest tiles", async ({ page, context }) => {
-    await context.addCookies([
-      { name: "ww_invite_id", value: INVITE_ID, domain: "localhost", path: "/" },
-    ]);
-    await page.route(
-      "**/api/submissions",
-      routeSubmissions({ mine: null, wall: { wishes: [], stories: [] } }),
-    );
-
-    await skipUnlessEmptyWall(page);
-    await gotoRail(page);
-    await expect(page.locator(`${RAIL} [data-mock]`)).toHaveCount(3);
-
-    await page.route("**/api/submissions", async (route) => {
-      if (route.request().method() === "POST") {
-        await route.fulfill({
-          status: 201,
-          contentType: "application/json",
-          body: JSON.stringify({ id: "BBBBBBBBBBBB", wishText: "Best wishes!", photos: [] }),
-        });
-      } else {
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({
-            mine: { id: "BBBBBBBBBBBB", wishText: "Best wishes!", photos: [] },
-            inviteValid: true,
-            wall: { wishes: [{ text: "Best wishes!" }], stories: [] },
-          }),
-        });
-      }
-    });
-
-    await page.locator("[data-add-story-open]").click();
-    await page.locator("[data-wish-input]").fill("Best wishes!");
-    await page.locator("[data-flow-submit]").click();
-    await expect(page.locator("#add-story-flow")).toHaveAttribute("aria-hidden", "true");
-
-    // Wish-only: no story tile anywhere, mocks stay.
-    await page.waitForTimeout(300);
-    await expect(page.locator(`${RAIL} [data-mock]`)).toHaveCount(3);
-    await expect(page.locator(`${RAIL} [data-guest]`)).toHaveCount(0);
-    // The add-story tile hides (mine now exists).
-    await expect(page.locator("[data-add-story-root]")).toBeHidden();
-  });
-
   test("eviction while a mock's modal is open cleans up scroll lock and modal", async ({
     page,
     context,
@@ -636,6 +586,7 @@ test.describe("story rail guest tiles", () => {
     await context.addCookies([
       { name: "ww_invite_id", value: INVITE_ID, domain: "localhost", path: "/" },
     ]);
+    await seedStoryIntroSeen(page);
     // Adversarial-review fix: drive the REAL eviction path (POST →
     // invalidateSubmissions → submissions:posted → refetch → syncMockTiles),
     // not a manual DOM removal. The post-POST re-sync GET is DELAYED so the
@@ -649,7 +600,7 @@ test.describe("story rail guest tiles", () => {
         await route.fulfill({
           status: 201,
           contentType: "application/json",
-          body: JSON.stringify({ id: "BBBBBBBBBBBB", wishText: null, photos: [] }),
+          body: JSON.stringify({ id: "BBBBBBBBBBBB", photos: [] }),
         });
       } else if (posted) {
         // Hold the re-sync GET until the test opens the mock's modal.
@@ -662,11 +613,10 @@ test.describe("story rail guest tiles", () => {
           body: JSON.stringify({
             mine: {
               id: "BBBBBBBBBBBB",
-              wishText: null,
               photos: [{ photoUrl: "/x-orig-mine", thumbnailUrl: "/thumb-mine.webp" }],
             },
             inviteValid: true,
-            wall: { wishes: [], stories: [] },
+            wall: { stories: [] },
           }),
         });
       } else {
@@ -676,7 +626,7 @@ test.describe("story rail guest tiles", () => {
           body: JSON.stringify({
             mine: null,
             inviteValid: true,
-            wall: { wishes: [], stories: [] },
+            wall: { stories: [] },
           }),
         });
       }
@@ -743,11 +693,6 @@ test.describe("story rail guest tiles", () => {
     // force-closed and removed from body (no OPEN modal anywhere); scroll is
     // restored; the caller's own tile rendered; nothing threw.
     await expect(page.locator('body > [data-modal][aria-hidden="false"]')).toHaveCount(0);
-    await expect(
-      page.locator(
-        "body > [data-modal] img[src='/story_example_1.webp'], body > [data-modal] img[src='/story_example_2.webp'], body > [data-modal] img[src='/story_example_3.webp']",
-      ),
-    ).toHaveCount(0);
     expect(await page.evaluate(() => document.body.style.overflow)).toBe("");
     await expect(page.locator(`${RAIL} [data-guest]`)).toHaveCount(1);
 
@@ -779,10 +724,7 @@ test.describe("story rail guest tiles", () => {
     await context.addCookies([
       { name: "ww_invite_id", value: INVITE_ID, domain: "localhost", path: "/" },
     ]);
-    await page.route(
-      "**/api/submissions",
-      routeSubmissions({ mine: null, wall: { wishes: [], stories: [] } }),
-    );
+    await page.route("**/api/submissions", routeSubmissions({ mine: null, wall: { stories: [] } }));
 
     await skipUnlessEmptyWall(page);
     await gotoRail(page);
@@ -818,75 +760,208 @@ test.describe("story rail guest tiles", () => {
   });
 });
 
-test.describe("add-story flow", () => {
-  async function openFlow(page: Page, payload: Payload) {
-    await page.route("**/api/submissions", routeSubmissions(payload));
+// retire-wishes-story-intro D3/D4/D5: the add-story tile's FIRST activation per
+// browser plays the three example stories, then opens the flow when the last
+// one ends. Later taps open the flow directly, and a tap while the rail's mock
+// tiles are still there skips the intro without marking it seen — the mocks ARE
+// its content; it only plays once real posts have evicted them. The intro
+// viewer is always in the DOM (outside the rail, no data-mock), so it survives
+// mock eviction.
+test.describe("add-story first-tap intro", () => {
+  const EXAMPLES = [
+    "/story_example_1.webp",
+    "/story_example_2.webp",
+    "/story_example_3.webp",
+  ] as const;
+
+  async function railWithTile(page: Page, context: import("@playwright/test").BrowserContext) {
+    await context.addCookies([
+      { name: "ww_invite_id", value: INVITE_ID, domain: "localhost", path: "/" },
+    ]);
+    // Non-empty wall: the intro only plays once the rail's mock tiles are GONE,
+    // and syncMockTiles evicts any SSR mocks when this payload lands — so the
+    // intro-eligible state holds regardless of the scratch DB's SSR gate.
+    await page.route(
+      "**/api/submissions",
+      routeSubmissions({
+        mine: null,
+        inviteValid: true,
+        wall: { stories: storyPayload(["/thumb-1.webp"]) },
+      }),
+    );
     await gotoRail(page);
-    await page.locator("[data-add-story-open]").click();
-    await expect(page.locator("#add-story-flow")).toBeVisible();
+    await expect(page.locator("[data-add-story-root]")).toBeVisible();
+    await expect(page.locator(`${RAIL} [data-mock]`)).toHaveCount(0);
   }
 
-  test("text-only submit posts wishText; flow closes; tile disappears", async ({
+  const introFlag = (page: Page) =>
+    page.evaluate(() => localStorage.getItem("ww-story-intro-seen"));
+
+  test("first tap skips the intro while the mock tiles still sit in the rail", async ({
     page,
     context,
   }) => {
     await context.addCookies([
       { name: "ww_invite_id", value: INVITE_ID, domain: "localhost", path: "/" },
     ]);
-    await openFlow(page, { mine: null, wall: { wishes: [], stories: [] } });
+    await page.route(
+      "**/api/submissions",
+      routeSubmissions({ mine: null, inviteValid: true, wall: { stories: [] } }),
+    );
+    await skipUnlessEmptyWall(page);
+    await gotoRail(page);
+    await expect(page.locator(`${RAIL} [data-mock]`)).toHaveCount(3);
 
-    await page.locator("[data-wish-input]").fill("Best wishes!");
-    await expect(page.locator("[data-flow-submit]")).toBeEnabled();
-
-    const posts: string[] = [];
-    page.on("request", (req) => {
-      if (req.method() === "POST" && new URL(req.url()).pathname === "/api/submissions") {
-        posts.push(req.postData() ?? "");
-      }
-    });
-
-    await page.route("**/api/submissions", async (route) => {
-      if (route.request().method() === "POST") {
-        await route.fulfill({
-          status: 201,
-          contentType: "application/json",
-          body: JSON.stringify({
-            id: "BBBBBBBBBBBB",
-            wishText: "Best wishes!",
-            photos: [
-              {
-                photoUrl: "/api/photos/submissions/BBBBBBBBBBBB/0.jpg",
-                thumbnailUrl: "/api/photos/submissions/BBBBBBBBBBBB/thumb.webp",
-              },
-            ],
-          }),
-        });
-      } else {
-        // Post-POST resync GET: mine now exists.
-        await route.fulfill({
-          status: 200,
-          contentType: "application/json",
-          body: JSON.stringify({
-            mine: { id: "BBBBBBBBBBBB", wishText: "Best wishes!", photos: [] },
-            inviteValid: true,
-            wall: { wishes: [], stories: [] },
-          }),
-        });
-      }
-    });
-
-    await page.locator("[data-flow-submit]").click();
-
-    // Flow closes (inert state), tile disappears (mine now exists).
-    await expect(page.locator("#add-story-flow")).toHaveAttribute("aria-hidden", "true");
-    await expect(page.locator("#add-story-flow")).toHaveClass(/pointer-events-none/);
-    await expect(page.locator("[data-add-story-root]")).toBeHidden();
-
-    // The multipart body carries the wish text (and no photo entries).
-    expect(posts.length).toBeGreaterThan(0);
-    expect(posts[0]).toContain("Best wishes!");
-    expect(posts[0]).not.toContain('name="photos"');
+    // The mocks ARE the intro content, visible and tappable right there: the
+    // tap goes straight to the flow — no fullscreen replay…
+    await page.locator("[data-add-story-open]").click();
+    await expect(page.locator('body > [data-modal][aria-hidden="false"]')).toHaveCount(0);
+    await expect(page.locator("#add-story-flow")).toHaveAttribute("aria-hidden", "false");
+    // …and the skip does NOT mark the intro seen, so it can still play the
+    // first time the rail no longer shows the mocks.
+    expect(await introFlag(page)).toBeNull();
   });
+  test("first tap plays the intro, and watching it through opens the flow", async ({
+    page,
+    context,
+  }) => {
+    await railWithTile(page, context);
+    expect(await introFlag(page)).toBeNull();
+
+    // First tap: the intro opens instead of the flow.
+    await page.locator("[data-add-story-open]").click();
+    const modal = page.locator('body > [data-modal][aria-hidden="false"]');
+    await expect(modal).toHaveCount(1);
+    await expect(page.locator("#add-story-flow")).toHaveAttribute("aria-hidden", "true");
+    expect(await modal.locator("[data-stage] img").first().getAttribute("src")).toBe(EXAMPLES[0]);
+    // Three slides in ONE viewer: three progress segments, not three tiles.
+    await expect(modal.locator("[data-progress-item]")).toHaveCount(3);
+    // The flag is set on OPEN (D4), so bailing out early still counts.
+    expect(await introFlag(page)).toBe("1");
+
+    // Tap through the three examples; ending the last one closes the intro and
+    // opens the flow (D5).
+    const stage = modal.locator("[data-stage]");
+    for (let i = 1; i < EXAMPLES.length; i++) {
+      const box = await stage.boundingBox();
+      await page.mouse.click(box!.x + box!.width * 0.75, box!.y + box!.height / 2);
+      await expect
+        .poll(() => modal.locator("[data-stage] img").first().getAttribute("src"))
+        .toBe(EXAMPLES[i]);
+    }
+    const lastBox = await stage.boundingBox();
+    await page.mouse.click(lastBox!.x + lastBox!.width * 0.75, lastBox!.y + lastBox!.height / 2);
+
+    await expect(page.locator("#add-story-flow")).toHaveAttribute("aria-hidden", "false");
+    await expect(page.locator("#add-story-flow")).toBeVisible();
+    // The intro modal closed — no story modal is left open behind the flow…
+    await expect(page.locator('body > [data-modal][aria-hidden="false"]')).toHaveCount(0);
+    // …and the flow owns the scroll lock (D5's sync-close guards this).
+    expect(await page.evaluate(() => document.body.style.overflow)).toBe("hidden");
+  });
+
+  test("bailing out of the intro does not open the flow; the next tap does", async ({
+    page,
+    context,
+  }) => {
+    await railWithTile(page, context);
+
+    await page.locator("[data-add-story-open]").click();
+    await expect(page.locator('body > [data-modal][aria-hidden="false"]')).toHaveCount(1);
+
+    // Escape closes the intro WITHOUT firing story-viewer-end → no flow.
+    await page.keyboard.press("Escape");
+    await expect(page.locator('body > [data-modal][aria-hidden="false"]')).toHaveCount(0);
+    await expect(page.locator("#add-story-flow")).toHaveAttribute("aria-hidden", "true");
+    expect(await page.evaluate(() => document.body.style.overflow)).toBe("");
+
+    // The intro is marked seen, so the next tap goes straight to the flow.
+    await page.locator("[data-add-story-open]").click();
+    await expect(page.locator("#add-story-flow")).toHaveAttribute("aria-hidden", "false");
+    await expect(page.locator('body > [data-modal][aria-hidden="false"]')).toHaveCount(0);
+  });
+
+  test("the flag persists across reloads: later taps open the flow directly", async ({
+    page,
+    context,
+  }) => {
+    await railWithTile(page, context);
+    await page.locator("[data-add-story-open]").click();
+    await expect(page.locator('body > [data-modal][aria-hidden="false"]')).toHaveCount(1);
+    await page.keyboard.press("Escape");
+
+    // Same browser context, fresh page load: the flag survives.
+    await gotoRail(page);
+    expect(await introFlag(page)).toBe("1");
+    await page.locator("[data-add-story-open]").click();
+    await expect(page.locator("#add-story-flow")).toHaveAttribute("aria-hidden", "false");
+    await expect(page.locator('body > [data-modal][aria-hidden="false"]')).toHaveCount(0);
+  });
+
+  test("intro survives mock eviction: reachable on a non-empty wall", async ({ page, context }) => {
+    await context.addCookies([
+      { name: "ww_invite_id", value: INVITE_ID, domain: "localhost", path: "/" },
+    ]);
+    // Non-empty wall: the SSR gate renders no mocks and the client evicts any
+    // that were server-rendered. The intro viewer carries no data-mock, so it
+    // must still be there — this is the whole point of the change.
+    await page.route(
+      "**/api/submissions",
+      routeSubmissions({
+        mine: null,
+        inviteValid: true,
+        wall: { stories: storyPayload(["/thumb-1.webp"]) },
+      }),
+    );
+    await gotoRail(page);
+    await expect(page.locator(`${RAIL} [data-guest]`)).toHaveCount(1);
+    await expect(page.locator("[data-mock]")).toHaveCount(0);
+    await expect(page.locator("[data-story-intro] [data-story-viewer]")).toHaveCount(1);
+
+    await page.locator("[data-add-story-open]").click();
+    const modal = page.locator('body > [data-modal][aria-hidden="false"]');
+    await expect(modal).toHaveCount(1);
+    expect(await modal.locator("[data-stage] img").first().getAttribute("src")).toBe(EXAMPLES[0]);
+    await expect(modal.locator("[data-progress-item]")).toHaveCount(3);
+  });
+
+  test("rail hand-off never chains into the intro viewer", async ({ page, context }) => {
+    await context.addCookies([
+      { name: "ww_invite_id", value: INVITE_ID, domain: "localhost", path: "/" },
+    ]);
+    await seedStoryIntroSeen(page); // not testing the tile here
+    await page.route("**/api/submissions", routeSubmissions({ mine: null, wall: { stories: [] } }));
+
+    await skipUnlessEmptyWall(page);
+    await gotoRail(page);
+    await expect(page.locator(`${RAIL} [data-mock]`)).toHaveCount(3);
+
+    // Advance past the LAST rail mock: hand-off is rail-scoped (D6), so this
+    // must simply close — not open the example intro.
+    await page.locator(`${RAIL} [data-mock] [data-open]`).last().click();
+    const openModal = page.locator('[data-modal][aria-hidden="false"]');
+    await expect(openModal).toHaveCount(1);
+    expect(await openModal.locator("[data-stage] img").first().getAttribute("src")).toBe(
+      EXAMPLES[2],
+    );
+
+    const box = await openModal.locator("[data-stage]").boundingBox();
+    await page.mouse.click(box!.x + box!.width * 0.75, box!.y + box!.height / 2);
+
+    await expect(page.locator('[data-modal][aria-hidden="false"]')).toHaveCount(0);
+    await expect(page.locator("#add-story-flow")).toHaveAttribute("aria-hidden", "true");
+    expect(await page.evaluate(() => document.body.style.overflow)).toBe("");
+  });
+});
+
+test.describe("add-story flow", () => {
+  async function openFlow(page: Page, payload: Payload) {
+    await page.route("**/api/submissions", routeSubmissions(payload));
+    await seedStoryIntroSeen(page);
+    await gotoRail(page);
+    await page.locator("[data-add-story-open]").click();
+    await expect(page.locator("#add-story-flow")).toBeVisible();
+  }
 
   test("photos can be removed: per-photo button, Remove all, and close resets", async ({
     page,
@@ -895,7 +970,7 @@ test.describe("add-story flow", () => {
     await context.addCookies([
       { name: "ww_invite_id", value: INVITE_ID, domain: "localhost", path: "/" },
     ]);
-    await openFlow(page, { mine: null, wall: { wishes: [], stories: [] } });
+    await openFlow(page, { mine: null, wall: { stories: [] } });
 
     // Two photos: preview list + Remove all visible + submit enabled.
     await page.setInputFiles("[data-photo-input]", [
@@ -945,13 +1020,16 @@ test.describe("add-story flow", () => {
     await expect(page.locator("[data-flow-submit]")).toBeDisabled();
   });
 
-  test("photo-only submit enables and posts without wishText", async ({ page, context }) => {
+  test("photo submit posts the photos, closes the flow, and hides the tile", async ({
+    page,
+    context,
+  }) => {
     await context.addCookies([
       { name: "ww_invite_id", value: INVITE_ID, domain: "localhost", path: "/" },
     ]);
-    await openFlow(page, { mine: null, wall: { wishes: [], stories: [] } });
+    await openFlow(page, { mine: null, wall: { stories: [] } });
 
-    // No wish text — a photo alone must enable submit.
+    // A photo is the ONLY thing that enables submit (photo-only flow).
     await expect(page.locator("[data-flow-submit]")).toBeDisabled();
     await page.setInputFiles("[data-photo-input]", {
       name: "photo.jpg",
@@ -972,25 +1050,29 @@ test.describe("add-story flow", () => {
         await route.fulfill({
           status: 201,
           contentType: "application/json",
-          body: JSON.stringify({ id: "DDDDDDDDDDDD", wishText: null, photos: [] }),
+          body: JSON.stringify({ id: "DDDDDDDDDDDD", photos: [] }),
         });
       } else {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
           body: JSON.stringify({
-            mine: { id: "DDDDDDDDDDDD", wishText: null, photos: [] },
+            mine: { id: "DDDDDDDDDDDD", photos: [] },
             inviteValid: true,
-            wall: { wishes: [], stories: [] },
+            wall: { stories: [] },
           }),
         });
       }
     });
 
     await page.locator("[data-flow-submit]").click();
+    // Flow closes (inert state), tile disappears (mine now exists).
     await expect(page.locator("#add-story-flow")).toHaveAttribute("aria-hidden", "true");
+    await expect(page.locator("#add-story-flow")).toHaveClass(/pointer-events-none/);
+    await expect(page.locator("[data-add-story-root]")).toBeHidden();
+
     expect(posts.length).toBeGreaterThan(0);
-    // Photo multipart part present, no wishText part.
+    // Photo multipart part present, and no wish part exists any more.
     expect(posts[0]).toContain('name="photos"');
     expect(posts[0]).not.toContain('name="wishText"');
   });
@@ -999,9 +1081,13 @@ test.describe("add-story flow", () => {
     await context.addCookies([
       { name: "ww_invite_id", value: INVITE_ID, domain: "localhost", path: "/" },
     ]);
-    await openFlow(page, { mine: null, wall: { wishes: [], stories: [] } });
+    await openFlow(page, { mine: null, wall: { stories: [] } });
 
-    await page.locator("[data-wish-input]").fill("x");
+    await page.setInputFiles("[data-photo-input]", {
+      name: "photo.jpg",
+      mimeType: "image/jpeg",
+      buffer: Buffer.alloc(8),
+    });
     await page.route("**/api/submissions", async (route) => {
       if (route.request().method() === "POST") {
         await route.fulfill({
@@ -1016,7 +1102,7 @@ test.describe("add-story flow", () => {
 
     await page.locator("[data-flow-submit]").click();
     await expect(page.locator("[data-flow-error]")).toBeVisible();
-    await expect(page.locator("[data-flow-error]")).toContainText("Add a wish");
+    await expect(page.locator("[data-flow-error]")).toContainText("Add at least one photo");
     await expect(page.locator("#add-story-flow")).toBeVisible();
   });
 
@@ -1024,9 +1110,13 @@ test.describe("add-story flow", () => {
     await context.addCookies([
       { name: "ww_invite_id", value: INVITE_ID, domain: "localhost", path: "/" },
     ]);
-    await openFlow(page, { mine: null, wall: { wishes: [], stories: [] } });
+    await openFlow(page, { mine: null, wall: { stories: [] } });
 
-    await page.locator("[data-wish-input]").fill("x");
+    await page.setInputFiles("[data-photo-input]", {
+      name: "photo.jpg",
+      mimeType: "image/jpeg",
+      buffer: Buffer.alloc(8),
+    });
     await page.route("**/api/submissions", async (route) => {
       if (route.request().method() === "POST") {
         await route.abort("failed");
@@ -1048,9 +1138,13 @@ test.describe("add-story flow", () => {
     await context.addCookies([
       { name: "ww_invite_id", value: INVITE_ID, domain: "localhost", path: "/" },
     ]);
-    await openFlow(page, { mine: null, wall: { wishes: [], stories: [] } });
+    await openFlow(page, { mine: null, wall: { stories: [] } });
 
-    await page.locator("[data-wish-input]").fill("x");
+    await page.setInputFiles("[data-photo-input]", {
+      name: "photo.jpg",
+      mimeType: "image/jpeg",
+      buffer: Buffer.alloc(8),
+    });
     await page.route("**/api/submissions", async (route) => {
       if (route.request().method() === "POST") {
         await route.fulfill({
@@ -1063,9 +1157,9 @@ test.describe("add-story flow", () => {
           status: 200,
           contentType: "application/json",
           body: JSON.stringify({
-            mine: { id: "CCCCCCCCCCCC", wishText: null, photos: [] },
+            mine: { id: "CCCCCCCCCCCC", photos: [] },
             inviteValid: true,
-            wall: { wishes: [], stories: [] },
+            wall: { stories: [] },
           }),
         });
       }

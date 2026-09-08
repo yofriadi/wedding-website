@@ -30,42 +30,51 @@ The story rail SHALL show an "Add Story" tile only when the server has RESOLVED 
 - **WHEN** a cookie holder whose invite no longer resolves (deleted invite, reset database) loads the page
 - **THEN** any SSR-rendered tile is hidden after the submissions fetch resolves, and no add-story tile remains visible
 
-### Requirement: One-screen flow with two optional inputs
+### Requirement: One-screen photo flow
 
-The flow SHALL present a photo picker (optional, up to 3 photos with client-side type/size pre-validation) and wish text (optional, max 30 chars, single line) on one screen; at least one input must be non-empty to submit.
+The flow SHALL present a single photo picker (up to 3 photos, client-side type and size pre-validation) on one screen; at least one photo SHALL be required to submit, and the submit action SHALL be disabled or rejected client-side while no photo is selected.
 
-#### Scenario: Text-only submission
+#### Scenario: Photo submission
 
-- **WHEN** an invitee submits wish text with no photos
-- **THEN** the submission is created with wish text only
-
-#### Scenario: Photo-only submission
-
-- **WHEN** an invitee submits photos with no wish text
-- **THEN** the submission is created with photos only
-
-#### Scenario: Both together
-
-- **WHEN** an invitee submits wish text and photos
-- **THEN** one submission is created containing both
+- **WHEN** an invitee selects one to three valid photos and submits
+- **THEN** the submission is created with those photos
 
 #### Scenario: Empty submit disabled
 
-- **WHEN** both inputs are empty
+- **WHEN** no photo is selected
 - **THEN** the submit action is disabled or rejected client-side
+
+### Requirement: Add-story tile plays the example intro on first tap
+
+The first activation of the add-story tile in a given browser SHALL play the three example stories as a full-screen story sequence; on reaching the end of the third example the flow SHALL open automatically. Every subsequent activation SHALL open the flow directly, skipping the intro. "First activation" SHALL be tracked with a persistent client flag (e.g. `localStorage`) set when the intro opens; when the flag cannot be persisted the intro MAY replay, and it SHALL never block opening the flow. Dismissing the intro before its end (e.g. Escape) SHALL NOT auto-open the flow.
+
+#### Scenario: First tap plays the intro then opens the flow
+
+- **WHEN** an eligible invitee activates the add-story tile for the first time in this browser
+- **THEN** the three example stories play in sequence, and when the third finishes the add-story flow opens
+
+#### Scenario: Later taps open the flow directly
+
+- **WHEN** the same invitee activates the tile again (the intro flag is set)
+- **THEN** the add-story flow opens immediately with no intro
+
+#### Scenario: Bailing out of the intro does not open the flow
+
+- **WHEN** the invitee dismisses the intro (Escape or close) before the third example ends
+- **THEN** the flow does not auto-open, and the next tap opens the flow directly (the intro is marked seen)
 
 ### Requirement: Post-submit state transitions
 
-On `201` the flow SHALL close, the add-story tile SHALL disappear, the wish marquee SHALL swap per its display states, and the rail SHALL include the caller's photos.
+On `201` the flow SHALL close, the add-story tile SHALL disappear, and the rail SHALL include the caller's photos.
 
 #### Scenario: Successful submit
 
 - **WHEN** the flow completes with `201`
-- **THEN** the tile is gone, the marquee reflects real content (or remains demo+be-first if this was wish-less and no wishes exist), and own photos appear in the rail
+- **THEN** the tile is gone and the caller's own photos appear in the rail
 
 ### Requirement: Error handling maps to inline states
 
-`409` SHALL map to the already-posted state (tile gone, mine shown); `400` SHALL map to inline field errors; network failure SHALL leave the flow open with a retry.
+`409` SHALL map to the already-posted state (tile gone, mine shown); `400` SHALL map to inline photo errors; network failure SHALL leave the flow open with a retry.
 
 #### Scenario: Race loser sees already-posted
 
@@ -74,8 +83,8 @@ On `201` the flow SHALL close, the add-story tile SHALL disappear, the wish marq
 
 #### Scenario: Validation error inline
 
-- **WHEN** the server responds `400` with a field error
-- **THEN** the corresponding input shows an inline error and the flow stays open
+- **WHEN** the server responds `400` (too many photos, oversized, disallowed type, or no photo)
+- **THEN** the corresponding inline error shows and the flow stays open
 
 ### Requirement: The flow modal animates open and closed
 
@@ -100,32 +109,3 @@ Opening and closing the add-story flow SHALL animate on the composite path (opac
 
 - **WHEN** the guest opens and closes the flow in quick succession
 - **THEN** the animations retarget from their current values and never leave the modal stuck half-visible or interactive while hidden
-
-### Requirement: Rotating wish placeholder
-
-While the add-story flow is open and the wish input is empty, the input's `placeholder` SHALL cycle through couple-curated template wishes on an interval of approximately 4 seconds. Every template SHALL be at most 30 UTF-16 code units (the wish length limit). Rotation SHALL play at most one pass through the template list per flow open and then settle on the default placeholder. The first keystroke in a page session SHALL disable rotation for the rest of the session; clearing the field afterwards SHALL NOT resume it, and reopening the flow after typing SHALL NOT restart it. Rotation SHALL NOT run when the input is non-empty (note: closing the flow does not clear typed wish text, so a reopen may begin non-empty), when the flow is closed, or under `prefers-reduced-motion` (the static default placeholder is shown instead). The field's accessible name SHALL remain constant (the rotation changes only supplementary hint text).
-
-#### Scenario: Empty input cycles suggestions once
-
-- **WHEN** the flow is open and the wish input is empty
-- **THEN** the placeholder rotates through the template list on the interval, once, then settles on the default
-
-#### Scenario: First keystroke disables rotation
-
-- **WHEN** the guest types in the wish input
-- **THEN** rotation stops for the rest of the page session, and clearing the field does not resume it
-
-#### Scenario: Closed flow idles
-
-- **WHEN** the flow closes
-- **THEN** the rotation timer stops, and reopening starts a fresh pass from the default — unless rotation was already disabled by typing, in which case reopening leaves the placeholder static
-
-#### Scenario: Reopen with retained text
-
-- **WHEN** the flow is reopened after the guest typed (closing does not clear the wish text)
-- **THEN** the input is non-empty and rotation does not run
-
-#### Scenario: Reduced motion
-
-- **WHEN** the user prefers reduced motion
-- **THEN** the placeholder stays static at the default

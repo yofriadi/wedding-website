@@ -21,7 +21,6 @@ const THREE_PHOTO_WALL = {
   mine: null,
   inviteValid: true,
   wall: {
-    wishes: [],
     stories: [
       {
         photos: [1, 2, 3].map((n) => ({

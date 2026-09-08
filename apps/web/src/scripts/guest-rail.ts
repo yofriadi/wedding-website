@@ -219,12 +219,13 @@ function buildGuestModal(
     author.appendChild(column);
     row.appendChild(author);
   } else {
+    // Unnamed tile (null firstName): an empty attribution slot, no placeholder
+    // text (retire-wishes-story-intro D7). The span stays as a zero-width flex
+    // child so `justify-between` keeps the close button right-aligned; parity
+    // with StoryViewer.astro's empty SSR slot.
     const label = document.createElement("span");
     label.className = "text-white/60 text-xs";
-    // Parity with StoryViewer.astro: the placeholder is decorative, so screen
-    // readers hear the same nothing from a client-built tile as from an SSR one.
     label.setAttribute("aria-hidden", "true");
-    label.textContent = "Guest story";
     row.appendChild(label);
   }
 
@@ -345,11 +346,80 @@ async function initGuestRailState(): Promise<void> {
   applySubmissionsState(data);
 }
 
-// Wire the tile's open button once (the tile is static markup).
+// Persistent, per-browser flag: the add-story tile's first activation plays
+// the example-story intro; every later tap opens the flow directly
+// (retire-wishes-story-intro D4). The flag is set only when the intro
+// actually plays — a tap while the three mock tiles still occupy the rail
+// skips it unmarked (they ARE the intro content, tappable in place), so the
+// first tap AFTER real posts evicted the mocks still gets it.
+const STORY_INTRO_SEEN_KEY = "ww-story-intro-seen";
+
+function introSeen(): boolean {
+  try {
+    return localStorage.getItem(STORY_INTRO_SEEN_KEY) === "1";
+  } catch {
+    // Private mode / storage disabled: treat as unseen. The intro may replay,
+    // but it never blocks opening the flow.
+    return false;
+  }
+}
+
+function markIntroSeen(): void {
+  try {
+    localStorage.setItem(STORY_INTRO_SEEN_KEY, "1");
+  } catch {
+    // Non-fatal: see introSeen().
+  }
+}
+
+// Find the always-present, hidden example-story viewer (index.astro renders it
+// outside [data-story-rail] so it survives mock eviction and never joins rail
+// hand-off).
+function findIntroViewer(): (HTMLElement & { openStory?: (o?: unknown) => void }) | null {
+  return document.querySelector("[data-story-intro] [data-story-viewer]");
+}
+
+// First tap plays the intro, then opens the flow when the last example ends;
+// every later tap opens the flow directly (retire-wishes-story-intro D4/D5).
+// The intro is also skipped while any mock tile still sits in the rail:
+// replaying the three examples fullscreen would duplicate what is already
+// visible and tappable right there. It only serves a purpose once real posts
+// have evicted the mocks, so this skip does NOT mark the intro seen.
 function wireTileOpen(): void {
   const openButton = document.querySelector<HTMLElement>("[data-add-story-open]");
   if (!openButton) return;
-  openButton.addEventListener("click", () => openAddStoryFlow());
+  openButton.addEventListener("click", () => {
+    const intro = findIntroViewer();
+    // Mock tiles carry data-mock; the hidden intro viewer never does.
+    const mocksInRail = document.querySelector("[data-story-rail] [data-mock]") !== null;
+    if (introSeen() || mocksInRail || !intro || typeof intro.openStory !== "function") {
+      openAddStoryFlow();
+      return;
+    }
+
+    // Mark seen on OPEN (the literal "first time they tap it"): bailing out
+    // early still counts, so the flow is never gated behind watching it twice.
+    markIntroSeen();
+
+    // Hand off to the flow only when the intro plays THROUGH to the end. The
+    // viewer dispatches a cancelable `story-viewer-end` when its last slide
+    // finishes; the rail-scoped orchestrator (index.astro) ignores this viewer,
+    // so we cancel the event ourselves to stop the viewer's own animated close,
+    // then close instantly and open the flow. Doing both synchronously avoids a
+    // scroll-lock race: the animated close's async onComplete would release
+    // document.body.overflow ~120ms later, after the flow (not a [data-modal])
+    // already re-locked it. Escape/close before the end never fires this event,
+    // so bailing out does NOT open the flow.
+    const onIntroEnd = (e: Event) => {
+      e.preventDefault();
+      const viewer = intro as HTMLElement & { closeStory?: (o?: { animate?: boolean }) => void };
+      viewer.closeStory?.({ animate: false });
+      openAddStoryFlow();
+    };
+    intro.addEventListener("story-viewer-end", onIntroEnd, { once: true });
+
+    intro.openStory();
+  });
 }
 
 // After a successful POST: re-render from the fresh payload (invalidate +
@@ -367,7 +437,9 @@ function onPosted(): void {
 // story-rail-mocks D6 + public-wall D2: live mock eviction — every visitor
 // runs this now (all fetch the payload). Any real story — the wall's or the
 // caller's own — removes every SSR mock tile, wrapper and all, through the
-// leak-free disconnect path. A wish-only post keeps mocks.
+// leak-free disconnect path. Submissions are photo-only
+// (retire-wishes-story-intro), so any submission has photos and evicts mocks;
+// the always-present example intro carries no data-mock and is never touched.
 function syncMockTiles(data: SubmissionsPayload): void {
   if (data.wall.stories.length > 0 || (data.mine?.photos.length ?? 0) > 0) {
     document.querySelectorAll("[data-mock]").forEach((el) => el.parentElement?.remove());

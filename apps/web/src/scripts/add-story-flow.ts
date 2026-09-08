@@ -3,6 +3,9 @@
 // Wired by index.astro. The modal lives in AddStoryFlow.astro; this module
 // owns open/close, client-side pre-validation, submit, and the post-submit
 // state transition (tile removal + surfaces re-sync via submissions:posted).
+//
+// Photo-only (retire-wishes-story-intro D1/D2): wishes are retired, so the
+// flow is a single photo picker and at least one photo is required.
 
 import { animate } from "motion";
 
@@ -10,28 +13,11 @@ import { invalidateSubmissions, SUBMISSION_POSTED_EVENT } from "../lib/submissio
 
 const MAX_PHOTOS = 3;
 const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
-const WISH_MAX = 30;
 
 // JS twin of the CSS --ease-out-expo token; keep in sync.
 const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
 
 const ACCEPTED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
-
-// Rotating wish placeholder (story-rail-mocks D7): writing prompts for the
-// empty input while the flow is open. One pass per open, then settle on the
-// default; the first keystroke disables rotation for the whole page session.
-// Every template must stay within the 30-char wish limit (WISH_MAX) —
-// suggesting an untypeable wish would be a lie.
-const DEFAULT_WISH_PLACEHOLDER = "Write a wish…";
-const WISH_PLACEHOLDER_TEMPLATES = [
-  "Happy ever after! ✨",
-  "To a lifetime of joy!",
-  "May love always find you",
-  "Grow old together 💛",
-  "Selamat menempuh hidup baru!",
-  "Bahagia selalu, kalian!",
-];
-const WISH_PLACEHOLDER_INTERVAL_MS = 4000;
 
 interface FlowElements {
   root: HTMLElement;
@@ -39,9 +25,6 @@ interface FlowElements {
   openButtons: HTMLElement[];
   cancelButton: HTMLButtonElement;
   form: HTMLFormElement;
-  wishInput: HTMLInputElement;
-  wishCount: HTMLElement;
-  wishError: HTMLElement;
   photoInput: HTMLInputElement;
   photoError: HTMLElement;
   photoList: HTMLElement;
@@ -57,44 +40,6 @@ let selectedFiles: File[] = [];
 // Object URLs for the live previews; revoked on each re-render (leak guard).
 let previewUrls: string[] = [];
 let submitting = false;
-
-// Placeholder rotation state (story-rail-mocks D7).
-let placeholderTimer: number | null = null;
-let placeholderIndex = 0;
-let hasTyped = false; // first-keystroke latch — clearing the field never resumes rotation
-
-function stopPlaceholderRotation(): void {
-  if (placeholderTimer !== null) {
-    window.clearInterval(placeholderTimer);
-    placeholderTimer = null;
-  }
-  if (els) els.wishInput.placeholder = DEFAULT_WISH_PLACEHOLDER;
-  placeholderIndex = 0;
-}
-
-function startPlaceholderRotation(): void {
-  // Clear any existing timer FIRST (double-open must not stack timers) —
-  // including the case where the early-returns below fire.
-  stopPlaceholderRotation();
-  // Never under reduced motion, never after the guest typed, never when the
-  // retained text makes the input non-empty (closeFlow keeps typed text).
-  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (reducedMotion || hasTyped || els?.wishInput.value) return;
-  if (WISH_PLACEHOLDER_TEMPLATES.length === 0) return;
-  // Spec (add-story-flow delta): a pass starts FROM THE DEFAULT — the
-  // placeholder keeps the default until the first interval tick, then
-  // advances one template per tick and settles back on the default.
-  placeholderIndex = 0;
-  placeholderTimer = window.setInterval(() => {
-    if (!els || els.wishInput.value !== "") return; // non-empty: hold position
-    if (placeholderIndex >= WISH_PLACEHOLDER_TEMPLATES.length) {
-      // One pass, then settle — no perpetual auto-updating content.
-      stopPlaceholderRotation();
-      return;
-    }
-    els.wishInput.placeholder = WISH_PLACEHOLDER_TEMPLATES[placeholderIndex++];
-  }, WISH_PLACEHOLDER_INTERVAL_MS);
-}
 
 function q<T extends HTMLElement>(selector: string): T {
   const el = document.querySelector<T>(selector);
@@ -113,21 +58,12 @@ function showInline(el: HTMLElement, message: string | null): void {
 }
 
 function isDirty(): boolean {
-  const wish = els?.wishInput.value.trim() ?? "";
-  return wish.length > 0 || selectedFiles.length > 0;
+  return selectedFiles.length > 0;
 }
 
 function updateSubmitEnabled(): void {
   if (!els) return;
-  const wishLen = els.wishInput.value.trim().length;
-  const canSubmit = (wishLen > 0 || selectedFiles.length > 0) && !submitting;
-  els.submitButton.disabled = !canSubmit;
-}
-
-function updateWishCount(): void {
-  if (!els) return;
-  const len = els.wishInput.value.length;
-  els.wishCount.textContent = `${len} / ${WISH_MAX}`;
+  els.submitButton.disabled = !isDirty() || submitting;
 }
 
 // Client-side pre-validation (server re-validates everything; this is fast
@@ -231,8 +167,11 @@ function openFlow(): void {
     );
   }
 
-  startPlaceholderRotation();
-  els.wishInput.focus();
+  // Photo-only flow (retire-wishes-story-intro): move focus into the dialog
+  // on open. Focusing the dialog root (role="dialog", aria-modal, labelled
+  // "Share our stories") announces the modal to assistive tech and puts the
+  // starting point inside the trap; the user tabs to "Choose photos" next.
+  els.root.focus();
 }
 
 function closeFlow(): void {
@@ -270,7 +209,6 @@ function closeFlow(): void {
     animate(root, { opacity: [1, 0] }, { duration: 0.12 }).finished.then(restoreAfterSettle);
   }
 
-  stopPlaceholderRotation();
   setSubmitting(false);
   // Closing discards the flow's transient state: a re-open starts fresh,
   // not with photos chosen in a previous abandoned attempt.
@@ -290,9 +228,6 @@ function setSubmitting(on: boolean): void {
 function applyServerError(code: string): void {
   if (!els) return;
   switch (code) {
-    case "invalid_wish_text":
-      showInline(els.wishError, "Wish text must be 1–30 characters after trimming.");
-      break;
     case "too_many_photos":
       showInline(els.photoError, "Up to 3 photos.");
       break;
@@ -303,7 +238,7 @@ function applyServerError(code: string): void {
       showInline(els.photoError, "Photos must be JPEG, PNG, WebP, or AVIF.");
       break;
     case "empty_submission":
-      showInline(els.formError, "Add a wish or at least one photo.");
+      showInline(els.formError, "Add at least one photo.");
       break;
     case "already_posted":
       // Already-posted is a SUCCESS-equivalent state: the guest has a
@@ -320,15 +255,9 @@ function applyServerError(code: string): void {
 
 async function submit(): Promise<void> {
   if (!els || submitting) return;
-  const wishText = els.wishInput.value.trim();
 
-  const wishLen = wishText.length;
-  if (wishLen > WISH_MAX) {
-    showInline(els.wishError, "Wish text must be 1–30 characters after trimming.");
-    return;
-  }
-  if (wishLen === 0 && selectedFiles.length === 0) {
-    showInline(els.formError, "Add a wish or at least one photo.");
+  if (selectedFiles.length === 0) {
+    showInline(els.formError, "Add at least one photo.");
     return;
   }
 
@@ -336,7 +265,6 @@ async function submit(): Promise<void> {
   showInline(els.formError, null);
 
   const body = new FormData();
-  if (wishLen > 0) body.append("wishText", wishText);
   for (const file of selectedFiles) {
     body.append("photos", file, file.name);
   }
@@ -390,9 +318,6 @@ export function initAddStoryFlow(): void {
     openButtons: [],
     cancelButton: q("[data-flow-cancel]"),
     form: q("[data-flow-form]"),
-    wishInput: q<HTMLInputElement>("[data-wish-input]"),
-    wishCount: q("[data-wish-count]"),
-    wishError: q("[data-wish-error]"),
     photoInput: q<HTMLInputElement>("[data-photo-input]"),
     photoError: q("[data-photo-error]"),
     photoList: q("[data-photo-list]"),
@@ -416,21 +341,6 @@ export function initAddStoryFlow(): void {
     void submit();
   });
 
-  els.wishInput.addEventListener("input", (e) => {
-    // First user edit disables placeholder rotation for the whole page session
-    // (story-rail-mocks D7): once someone is writing, suggestions stop
-    // competing. Any trusted input event counts — insertion, deletion, paste,
-    // IME composition (inputType covers them; `data === null` alone misses
-    // deletion/replace paths). Clearing the field must not resume rotation.
-    if (e.isTrusted) {
-      hasTyped = true;
-      stopPlaceholderRotation();
-    }
-    updateWishCount();
-    updateSubmitEnabled();
-    showInline(els!.wishError, null);
-  });
-
   els.photoInput.addEventListener("change", () => {
     if (!els) return;
     const incoming = Array.from(els.photoInput.files ?? []);
@@ -450,8 +360,6 @@ export function initAddStoryFlow(): void {
 
   // "Remove all" next to the Photos label.
   els.photoClear.addEventListener("click", clearSelectedPhotos);
-
-  updateWishCount();
 }
 
 // Open from anywhere (the rail tile calls this).

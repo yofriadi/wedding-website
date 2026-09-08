@@ -4,16 +4,19 @@
  *
  * Full-screen, one-screen submission flow, laid out thumb-first for phones:
  * the picked-photo thumbnails, the picker row ("up to 3" | Choose photos |
- * "Remove all"), the single-line wish (≤30 chars), and the actions form one
- * bottom-anchored stack so every interactive element lands in finger reach.
- * Submitting is POST /api/submissions as multipart.
+ * "Remove all"), and the actions form one bottom-anchored stack so every
+ * interactive element lands in finger reach. Submitting is
+ * POST /api/submissions as multipart.
+ *
+ * Photo-only (retire-wishes-story-intro D1/D2): wishes are retired, so at
+ * least one photo is required to submit.
  *
  * Theme-aware (repo idiom: CSS vars with dark defaults + a
  * prefers-color-scheme: light override — WelcomeGate/index.astro precedent).
  *
  * Server-side validation remains the source of truth; the client pre-checks
- * only for fast feedback (invalid_body/invalid_wish_text/too_many_photos/
- * photo_too_large/invalid_photo_type map to inline field errors).
+ * only for fast feedback (invalid_body/too_many_photos/photo_too_large/
+ * invalid_photo_type map to inline field errors).
  */
 ---
 
@@ -24,14 +27,14 @@
   role="dialog"
   aria-modal="true"
   aria-label="Share our stories"
+  tabindex="-1"
 >
   <div data-flow-panel class="relative h-full w-full overflow-y-auto">
     <div class="mx-auto flex min-h-full w-full max-w-md flex-col px-6 py-10">
       <h2 class="text-center text-lg font-medium">Share our stories</h2>
 
       <form data-flow-form class="mt-8 flex flex-1 flex-col" novalidate>
-        <!-- Bottom-anchored stack: thumbnails → picker row → wish → actions.
-        -->
+        <!-- Bottom-anchored stack: thumbnails → picker row → actions. -->
         <div class="mt-auto space-y-4">
           {/* Picked photo previews: three 9:16 tiles fill the row; they sit
               directly above the picker row that manages them. */}
@@ -58,6 +61,7 @@
             <span class="justify-self-start text-xs text-[color:var(--flow-muted)]">up to 3</span>
             <label
               for="photo-input"
+              data-photo-pick
               class="inline-flex cursor-pointer items-center rounded-md border border-[color:var(--flow-border)] bg-[color:var(--flow-input-bg)] px-4 py-2 text-sm transition-[colors,transform] duration-160 ease-out hover:bg-[color:var(--flow-input-bg-hover)] active:scale-[0.98]"
             >
               Choose photos
@@ -74,69 +78,43 @@
           <p data-photo-error class="hidden text-xs text-[color:var(--flow-error)]"></p>
         </div>
 
-        <!-- Wish + actions: the wish input sits right above the buttons so it
-             lands in thumb reach on phones. The char counter lives INSIDE the
-             input, at its far right edge. -->
-        <div class="space-y-6 pt-8">
-          <div class="space-y-2">
-            <div class="relative">
-              <input
-                id="wish-text"
-                name="wishText"
-                type="text"
-                maxlength="30"
-                data-wish-input
-                aria-label="Wish"
-                placeholder="Write a wish…"
-                autocomplete="off"
-                class="w-full rounded-lg border border-[color:var(--flow-border)] bg-[color:var(--flow-input-bg)] py-2 pl-3 pr-14 text-sm outline-none placeholder:text-[color:var(--flow-placeholder)] focus:border-[color:var(--flow-border-focus)] focus:ring-1 focus:ring-[color:var(--flow-border-focus)]"
-              />
-              <span
-                data-wish-count
-                class="pointer-events-none absolute inset-y-0 right-3 flex items-center text-xs text-[color:var(--flow-placeholder)]"
+        <!-- Actions sit at the bottom of the stack so they land in thumb reach
+             on phones. -->
+        <div class="pt-8">
+          <p data-flow-error class="mb-3 hidden text-xs text-[color:var(--flow-error)]"></p>
+          <div class="flex items-center justify-center gap-6">
+            <button
+              type="button"
+              data-flow-cancel
+              class="rounded-full px-5 py-2.5 text-sm font-medium text-[color:var(--flow-muted)] transition-[colors,transform] duration-160 ease-out hover:bg-[color:var(--flow-ghost-hover)] hover:text-[color:var(--flow-fg)] active:scale-[0.97] cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              data-flow-submit
+              disabled
+              class="inline-flex items-center gap-2 rounded-full bg-[color:var(--flow-primary)] px-5 py-2.5 text-sm font-medium text-[color:var(--flow-primary-fg)] transition-[opacity,transform] duration-160 ease-out hover:opacity-90 active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+            >
+              <span data-flow-submit-label>Share</span>
+              <svg
+                data-flow-spinner
+                class="hidden w-4 h-4 animate-spin"
+                viewBox="0 0 24 24"
+                aria-hidden="true"
               >
-                0 / 30
-              </span>
-            </div>
-            <p data-wish-error class="hidden text-xs text-[color:var(--flow-error)]"></p>
-          </div>
-
-          <div>
-            <p data-flow-error class="mb-3 hidden text-xs text-[color:var(--flow-error)]"></p>
-            <div class="flex items-center justify-center gap-6">
-              <button
-                type="button"
-                data-flow-cancel
-                class="rounded-full px-5 py-2.5 text-sm font-medium text-[color:var(--flow-muted)] transition-[colors,transform] duration-160 ease-out hover:bg-[color:var(--flow-ghost-hover)] hover:text-[color:var(--flow-fg)] active:scale-[0.97] cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                data-flow-submit
-                disabled
-                class="inline-flex items-center gap-2 rounded-full bg-[color:var(--flow-primary)] px-5 py-2.5 text-sm font-medium text-[color:var(--flow-primary-fg)] transition-[opacity,transform] duration-160 ease-out hover:opacity-90 active:scale-[0.97] disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
-              >
-                <span data-flow-submit-label>Share</span>
-                <svg
-                  data-flow-spinner
-                  class="hidden w-4 h-4 animate-spin"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="3"
-                    stroke-linecap="round"
-                    stroke-dasharray="40 60"
-                  />
-                </svg>
-              </button>
-            </div>
+                <circle
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  stroke-linecap="round"
+                  stroke-dasharray="40 60"
+                />
+              </svg>
+            </button>
           </div>
         </div>
       </form>

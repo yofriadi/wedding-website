@@ -7,28 +7,20 @@ one gone anyway.
 Attribution is partial by design (story-rail-attribution). A STORY tile shows
 the poster's first name to every visitor — derived at read time from that
 invite's `display_name` (first whitespace token), never snapshotted, so
-renaming an invite renames its tiles and the wall needs no cleanup. WISHES
-stay anonymous: no name, no author, no timestamp, on the marquee or in the
-`GET /api/submissions` payload.
+renaming an invite renames its tiles and the wall needs no cleanup.
+Submissions are photo-only (retire-wishes-story-intro): there is no wish text
+to moderate.
 
-## Remove a wish (text only, keeps photos if any)
+## Remove a whole submission (photos)
 
-Find the submission id first (wishes render newest-first on the wall):
-
-```sh
-sqlite3 /srv/wedding/local.db \
-  "SELECT id, created_at, wish_text FROM submissions WHERE wish_text IS NOT NULL ORDER BY created_at DESC;"
-```
-
-Then blank the wish text (the row must survive if it also owns photos —
-deleting it would orphan-check the photo rows):
+Find the submission id first (stories render newest-first on the wall):
 
 ```sh
 sqlite3 /srv/wedding/local.db \
-  "UPDATE submissions SET wish_text = NULL WHERE id = '<submission-id>';"
+  "SELECT s.id, s.created_at, COUNT(p.id) AS photos
+     FROM submissions s LEFT JOIN submission_photos p ON p.submission_id = s.id
+    GROUP BY s.id ORDER BY s.created_at DESC;"
 ```
-
-## Remove a whole submission (wish + photos)
 
 ```sh
 # 1. delete the row (FK: submission_photos rows go with it via ON DELETE…

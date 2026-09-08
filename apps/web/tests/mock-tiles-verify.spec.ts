@@ -69,12 +69,17 @@ test("mock tile opens the modal: one progress segment, attribution-free header",
   const modal = page.locator('body > [data-modal][aria-hidden="false"]');
   await expect(modal).toHaveCount(1);
 
-  // No author UI at all: no avatar circle, no name span, no timestamp — the
-  // neutral placeholder holds the header's left slot instead.
+  // No author UI at all: no avatar circle, no name span, no timestamp — and no
+  // placeholder text either (retire-wishes-story-intro D7). The header's left
+  // slot is an EMPTY span holding the close button on the right.
   await expect(modal.locator("[data-avatar]")).toHaveCount(0);
   await expect(modal.locator("[data-username]")).toHaveCount(0);
   await expect(modal.locator("[data-timestamp]")).toHaveCount(0);
-  await expect(modal.locator("text=Guest story")).toBeVisible();
+  await expect(modal.getByText("Guest story")).toHaveCount(0);
+  // The close button stays right-aligned (empty spacer preserves justify-between).
+  const closeBox = await modal.locator("[data-close]").boundingBox();
+  const panelBox = await modal.locator("[data-panel]").boundingBox();
+  expect(closeBox!.x).toBeGreaterThan(panelBox!.x + panelBox!.width / 2);
 
   // Exactly one story → exactly one progress segment (a named 3-photo guest
   // tile would render three).

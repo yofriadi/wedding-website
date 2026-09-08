@@ -56,12 +56,11 @@ const EVENTS = [
         aria-expanded={event.defaultOpen ? "true" : "false"}
         aria-label={`${event.name} at ${event.time}`}
       >
-        {/* Background image — modern formats first, JPEG fallback. */}
+        {/* Background image — AVIF with WebP fallback. */}
         <picture class="pointer-events-none absolute inset-0">
           <source srcset={`${event.image}.avif`} type="image/avif" />
-          <source srcset={`${event.image}.webp`} type="image/webp" />
           <img
-            src={`${event.image}.jpg`}
+            src={`${event.image}.webp`}
             alt=""
             loading="lazy"
             width={event.short === "Akad" ? 768 : 584}

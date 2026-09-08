@@ -16,7 +16,7 @@ import {
   type PhotoType,
 } from "../../../lib/photo-storage";
 import { notFound, resolveInvite, serviceUnavailable } from "../../../lib/invite-session";
-import { generateSubmissionId, normalizeWishText } from "../../../lib/submissions";
+import { generateSubmissionId } from "../../../lib/submissions";
 
 function json(status: number, body: unknown) {
   return new Response(JSON.stringify(body), {
@@ -56,13 +56,12 @@ function isInviteIdUniqueViolation(err: unknown): boolean {
 
 // Read side for the wall: every caller gets `wall` — the caller's own
 // submission (`mine`, cookie holders only) plus everyone else's, EXCLUDING
-// the caller's own row (dedupe by id) so their own wish/photos never render
+// the caller's own row (dedupe by id) so their own photos never render
 // twice — the caller's content is surfaced via `mine` only.
 // Attribution (story-rail-attribution D3): STORY entries carry the poster's
 // first name, derived at read time from their invite's display_name — no
-// snapshot column, so an admin rename propagates to the wall. Wishes stay
-// name-free (guest-wishes); the old payload-wide no-names rule (D1a) is
-// retired for stories only.
+// snapshot column, so an admin rename propagates to the wall. The old
+// payload-wide no-names rule (D1a) is retired for stories only.
 // Anonymous callers (public-wall D1) receive `mine: null` + the same wall;
 // posting below stays cookie-gated. `inviteValid` distinguishes a resolved
 // invite (true) from an anonymous caller or a STALE well-shaped cookie
@@ -97,7 +96,6 @@ export const GET: APIRoute = async ({ cookies }) => {
       .select({
         id: submissions.id,
         inviteId: submissions.inviteId,
-        wishText: submissions.wishText,
         createdAt: submissions.createdAt,
         displayName: invites.displayName,
       })
@@ -126,12 +124,10 @@ export const GET: APIRoute = async ({ cookies }) => {
 
     let mine: {
       id: string;
-      wishText: string | null;
       photos: { photoUrl: string; thumbnailUrl: string }[];
       firstName: string | null;
       createdAt: number;
     } | null = null;
-    const wallWishes: { text: string }[] = [];
     const wallStories: {
       photos: { photoUrl: string; thumbnailUrl: string }[];
       firstName: string | null;
@@ -144,15 +140,11 @@ export const GET: APIRoute = async ({ cookies }) => {
       if (invite !== null && row.inviteId === invite.id) {
         mine = {
           id: row.id,
-          wishText: row.wishText ?? null,
           photos,
           firstName,
           createdAt: row.createdAt,
         };
         continue;
-      }
-      if (row.wishText !== null) {
-        wallWishes.push({ text: row.wishText });
       }
       if (photos.length > 0) {
         wallStories.push({ photos, firstName, createdAt: row.createdAt });
@@ -162,7 +154,7 @@ export const GET: APIRoute = async ({ cookies }) => {
     return json(200, {
       mine,
       inviteValid: invite !== null,
-      wall: { wishes: wallWishes, stories: wallStories },
+      wall: { stories: wallStories },
     });
   } catch (err) {
     console.error("[submissions] read failed:", err);
@@ -184,16 +176,7 @@ interface ValidatedPhoto {
 // (row or file): a mid-batch failure must not leave partial state behind.
 async function parseMultipart(
   formData: FormData,
-): Promise<
-  { ok: true; wishText: string | null; photos: ValidatedPhoto[] } | { ok: false; error: string }
-> {
-  const wishRaw = formData.get("wishText");
-  const wishResult = normalizeWishText(wishRaw);
-  if (!wishResult.ok) {
-    return { ok: false, error: "invalid_wish_text" };
-  }
-  const wishText = wishResult.value;
-
+): Promise<{ ok: true; photos: ValidatedPhoto[] } | { ok: false; error: string }> {
   const photoEntries = formData.getAll("photos").filter((v): v is File => v instanceof File);
   if (photoEntries.length > MAX_PHOTOS_PER_SUBMISSION) {
     return { ok: false, error: "too_many_photos" };
@@ -225,15 +208,15 @@ async function parseMultipart(
     }
   }
 
-  // At-least-one-content rule (blank text counts as no text).
-  if (wishText === null && photos.length === 0) {
+  // Photo-only rule (retire-wishes-story-intro): at least one photo required.
+  if (photos.length === 0) {
     return { ok: false, error: "empty_submission" };
   }
 
-  return { ok: true, wishText, photos };
+  return { ok: true, photos };
 }
 
-// Create the caller's single submission (wish text + optional photos).
+// Create the caller's single submission (photos only).
 // AUTHENTICATE FIRST: the cookie is resolved before the body is read, so
 // anonymous callers get the uniform 404 even with a garbage body
 // (endpoint-invisibility rule).
@@ -273,7 +256,7 @@ export const POST: APIRoute = async ({ cookies, request }) => {
   if (!parsed.ok) {
     return json(400, { error: parsed.error });
   }
-  const { wishText, photos } = parsed;
+  const { photos } = parsed;
 
   const id = generateSubmissionId();
 
@@ -283,7 +266,6 @@ export const POST: APIRoute = async ({ cookies, request }) => {
     await db.insert(submissions).values({
       id,
       inviteId: invite.id,
-      wishText,
       createdAt: Date.now(),
     });
   } catch (err) {
@@ -354,7 +336,7 @@ export const POST: APIRoute = async ({ cookies, request }) => {
       thumbnailUrl: `/api/photos/${thumbnailKey(id)}`,
     }));
 
-    return json(201, { id, wishText, photos: photoEntries });
+    return json(201, { id, photos: photoEntries });
   } catch (err) {
     console.error("[submissions] photo pipeline failed:", err);
     await cleanup();

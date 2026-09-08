@@ -83,8 +83,16 @@ const FALLBACK_SELECTOR = "[data-venue-map-fallback]";
 const ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
-const DARK_TILES = "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png";
-const LIGHT_TILES = "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png";
+// CARTO began requiring an API key on its raster basemaps (Aug 2026): unkeyed
+// requests still return HTTP 200 but watermarked tiles. The key is a
+// publishable, domain-restricted token — the browser sends it on every tile
+// request by design (CARTO's own Leaflet snippet embeds it in the URL), so
+// secrecy is not the protection model and it lives here as a plain constant.
+// Free-tier exchange: OSM + CARTO attribution stays visible (ATTRIBUTION).
+const CARTO_KEY = "cb1_2yvr_1_8922f69eff5c0a81a25f8d59";
+
+const DARK_TILES = `https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`;
+const LIGHT_TILES = `https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=${CARTO_KEY}`;
 
 /** Zoom at which the venue cluster (46–62 m apart) separates to ~50+ px. */
 const CLUSTER_ZOOM = 17;

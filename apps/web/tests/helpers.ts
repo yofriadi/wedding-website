@@ -57,3 +57,21 @@ export async function skipUnlessEmptyWall(page: Page): Promise<void> {
     `shared dev server wall is non-empty (${stories} stories) — mock-presence cases need an empty wall; see mock-gate-ssr for seeded coverage`,
   );
 }
+
+/**
+ * Mark the first-tap story intro as already seen so a test that opens the
+ * add-story flow via the tile lands on the flow directly. The add-story tile's
+ * first activation per browser plays the example-story intro
+ * (retire-wishes-story-intro D4); tests that exercise the flow itself seed this
+ * flag so they skip the intro. Uses addInitScript so it is set before any page
+ * script runs.
+ */
+export async function seedStoryIntroSeen(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem("ww-story-intro-seen", "1");
+    } catch {
+      // ignore (private mode) — the intro then plays but never blocks the flow
+    }
+  });
+}

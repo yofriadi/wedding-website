@@ -6,8 +6,7 @@ import { invites } from "./invites";
 // (story-rail-attribution D3) is DERIVED at read time by joining invite_id to
 // invites.display_name — no snapshot column, so an admin rename propagates to
 // the wall and neither a migration nor a dual-write is needed. The caller's
-// own submission is still identified via the session (`mine`), never by a
-// name on the wish marquee (wishes stay author-free).
+// own submission is identified via the session (`mine`), never by name.
 export const submissions = sqliteTable(
   "submissions",
   {
@@ -16,7 +15,6 @@ export const submissions = sqliteTable(
       .notNull()
       .unique()
       .references(() => invites.id),
-    wishText: text("wish_text"),
     createdAt: integer("created_at").notNull(),
   },
   (table) => [index("submissions_created_at_idx").on(table.createdAt)],

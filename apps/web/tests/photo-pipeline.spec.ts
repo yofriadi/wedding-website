@@ -183,7 +183,6 @@ interface UploadFile {
 
 async function postSubmission(inviteId: string, files: UploadFile[]) {
   const form = new FormData();
-  form.append("wishText", "Bahagia selalu!");
   for (const file of files) {
     form.append(
       "photos",

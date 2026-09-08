@@ -27,27 +27,3 @@ export function generateSubmissionId(): string {
   }
   return out;
 }
-
-export const WISH_TEXT_MAX_CHARS = 30;
-
-// Trim server-side; returns null for "no wish text" (absent/blank), so the
-// at-least-one-content rule can treat blank text as no text. A non-blank trim
-// result is validated for length by the caller.
-export function normalizeWishText(
-  raw: unknown,
-): { ok: true; value: string | null } | { ok: false } {
-  if (raw === undefined || raw === null) {
-    return { ok: true, value: null };
-  }
-  if (typeof raw !== "string") {
-    return { ok: false };
-  }
-  const trimmed = raw.trim();
-  if (trimmed.length === 0) {
-    return { ok: true, value: null };
-  }
-  if (trimmed.length > WISH_TEXT_MAX_CHARS) {
-    return { ok: false };
-  }
-  return { ok: true, value: trimmed };
-}

@@ -1,0 +1,1 @@
+ALTER TABLE `submissions` DROP COLUMN `wish_text`;

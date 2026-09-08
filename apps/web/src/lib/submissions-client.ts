@@ -1,8 +1,8 @@
 // Shared client-side access to GET /api/submissions.
 //
-// Both the wish marquee and the story rail need the same payload; importing
-// this module from multiple bundled component scripts shares ONE module
-// instance (Vite chunk dedupe), so the page makes exactly one fetch per load.
+// The story rail reads this payload; importing this module from multiple
+// bundled component scripts shares ONE module instance (Vite chunk dedupe),
+// so the page makes exactly one fetch per load.
 //
 // public-wall D2: the wall is a public surface — loadSubmissions() fetches
 // for EVERYONE (the old zero-request guarantee for cookie-less visitors is
@@ -18,8 +18,7 @@ export interface SubmissionPhoto {
 // (wall and the caller's own) carries the poster's first name and the
 // submission time so the rail can attribute its tiles. `firstName` is null
 // when the invite's display_name derives an empty first token — the tile then
-// renders the attribution-free layout. Wishes stay `{ text }`: no name, no
-// author, no timestamp (guest-wishes).
+// renders the attribution-free layout.
 export interface SubmissionStory {
   photos: SubmissionPhoto[];
   firstName: string | null;
@@ -29,7 +28,6 @@ export interface SubmissionStory {
 export interface SubmissionsPayload {
   mine: {
     id: string;
-    wishText: string | null;
     photos: SubmissionPhoto[];
     firstName: string | null;
     createdAt: number;
@@ -40,7 +38,6 @@ export interface SubmissionsPayload {
   // Optional so older payloads (and test fixtures) without it still parse.
   inviteValid?: boolean;
   wall: {
-    wishes: { text: string }[];
     stories: SubmissionStory[];
   };
 }
@@ -84,6 +81,6 @@ export function invalidateSubmissions(): void {
 }
 
 // Dispatched after a successful POST /api/submissions so every surface that
-// renders submissions state (marquee, rail, add-story tile) re-syncs without
-// a full page reload (the loader + welcome gate make reloads expensive UX).
+// renders submissions state (rail, add-story tile) re-syncs without a full
+// page reload (the loader + welcome gate make reloads expensive UX).
 export const SUBMISSION_POSTED_EVENT = "submissions:posted";

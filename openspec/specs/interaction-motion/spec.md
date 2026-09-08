@@ -164,25 +164,6 @@ Press feedback (`:active` scale) SHALL always be paired with a transform transit
 - **WHEN** the user presses and holds the StarButton CTA
 - **THEN** the pill eases to `scale(0.97)` over ~160ms and eases back on release, with the rim rotation unaffected; under reduced motion the press applies instantly (no tween)
 
-### Requirement: Wish marquee is pausable in its real state and smooths state changes
-
-When the marquee renders real wishes (`data-state="real"`, readable content at raised opacity), hovering or keyboard-focusing the band SHALL pause all rows so a guest can read a wish; the demo/empty texture states (non-interactive) SHALL NOT pause. Band opacity changes between states SHALL cross-fade (~300ms) instead of popping, and rebuilt rows SHALL resume from their live scroll offset rather than restarting at their phase offsets.
-
-#### Scenario: Reading a real wish
-
-- **WHEN** the marquee shows real wishes and the user hovers or focuses within the band
-- **THEN** every row freezes mid-scroll (animation-play-state, preserving position) and resumes seamlessly when the pointer leaves
-
-#### Scenario: Demo texture never pauses
-
-- **WHEN** the marquee is in the demo or empty state
-- **THEN** hover does not pause the scroll
-
-#### Scenario: Data swap or resize during scroll
-
-- **WHEN** rows are rebuilt (new submission or debounced resize) while the marquee is scrolling
-- **THEN** each row continues from its current pixel offset instead of jumping back to its phase offset; first load still starts at the staggered phases
-
 ### Requirement: Venue map vendor animations honor reduced motion
 
 Leaflet's own zoom animation (zoom-control clicks, double-click zoom) SHALL be disabled for reduced-motion users — via the library's `zoomAnimation` option at map construction and a CSS override of the vendor's `.leaflet-zoom-animated` transition — so no map motion reaches reduced-motion users beyond the already-gated `setView`/`fitBounds` calls.

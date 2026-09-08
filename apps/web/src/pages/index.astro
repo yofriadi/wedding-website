@@ -4,7 +4,6 @@ import HeroZoom from "../components/HeroZoom.astro";
 import ZoomParallax from "../components/ZoomParallax.astro";
 import QuranVerse from "../components/QuranVerse.astro";
 import TimelineScroll from "../components/TimelineScroll.astro";
-import WishMarquee from '../components/WishMarquee.astro';
 import StoryViewer from "../components/StoryViewer.astro";
 import AddStoryTile from "../components/AddStoryTile.astro";
 import AddStoryFlow from "../components/AddStoryFlow.astro";
@@ -170,12 +169,6 @@ const showMockStoryTiles = !hasAnyGuestPhoto;
           ))}
       </div>
     </section>
-    <!-- Wish marquee band: --wishes-* tokens live in this file's :root
-         (rsvp-* precedent); WishMarquee.astro's global styles read them by
-         inheritance so the band inverts with the OS theme. -->
-    <section id="wishes-section" class="relative py-4 overflow-hidden space-y-12">
-      <WishMarquee />
-    </section>
 
     <!-- Venue map (venue-map-routes) -->
     <VenueMap />
@@ -196,11 +189,22 @@ const showMockStoryTiles = !hasAnyGuestPhoto;
     <WeddingFAQ />
   </main>
 
-  {/* Add-story flow modal (guest-submissions 4.1): one-screen wish +
-     photo submission. Rendered unconditionally (it is inert/hidden until
-     opened, and its opener tile is invite-gated) so the client script can
-     always bind to it. */}
+  {/* Add-story flow modal: one-screen photo submission. Rendered
+     unconditionally (it is inert/hidden until opened, and its opener tile is
+     invite-gated) so the client script can always bind to it. */}
   <AddStoryFlow />
+
+  {/* Story intro (retire-wishes-story-intro D3): the three example stories,
+     always present and hidden, so the add-story tile's first tap can play them
+     once real posts evicted the rail mocks — while the mocks still sit in the
+     rail the tap skips it (guest-rail.ts), since it duplicates what the rail
+     already shows. NOT a mock (no data-mock) so syncMockTiles never removes
+     it; it sits outside [data-story-rail] and the hand-off orchestrator is
+     rail-scoped, so its end event closes into the flow (guest-rail.ts) rather
+     than chaining into rail tiles. */}
+  <div hidden data-story-intro>
+    <StoryViewer stories={mockStories.flatMap((entry) => entry.stories)} />
+  </div>
 
 <script is:inline>
   // Background music
@@ -332,7 +336,7 @@ const showMockStoryTiles = !hasAnyGuestPhoto;
 
   document.addEventListener('story-viewer-end', (e) => {
     const currentViewer = e.target;
-    const viewers = Array.from(document.querySelectorAll('[data-story-viewer]'));
+    const viewers = Array.from(document.querySelectorAll('[data-story-rail] [data-story-viewer]'));
     const currentIndex = viewers.indexOf(currentViewer);
 
     if (currentIndex >= 0 && currentIndex < viewers.length - 1) {
@@ -362,7 +366,7 @@ const showMockStoryTiles = !hasAnyGuestPhoto;
 
   document.addEventListener('story-viewer-prev', (e) => {
     const currentViewer = e.target;
-    const viewers = Array.from(document.querySelectorAll('[data-story-viewer]'));
+    const viewers = Array.from(document.querySelectorAll('[data-story-rail] [data-story-viewer]'));
     const currentIndex = viewers.indexOf(currentViewer);
 
     if (currentIndex > 0) {
@@ -451,7 +455,6 @@ const showMockStoryTiles = !hasAnyGuestPhoto;
 
 <script>
   // Guest-submissions client orchestration: add-story flow + rail tiles.
-  // (The wish marquee ships its own script inside WishMarquee.astro.)
   import { initAddStoryFlow } from "../scripts/add-story-flow";
   import { initGuestRail } from "../scripts/guest-rail";
 
@@ -483,16 +486,6 @@ const showMockStoryTiles = !hasAnyGuestPhoto;
     --memories-tile-hover-border: #a3a3a3; /* neutral-400: hover state */
     --memories-tile-bg: rgba(23, 23, 23, 0.4); /* neutral-900/40 fill */
     --memories-tile-icon: #a3a3a3; /* neutral-400 plus icon */
-
-    /* Wish marquee band (rsvp-* precedent): dark is the baseline, light
-       inverts. WishMarquee.astro's is:global styles read these by
-       inheritance — the section wrapper lives here, so this file owns them. */
-    --wishes-bg: #0a0a0a; /* neutral-950 — matches main's chrome */
-    --wishes-text: #ffffff; /* ambient demo texture (was inherited body white) */
-    --wishes-real-text: #e5e5e5; /* neutral-200: readable real wishes */
-    --wishes-cta-text: #fafafa; /* neutral-50: leading CTA card */
-    --wishes-cta-bg: rgba(255, 255, 255, 0.06); /* white/6 card fill */
-    --wishes-cta-border: rgba(255, 255, 255, 0.14); /* white/14 hairline */
   }
 
   /* Light theme */
@@ -513,13 +506,6 @@ const showMockStoryTiles = !hasAnyGuestPhoto;
       --memories-tile-hover-border: #525252; /* neutral-600 */
       --memories-tile-bg: rgba(245, 245, 244, 0.6); /* stone-100/60 */
       --memories-tile-icon: #525252; /* neutral-600 */
-
-      --wishes-bg: #ffffff;
-      --wishes-text: #262626; /* neutral-800 — ambient texture holds on white */
-      --wishes-real-text: #404040; /* neutral-700 — readable on white */
-      --wishes-cta-text: #0a0a0a;
-      --wishes-cta-bg: rgba(0, 0, 0, 0.05);
-      --wishes-cta-border: rgba(0, 0, 0, 0.14);
     }
   }
 
@@ -546,12 +532,6 @@ const showMockStoryTiles = !hasAnyGuestPhoto;
      collapsing and re-flowing the page when the tiles land. */
   [data-story-rail] {
     min-height: 232px;
-  }
-
-  /* Wish marquee band background — paints over main's chrome so the band
-     inverts like its neighbours (memories above, venue below) */
-  #wishes-section {
-    background-color: var(--wishes-bg);
   }
 
   /* Theme-aware text shimmer gradients for dark mode (white shimmer) */
