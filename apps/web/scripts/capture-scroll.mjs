@@ -12,24 +12,24 @@ const OUT_DIR = path.join(process.cwd(), ".artifacts", "capture-scroll");
 // Keep in sync with the component; a drift here makes the stop list target
 // the wrong moments and the probe catches it as missing/extra reveals.
 // ---------------------------------------------------------------------------
-const INTRO_END = 0.0386;
-const FINALE_TURN = 0.8074;
-const FINALE_MID = 0.8392;
-const FINALE_CORNER = 0.8681;
-const VERT_END = 0.956;
+const INTRO_END = 0.0574;
+const FINALE_TURN = 0.7128;
+const FINALE_CORNER = 0.8033;
+const VERT_END = 0.9339;
 const EXPANSION_START = VERT_END + 0.004;
-const EXPANSION_END = 0.994;
+const EXPANSION_END = 0.9904;
 const CONNECT_X = 80; // vw-relative offset from a dot where its connector completes
 
-// Node-9 is centered by the pan table: PAN_END_X = -1620vw at VERT_END.
+// Node-6 is centered by the pan table: PAN_END_X = -990vw at VERT_END. The
+// jog is an L-route: right-pan at cruise depth (y=0) until FINALE_CORNER,
+// then the vertical descent to VERT_END — no diagonal waypoint.
 const PAN_KEYFRAMES = [
   { t: 0, x: 0, y: 0 },
   { t: INTRO_END, x: 0, y: 0 },
-  { t: FINALE_TURN, x: -1470, y: 0 },
-  { t: FINALE_MID, x: -1545, y: null },
-  { t: FINALE_CORNER, x: -1620, y: null },
-  { t: VERT_END, x: -1620, y: null },
-  { t: 1, x: -1620, y: null },
+  { t: FINALE_TURN, x: -840, y: 0 },
+  { t: FINALE_CORNER, x: -990, y: 0 },
+  { t: VERT_END, x: -990, y: null },
+  { t: 1, x: -990, y: null },
 ];
 
 // Progress at which the track has panned targetX (vw). Inverse of the pan table.
@@ -102,14 +102,14 @@ function liveState(page, label) {
           ? (new DOMMatrixReadOnly(getComputedStyle(t).transform).m41 / innerWidth) * 100
           : null;
       })(),
-      node9X: (() => {
-        const n = document.getElementById("node-9");
+      node6X: (() => {
+        const n = document.getElementById("node-6");
         return n
           ? (new DOMMatrixReadOnly(getComputedStyle(n).transform).m41 / innerWidth) * 100
           : null;
       })(),
-      dot9Opacity: (() => {
-        const d = document.getElementById("dot-9");
+      dot6Opacity: (() => {
+        const d = document.getElementById("dot-6");
         return d ? Number(getComputedStyle(d).opacity) : null;
       })(),
     };
@@ -121,10 +121,10 @@ function liveState(page, label) {
 function checkExclusivity(page, label) {
   return page.evaluate((label) => {
     const selectors = [];
-    for (let n = 2; n <= 8; n++) {
+    for (let n = 2; n <= 6; n++) {
       for (const part of ["photo", "date", "desc"]) selectors.push(`[data-node${n}-${part}]`);
     }
-    selectors.push("[data-node9-date]");
+    selectors.push("[data-node6-date-bottom]");
     const visible = new Map();
     for (const el of document.querySelectorAll(selectors.join(","))) {
       if (parseFloat(getComputedStyle(el).opacity) <= 0.05) continue;
@@ -183,7 +183,7 @@ function checkLineClearance(page, label) {
       }
     }
     const hits = [];
-    for (let i = 1; i <= 8; i++) {
+    for (let i = 1; i <= 5; i++) {
       const path = document.getElementById(`line-${i}`);
       const len = path.getTotalLength();
       for (let s = 0; s <= 48; s++) {
@@ -208,21 +208,24 @@ function checkLineClearance(page, label) {
 async function deriveStops(page) {
   return page
     .evaluate((CONNECT_X) => {
+      // Sequence-ordered, matching the renumbered DOM ids 1:1: index 4 is
+      // #dot-5 and index 5 the finale anchor. connect(N) indexes THIS array —
+      // connect(5) is the dot-5 connection.
       const dots = [];
-      for (let n = 1; n <= 8; n++) {
+      for (const n of [1, 2, 3, 4, 5]) {
         const d = document.getElementById(`dot-${n}`);
         if (!d) throw new Error(`#dot-${n} missing`);
         const r = d.getBoundingClientRect();
         dots.push(((r.left + r.width / 2) / innerWidth) * 100);
       }
-      const dot9 = document.getElementById("dot-9-anchor");
-      const r9 = dot9.getBoundingClientRect();
-      dots.push(((r9.left + r9.width / 2) / innerWidth) * 100);
+      const dot6Anchor = document.getElementById("dot-6-anchor");
+      const r6 = dot6Anchor.getBoundingClientRect();
+      dots.push(((r6.left + r6.width / 2) / innerWidth) * 100);
       return dots;
     }, CONNECT_X)
     .then((dotsVw) => {
-      // connect(N): the pan at which dot N sits CONNECT_X from the viewport's
-      // left edge — i.e. track pan = -(dotXvw - CONNECT_X).
+      // connect(N): the pan at which sequence dot N sits CONNECT_X from the
+      // viewport's left edge — i.e. track pan = -(dotXvw - CONNECT_X).
       const connect = (n) => progressAtPanX(-(dotsVw[n - 1] - CONNECT_X));
       const stops = [
         { name: "00-section-top", at: 0 },
@@ -234,24 +237,18 @@ async function deriveStops(page) {
         { name: "06-node3-popped", at: connect(3) + 0.02 },
         { name: "07-node4-connect", at: connect(4) },
         { name: "08-node4-popped", at: connect(4) + 0.02 },
-        { name: "09-node5-connect", at: connect(5) },
-        { name: "10-node5-popped", at: connect(5) + 0.02 },
-        { name: "11-node6-connect", at: connect(6) },
-        { name: "12-node6-popped", at: connect(6) + 0.02 },
-        { name: "13-node7-connect", at: connect(7) },
-        { name: "14-node7-popped", at: connect(7) + 0.02 },
-        { name: "15-node8-connect", at: connect(8) },
-        { name: "16-node8-content", at: progressAtPanX(-1520) }, // node 8's card centered
-        { name: "17-node8-popped", at: connect(8) + 0.02 },
-        { name: "18-horiz-end", at: FINALE_TURN },
-        { name: "19-vertical-mid", at: FINALE_MID },
-        { name: "20-node9-arrive", at: FINALE_CORNER },
-        { name: "21-node9-formed", at: FINALE_CORNER + 0.038 },
-        { name: "22-vert-end", at: VERT_END },
-        { name: "23-expansion-start", at: EXPANSION_START },
-        { name: "24-expansion-half", at: (EXPANSION_START + EXPANSION_END) / 2 },
-        { name: "25-expansion-end", at: EXPANSION_END },
-        { name: "26-end", at: 1 },
+        { name: "09-node5-connect", at: connect(5) }, // connect(5) = the dot-5 connection
+        { name: "10-node5-content", at: progressAtPanX(-890) }, // node 5's card centered
+        { name: "11-node5-popped", at: connect(5) + 0.02 },
+        { name: "12-jog-start", at: FINALE_TURN }, // story cruise ends; right-pan jog begins (y=0)
+        { name: "13-jog-mid", at: (FINALE_TURN + FINALE_CORNER) / 2 }, // mid-jog: still at cruise depth
+        { name: "14-corner", at: FINALE_CORNER }, // anchor column centered; descent begins
+        { name: "15-node6-formed", at: FINALE_CORNER + 0.0566 },
+        { name: "16-vert-end", at: VERT_END },
+        { name: "17-expansion-start", at: EXPANSION_START },
+        { name: "18-expansion-half", at: (EXPANSION_START + EXPANSION_END) / 2 },
+        { name: "19-expansion-end", at: EXPANSION_END },
+        { name: "20-end", at: 1 },
       ];
       return { stops, connect };
     });
@@ -294,31 +291,31 @@ async function captureProgressStops(browser, url, width, report) {
     await page.screenshot({ path: path.join(OUT_DIR, `local-${width}-${stop.name}.png`) });
   }
 
-  // Node-9 hand-off probe: at VERT_END the track and node-9 must agree (the
-  // counter-pan keeps dot-9 on the expansion-circle center), and the finale
+  // Node-6 hand-off probe: at VERT_END the track and node-6 must agree (the
+  // counter-pan keeps dot-6 on the expansion-circle center), and the finale
   // dot must be fully formed before the expansion starts growing.
   await scrollToProgress(page, geom, VERT_END);
   const handoff = await page.evaluate(() => {
     const m = (id) =>
       new DOMMatrixReadOnly(getComputedStyle(document.getElementById(id)).transform);
     const track = m("timeline-track");
-    const node9 = m("node-9");
-    const dot9 = document.getElementById("dot-9").getBoundingClientRect();
+    const node6 = m("node-6");
+    const dot6 = document.getElementById("dot-6").getBoundingClientRect();
     return {
       trackVw: (track.m41 / innerWidth) * 100,
-      node9Vw: (node9.m41 / innerWidth) * 100,
-      dot9CenterX: dot9.left + dot9.width / 2,
+      node6Vw: (node6.m41 / innerWidth) * 100,
+      dot6CenterX: dot6.left + dot6.width / 2,
       viewportCenterX: innerWidth / 2,
-      dot9Opacity: Number(getComputedStyle(document.getElementById("dot-9")).opacity),
+      dot6Opacity: Number(getComputedStyle(document.getElementById("dot-6")).opacity),
     };
   });
   const entry = {
-    label: `${width}/node9-handoff`,
+    label: `${width}/node6-handoff`,
     ...handoff,
-    centerErrorPx: Math.round(Math.abs(handoff.dot9CenterX - handoff.viewportCenterX)),
+    centerErrorPx: Math.round(Math.abs(handoff.dot6CenterX - handoff.viewportCenterX)),
   };
   report.pins.push(entry);
-  if (entry.centerErrorPx > 2 || entry.dot9Opacity < 0.99) report.violations.push(entry);
+  if (entry.centerErrorPx > 2 || entry.dot6Opacity < 0.99) report.violations.push(entry);
 
   await context.close();
 }
@@ -345,10 +342,10 @@ async function captureReducedMotion(browser, url, report) {
     const audit = await page.evaluate(() => {
       const section = document.getElementById("timeline-section");
       const titleBottom = document.getElementById("title-layer-bottom");
-      const finale = document.querySelector("[data-node9-date-bottom]");
+      const finale = document.querySelector("[data-node6-date-bottom]");
       const blocks = Array.from(
         document.querySelectorAll(
-          "[data-node2-photo],[data-node3-photo],[data-node4-photo],[data-node5-photo],[data-node6-photo],[data-node7-photo],[data-node8-photo],[data-node9-date-bottom]",
+          "[data-node2-photo],[data-node3-photo],[data-node4-photo],[data-node5-photo],[data-node6-date-bottom]",
         ),
       );
       const inFlow = (el) => getComputedStyle(el).position === "static";
@@ -386,21 +383,23 @@ async function captureReducedMotion(browser, url, report) {
               return {
                 visible: Number(getComputedStyle(finale).opacity) === 1,
                 centered: r.left >= -2 && r.right <= innerWidth + 2,
-                afterNode8:
+                afterNode5:
                   r.top >=
-                  document.querySelector("[data-node8-photo]").getBoundingClientRect().bottom,
+                  document.querySelector("[data-node5-photo]").getBoundingClientRect().bottom,
               };
             })()
           : null,
         allPhotosVisible: blocks.every((b) => parseFloat(getComputedStyle(b).opacity) === 1),
         wrappersStatic: Array.from(
-          document.querySelectorAll("[data-node3-pin],[data-node5-pin],[data-node7-pin]"),
+          document.querySelectorAll(
+            "[data-node2-pin],[data-node3-pin],[data-node4-pin],[data-node5-pin]",
+          ),
         ).every((w) => getComputedStyle(w).position === "static"),
       };
     });
     report.reducedMotion.push({ width, ...audit });
     const finaleOk =
-      audit.finaleTitle?.visible && audit.finaleTitle?.centered && audit.finaleTitle?.afterNode8;
+      audit.finaleTitle?.visible && audit.finaleTitle?.centered && audit.finaleTitle?.afterNode5;
     if (
       // Content-driven height, not the ~18×-viewport scrub runway. 6× leaves
       // room for the desktop story's taller photos (measured ≈4.2×) while

@@ -25,8 +25,8 @@
     <!-- z-10: Above bottom title, below top circle overlay -->
     <div
       id="timeline-track"
-      class="relative z-10 h-[250vh] w-[1720vw] will-change-transform"
-      style="transform: translate(0vw, 0vh); width: 1720vw;"
+      class="relative z-10 h-[250vh] w-[1090vw] will-change-transform"
+      style="transform: translate(0vw, 0vh); width: 1090vw;"
     >
       <!-- SVG connectors live INSIDE the track -->
       <svg class="absolute inset-0 z-40 h-full w-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
@@ -35,9 +35,6 @@
         <path id="line-3" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0" />
         <path id="line-4" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0" />
         <path id="line-5" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0" />
-        <path id="line-6" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0" />
-        <path id="line-7" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0" />
-        <path id="line-8" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0" />
       </svg>
 
       <!-- Node 1 (left) -->
@@ -74,24 +71,23 @@
 
         <!-- Date above the node -->
         <div data-node2-pin class="absolute inset-0">
-          <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+16px)] whitespace-nowrap">
+          <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+16px)] whitespace-nowrap text-center">
             <div data-node2-date style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
-              <div class="font-serif text-2xl text-[color:var(--timeline-ink)]">Februari 2025</div>
+              <div class="font-serif text-2xl text-[color:var(--timeline-ink)] text-center">Februari 2025</div>
             </div>
           </div>
 
           <!-- Photo and Text below the node -->
           <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+24px)] flex flex-col items-center">
             <div data-node2-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
-              <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
-                <picture><source data-srcset="/13.avif" type="image/avif" /><img data-src="/13.webp" alt="Februari 2025" width="540" height="960" class="h-full w-full object-cover" decoding="async" /></picture>
+              <div class="h-[320px] md:h-[400px] w-auto max-w-[calc(100vw-32px)] aspect-[591/1280] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
+                <picture><source data-srcset="/awal-perkenalan.avif" type="image/avif" /><img data-src="/awal-perkenalan.webp" alt="Awal perkenalan" width="591" height="1280" class="h-full w-full object-cover" decoding="async" /></picture>
               </div>
             </div>
 
-            <div data-node2-desc class="mt-4 w-[320px]" style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
-              <p class="text-sm leading-relaxed text-[color:var(--timeline-muted)] text-pretty">
-                Menjadi bulan pertama kami bertemu dan berkenalan. Sebatas teman, dikenalkan oleh Rahadian,
-                kakak Aci. Tidak dekat, tidak berlebihan.
+            <div data-node2-desc class="mt-4 w-[320px] text-center" style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
+              <p class="text-sm leading-relaxed text-[color:var(--timeline-muted)] text-center text-pretty">
+                Awal perkenalan
               </p>
             </div>
           </div>
@@ -111,21 +107,21 @@
           <!-- Photo and Date above the node -->
           <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)] flex flex-col items-center">
             <div data-node3-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
-              <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl mb-4 ring-1 ring-[color:var(--timeline-photo-ring)]">
-                <picture><source data-srcset="/13.avif" type="image/avif" /><img data-src="/13.webp" alt="5 April 2025" width="540" height="960" class="h-full w-full object-cover" decoding="async" /></picture>
+              <div class="w-[300px] md:w-[460px] max-w-[calc(100vw-32px)] h-auto aspect-[1280/591] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl mb-4 ring-1 ring-[color:var(--timeline-photo-ring)]">
+                <picture><source data-srcset="/keluarga-yofri.avif" type="image/avif" /><img data-src="/keluarga-yofri.webp" alt="Aci diperkenalkan ke keluarga Yofri" width="1280" height="591" class="h-full w-full object-cover" decoding="async" /></picture>
               </div>
             </div>
             <div data-node3-date style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
-              <div class="whitespace-nowrap font-serif text-2xl text-[color:var(--timeline-ink)]">
+              <div class="whitespace-nowrap font-serif text-2xl text-[color:var(--timeline-ink)] text-center">
                 5 April 2025
               </div>
             </div>
           </div>
 
           <!-- Text below the node -->
-          <div data-node3-desc class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+24px)] w-[320px]" style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
+          <div data-node3-desc class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+24px)] w-[320px] text-center" style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
             <p class="text-sm leading-relaxed text-[color:var(--timeline-muted)] text-center text-pretty">
-              Menjadi bulan pertama kami bertemu dan berkenalan. Sebatas teman, dikenalkan oleh Rahadian, kakak Aci. Tidak dekat, tidak berlebihan.
+              Aci diperkenalkan ke keluarga Yofri
             </p>
           </div>
         </div>
@@ -144,20 +140,19 @@
         <div data-node4-pin class="absolute inset-0">
           <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)]">
             <div data-node4-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
-              <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
-                <picture><source data-srcset="/0.avif" type="image/avif" /><img data-src="/0.webp" alt="28 Juni 2025" width="960" height="720" class="h-full w-full object-cover" decoding="async" /></picture>
+              <div class="w-[300px] md:w-[460px] max-w-[calc(100vw-32px)] h-auto aspect-[2048/945] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
+                <picture><source data-srcset="/keluarga-acik.avif" type="image/avif" /><img data-src="/keluarga-acik.webp" alt="Yofri bertemu keluarga Aci" width="2048" height="945" class="h-full w-full object-cover" decoding="async" /></picture>
               </div>
             </div>
           </div>
 
           <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+22px)] w-[320px] flex flex-col items-center">
             <div data-node4-date style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
-              <div class="font-serif text-2xl text-[color:var(--timeline-ink)]">28 Juni 2025</div>
+              <div class="font-serif text-2xl text-[color:var(--timeline-ink)] text-center">28 Juni 2025</div>
             </div>
-            <div data-node4-desc style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
+            <div data-node4-desc class="text-center" style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
               <p class="mt-2 text-sm leading-relaxed text-[color:var(--timeline-muted)] text-center text-pretty">
-                Kali pertama kami jalan berdua saja. Aci pikir, perbedaan hobi dan interest akan menjadi hambatan dari merasa nyaman.
-                Namun ternyata, candaan dan obrolan mengalir dengan baik. Bahkan diamnya saja menyenangkan.
+                Yofri bertemu keluarga Aci
               </p>
             </div>
           </div>
@@ -170,147 +165,50 @@
         class="timeline-node absolute z-30"
         style="left: 890vw; transform: translate(-50%, -50%);"
       >
-        <div id="dot-5" class="h-5 w-5 rounded-full bg-[color:var(--timeline-dot)]" style="transform: scale(0.6); transform-origin: center;"></div>
-
         <div data-node5-pin class="absolute inset-0">
-          <!-- Photo above the node -->
-          <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)]">
-            <div data-node5-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
-              <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
-                <picture><source data-srcset="/0.avif" type="image/avif" /><img data-src="/0.webp" alt="26 Oktober 2025" width="960" height="720" class="h-full w-full object-cover" decoding="async" /></picture>
-              </div>
-            </div>
-          </div>
-
-          <!-- Date and Text below the node -->
-          <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+22px)] w-[320px] flex flex-col items-center">
-            <div data-node5-date style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
-              <div class="font-serif text-2xl text-[color:var(--timeline-ink)]">26 Oktober 2025</div>
-            </div>
-            <div data-node5-desc style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
-              <p class="mt-2 text-sm leading-relaxed text-[color:var(--timeline-muted)] text-center text-pretty">
-                Pertama kali kami saling mengungkapkan rasa ketertarikan. Sepulangnya dari kafe, Adi langsung mengajak Aci bertemu Mama Nur.
-                Salah satu bentuk yang menunjukkan keseriusan untuk melanjutkan ke jenjang berikutnya.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Node 6 -->
-      <div
-        id="node-6"
-        class="timeline-node absolute z-30"
-        style="left: 1100vw; transform: translate(-50%, -50%);"
-      >
-        <div id="dot-6" class="h-5 w-5 rounded-full bg-[color:var(--timeline-dot)]" style="transform: scale(0.6); transform-origin: center;"></div>
-
-        <div data-node6-pin class="absolute inset-0">
-          <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)]">
-            <div data-node6-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
-              <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
-                <picture><source data-srcset="/0.avif" type="image/avif" /><img data-src="/0.webp" alt="1 November 2025" width="960" height="720" class="h-full w-full object-cover" decoding="async" /></picture>
-              </div>
-            </div>
-          </div>
-
-          <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+22px)] w-[320px] text-center">
-            <div data-node6-date style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
-              <div class="font-serif text-2xl text-[color:var(--timeline-ink)]">1 November 2025</div>
-            </div>
-            <div data-node6-desc style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
-              <p class="mt-2 text-sm leading-relaxed text-[color:var(--timeline-muted)] text-pretty">
-                Foto berdua kami yang pertama. Kami mulai sore di hari hujan itu dengan bercerita. Tentang diri, tentang pertemanan kami,
-                tentang kisah yang lalu, dan rencana-rencana masa depan kami.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Node 7 -->
-      <div
-        id="node-7"
-        class="timeline-node absolute z-30"
-        style="left: 1310vw; transform: translate(-50%, -50%);"
-      >
-        <div id="dot-7" class="h-5 w-5 rounded-full bg-[color:var(--timeline-dot)]" style="transform: scale(0.6); transform-origin: center;"></div>
-
-        <div data-node7-pin class="absolute inset-0">
-          <!-- Photo above the node -->
-          <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)]">
-            <div data-node7-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
-              <div class="h-45 w-[320px] md:h-55 md:w-105 overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
-                <picture><source data-srcset="/0.avif" type="image/avif" /><img data-src="/0.webp" alt="29-30 November 2025" width="960" height="720" class="h-full w-full object-cover" decoding="async" /></picture>
-              </div>
-            </div>
-          </div>
-
-          <!-- Date and Text below the node -->
-          <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+22px)] w-[320px] text-center">
-            <div data-node7-date style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
-              <div class="font-serif text-2xl text-[color:var(--timeline-ink)]">29-30 November 2025</div>
-            </div>
-            <div data-node7-desc style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
-              <p class="mt-2 text-sm leading-relaxed text-[color:var(--timeline-muted)] text-pretty">
-                Aci membawa Adi ke rumah Solo. Mengenalkan kepada orang tua Aci, saudara Aci, keluarga besar. Go public!
-                Ditandai dengan unggahan story media sosial. Tanpa penjelasan, cukup foto kami berdua.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Node 8 -->
-      <div
-        id="node-8"
-        class="timeline-node absolute z-30"
-        style="left: 1520vw; transform: translate(-50%, -50%);"
-      >
-        <div data-node8-pin class="absolute inset-0">
-          <div class="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 whitespace-nowrap text-center">
-              <div data-node8-date style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
-                <div class="font-serif text-2xl text-[color:var(--timeline-ink)]">11 April 2026</div>
+          <div class="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-[85%] whitespace-nowrap text-center">
+              <div data-node5-date style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
+                <div class="font-serif text-2xl text-[color:var(--timeline-ink)] text-center">11 April 2026</div>
               </div>
           </div>
 
           <!-- Photo and Text stay on the authored right side of the dot. -->
-          <div class="absolute left-[50vw] -translate-x-1/2 top-4 flex flex-col items-center w-[260px]">
-            <div data-node8-photo style="opacity: 0; transform: scale(0.6); transform-origin: 0% 0%;">
-              <div class="h-45 w-full overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl mb-4 ring-1 ring-[color:var(--timeline-photo-ring)]">
-                <picture><source data-srcset="/0.avif" type="image/avif" /><img data-src="/0.webp" alt="Lamaran" width="960" height="720" class="h-full w-full object-cover" decoding="async" /></picture>
+          <div class="absolute left-[50vw] -translate-x-1/2 -top-8 flex flex-col items-center w-[280px] md:w-[340px]">
+            <div data-node5-photo style="opacity: 0; transform: scale(0.6); transform-origin: 0% 0%;">
+              <div class="h-[320px] md:h-[420px] w-auto aspect-[2/3] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl mb-4 ring-1 ring-[color:var(--timeline-photo-ring)]">
+                <video autoplay loop muted playsinline preload="auto" aria-label="Lamaran" class="h-full w-full object-cover" width="478" height="850"><source src="/lamaran.mp4" type="video/mp4" /></video>
               </div>
             </div>
-            <div data-node8-desc style="opacity: 0; transform: scale(0.6); transform-origin: 0% 0%;">
+            <div data-node5-desc class="text-center" style="opacity: 0; transform: scale(0.6); transform-origin: 0% 0%;">
               <p class="text-sm leading-relaxed text-[color:var(--timeline-muted)] text-center text-pretty">
-                Momentum besar bagi kami sebagai langkah awal dalam menjalin hubungan yang lebih serius. Lamaran.
+                Lamaran
               </p>
             </div>
           </div>
         </div>
-        <div id="dot-8" class="h-5 w-5 rounded-full bg-[color:var(--timeline-dot)]" style="transform: scale(0.6); transform-origin: center;"></div>
+        <div id="dot-5" class="h-5 w-5 rounded-full bg-[color:var(--timeline-dot)]" style="transform: scale(0.6); transform-origin: center;"></div>
       </div>
 
-      <!-- Node 9 Anchor: restore the original 150vw turn-to-turn spacing, then
+      <!-- Node 6 Anchor: restore the original 150vw turn-to-turn spacing, then
            leave the drama to the much longer final vertical leg. -->
       <div
-        id="dot-9-anchor"
+        id="dot-6-anchor"
         class="absolute"
-        style="left: 1670vw; width: 20px; height: 20px; transform: translate(-50%, -50%); visibility: hidden;"
+        style="left: 1040vw; width: 20px; height: 20px; transform: translate(-50%, -50%); visibility: hidden;"
       ></div>
-      <!-- Node 9 label (black twin): never revealed in the animated run — the
+      <!-- Node 6 label (black twin): never revealed in the animated run — the
            expansion sweep's white twin is the title's only appearance. This copy
            exists for the reduced-motion story, where CSS forces it visible. -->
       <div
-        id="node-9-label-bottom"
+        id="node-6-label-bottom"
         class="timeline-node absolute z-30"
-        style="left: 1670vw; transform: translate(-50%, -50%);"
+        style="left: 1040vw; transform: translate(-50%, -50%);"
       >
         <div class="relative h-5 w-5">
           <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+24px)] whitespace-nowrap text-center">
-            <div data-node9-date-bottom style="opacity: 0; transform: scale(0.9); transform-origin: 50% 0%;">
-              <div class="max-w-[18ch] font-serif tracking-wide text-[color:var(--timeline-ink)] text-4xl md:text-6xl px-6">10 October 2026</div>
-              <div class="max-w-[18ch] font-serif tracking-wide text-[color:var(--timeline-ink)] text-4xl md:text-6xl px-6">Menikah</div>
+            <div data-node6-date-bottom style="opacity: 0; transform: scale(0.9); transform-origin: 50% 0%;">
+              <div class="max-w-[18ch] font-serif tracking-wide text-[color:var(--timeline-ink)] text-4xl md:text-6xl px-6 text-center">10 October 2026</div>
+              <div class="max-w-[18ch] font-serif tracking-wide text-[color:var(--timeline-ink)] text-4xl md:text-6xl px-6 text-center">Menikah</div>
             </div>
           </div>
         </div>
@@ -354,8 +252,8 @@
       <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
         <div class="relative h-5 w-5">
           <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+24px)] whitespace-nowrap text-center">
-            <div class="max-w-[18ch] font-serif tracking-wide text-[color:var(--timeline-overlay-ink)] text-4xl md:text-6xl px-6">10 October 2026</div>
-            <div class="max-w-[18ch] font-serif tracking-wide text-[color:var(--timeline-overlay-ink)] text-4xl md:text-6xl px-6">Menikah</div>
+            <div class="max-w-[18ch] font-serif tracking-wide text-[color:var(--timeline-overlay-ink)] text-4xl md:text-6xl px-6 text-center">10 October 2026</div>
+            <div class="max-w-[18ch] font-serif tracking-wide text-[color:var(--timeline-overlay-ink)] text-4xl md:text-6xl px-6 text-center">Menikah</div>
           </div>
         </div>
       </div>
@@ -364,13 +262,13 @@
     <!-- 5. Final Node Overlay -->
     <!-- z-50: visible above the growing black circle until it becomes the fill. -->
     <div
-      id="node-9"
+      id="node-6"
       class="timeline-node absolute z-50 pointer-events-none"
       style="left: 0; top: 0; width: 100%; height: 100%; transform: translate(0vw, 0vh); will-change-transform;"
     >
-      <div style="position: absolute; left: 1670vw; transform: translate(-50%, -50%);">
+      <div style="position: absolute; left: 1040vw; transform: translate(-50%, -50%);">
         <div
-          id="dot-9"
+          id="dot-6"
           class="h-5 w-5 rounded-full bg-[color:var(--timeline-overlay-dot)]"
           style="opacity: 0; transform: scale(0.6); transform-origin: center;"
         ></div>
@@ -423,49 +321,73 @@
   }
 
   /* Pinned runway: 210vw story gaps (the 280vw original cut by a quarter, with
-     the node verticals compressed to match so no connector steepens), the same
-     compact 150vw finale jog, a deeper final node, and a deliberately extended
-     descent. Scrollable = 1713vh: intro 66 + horizontal 1317 + jog 104 +
-     descent 150 + expansion 65 + tail 11 — only the horizontal phase shrank,
-     so every other beat keeps its original scroll density.
+     the node verticals compressed to match so no connector steepens) and the
+     same compact 150vw finale jog, on the six-node track. Scrollable = 1149vh:
+     intro 66 + horizontal 753 + jog 104 + descent 150 + expansion 65 + tail 11
+     — only the horizontal phase shrank (four gaps at the shipped ≈1.12 vw/vh
+     cruise), so every other phase and reveal beat keeps its shipped absolute
+     scroll length.
 
-     lvh, not svh: `lvh` is the viewport with browser chrome HIDDEN, which is the
-     only state this section is ever seen in — it starts ~17 viewports down, so the
-     URL bar has long since retracted. svh would leave the stage ~70px short of the
-     screen for the entire pinned run. Never dvh: it re-resolves as the chrome
-     moves, changing the scrub length mid-scroll. */
+  /* Pinned runway: 210vw story gaps (the 280vw original cut by a quarter, with
+     the node verticals compressed to match so no connector steepens) and the
+     same compact 150vw finale jog, on the six-node track. Scrollable = 1149vh:
+     intro 66 + horizontal 753 + jog 104 + descent 150 + expansion 65 + tail 11
+     — only the horizontal phase shrank (four gaps at the shipped ≈1.12 vw/vh
+     cruise), so every other phase and reveal beat keeps its shipped absolute
+     scroll length.
+
+     svh, not lvh/dvh: svh represents the stable small viewport height across
+     both forward and backward scroll, preventing the stage from jumping when
+     mobile browser chrome expands on reverse scroll. Never dvh: dvh re-resolves
+     as the chrome moves, changing the scrub length mid-scroll. */
   .timeline-section {
-    height: 1813vh;
-    height: 1813lvh;
+    height: 1249vh;
+    height: 1249svh;
   }
 
-  /* Stage: vh fallback, lvh so the pinned stage fills the chrome-hidden viewport. */
+  /* Stage: vh fallback, svh so mobile browser chrome expanding/retracting does not shift the stage. */
   .timeline-stage {
     height: 100vh;
-    height: 100lvh;
+    height: 100svh;
   }
 
-  /* Node vertical positions, keyed by id so each can carry its vh -> lvh fallback pair.
+  #timeline-track {
+    height: 250vh;
+    height: 250svh;
+  }
+
+  /* Node vertical positions, keyed by id so each can carry its vh -> svh fallback pair.
      Verticals follow the 3/4 horizontal cut so no connector steepens: each leg's
      rise/fall is ~0.75 of the original (within ~1vh of exact — node 1 stays the
-     circle center at 50 and node 8 stays the 25 the untouched finale is built on,
+     circle center at 50 and node 5 stays the 25 the untouched finale is built on,
      which forces 6.25vh of the original drop back into the profile). Net effect:
      the old track shape at 3/4 scale, same broad S-curves, same slopes. */
-  #node-1 { top: 50vh; top: 50lvh; }
-  #node-2 { top: 34vh; top: 34lvh; }
-  #node-3 { top: 64vh; top: 64lvh; }
-  #node-4 { top: 44vh; top: 44lvh; }
-  #node-5 { top: 59vh; top: 59lvh; }
-  #node-6 { top: 35vh; top: 35lvh; }
-  #node-7 { top: 49vh; top: 49lvh; }
-  #node-8 { top: 25vh; top: 25lvh; }
-  /* Keep the proven 180lvh finale on mobile. Wider viewports place it a little
+  #node-1 { top: 50vh; top: 50svh; }
+  #node-2 { top: 34vh; top: 34svh; }
+  #node-3 { top: 64vh; top: 64svh; }
+  #node-4 { top: 44vh; top: 44svh; }
+  #node-5 { top: 25vh; top: 25svh; }
+  /* Keep the proven 180svh finale on mobile. Wider viewports place it a little
      deeper for more clearance beneath the right turn and a longer descent. */
-  #dot-9-anchor, #node-9 > div, #node-9-label-bottom { top: 180vh; top: 180lvh; }
+  #dot-6-anchor, #node-6 > div, #node-6-label-bottom { top: 180vh; top: 180svh; }
   @media (min-width: 768px) {
-    #dot-9-anchor, #node-9 > div, #node-9-label-bottom { top: 188vh; top: 188lvh; }
+    #dot-6-anchor, #node-6 > div, #node-6-label-bottom { top: 188vh; top: 188svh; }
   }
 
+  /* Photo container max-heights: vh fallback, svh for stability */
+  [data-node2-photo] > div,
+  [data-node3-photo] > div {
+    max-height: calc(64vh - 96px);
+    max-height: calc(64svh - 96px);
+  }
+  [data-node4-photo] > div {
+    max-height: calc(44vh - 36px);
+    max-height: calc(44svh - 36px);
+  }
+  [data-node5-photo] > div {
+    max-height: calc(55vh - 96px);
+    max-height: calc(55svh - 96px);
+  }
 
   /* Reduced motion: readable vertical story instead of the pinned scrub sequence. */
   @media (prefers-reduced-motion: reduce) {
@@ -550,21 +472,21 @@
       transform: none !important;
       margin: 0 !important;
     }
-    /* Dots keep their Tailwind size (dot-9 lacks the scoping attr, so the */
+    /* Dots keep their Tailwind size (dot-6 lacks the scoping attr, so the */
     /* #id rule below would otherwise win the width cascade with width: auto). */
     .timeline-node div[id^="dot-"] {
       width: 1.25rem !important;
       height: 1.25rem !important;
     }
-    #node-9 > div > div[id^="dot-"] {
+    #node-6 > div > div[id^="dot-"] {
       width: 1.25rem !important;
       height: 1.25rem !important;
     }
-    /* Node 1 / node 9 wrap their dot in an extra positioning div; neutralize the */
+    /* Node 1 / node 6 wrap their dot in an extra positioning div; neutralize the */
     /* remaining absolutely-positioned label wrappers inside them. */
     #node-1 > div > div,
-    #node-9 > div > div,
-    #node-9-label-bottom > div > div {
+    #node-6 > div > div,
+    #node-6-label-bottom > div > div {
       position: static !important;
       transform: none !important;
       width: auto !important;
@@ -574,10 +496,8 @@
     /* Content wrappers are static in animated mode; flatten them in the
        reduced-motion document flow. */
     [data-node2-pin], [data-node3-pin], [data-node4-pin], [data-node5-pin],
-    [data-node6-pin], [data-node7-pin], [data-node8-pin],
     [data-node2-pin] > *, [data-node3-pin] > *, [data-node4-pin] > *,
-    [data-node5-pin] > *, [data-node6-pin] > *, [data-node7-pin] > *,
-    [data-node8-pin] > * {
+    [data-node5-pin] > * {
       position: static !important;
       transform: none !important;
     }
@@ -592,10 +512,7 @@
     [data-node3-photo], [data-node3-date], [data-node3-desc],
     [data-node4-photo], [data-node4-date], [data-node4-desc],
     [data-node5-photo], [data-node5-date], [data-node5-desc],
-    [data-node6-photo], [data-node6-date], [data-node6-desc],
-    [data-node7-photo], [data-node7-date], [data-node7-desc],
-    [data-node8-photo], [data-node8-date], [data-node8-desc],
-    [data-node9-date-bottom] {
+    [data-node6-date-bottom] {
       opacity: 1 !important;
       transform: none !important;
     }
@@ -603,7 +520,7 @@
       opacity: 1 !important;
       visibility: visible !important;
     }
-    #dot-9 {
+    #dot-6 {
       opacity: 1 !important;
       transform: none !important;
     }
@@ -619,35 +536,39 @@
   // 210vw story gaps (the 280vw original at 3/4, verticals compressed to match)
   // drive the horizontal cruise; the finale keeps the compact 150vw jog before its
   // extended descent. Progress fractions are the phase scroll lengths (see the CSS
-  // runway comment) over the 1713vh scrollable distance.
-  const INTRO_END = 0.0386;
-  // Finale camera route: stop the diagonal halfway across the short 150vw jog,
-  // finish the jog horizontally, then spend the longest phase moving straight
-  // down. This mirrors line 8's V-H-V turns instead of cutting diagonally to dot 9.
-  const FINALE_TURN = 0.8074;  // first turn, directly below dot 8
-  const FINALE_MID = 0.8392;   // halfway between the two turns
-  const FINALE_CORNER = 0.8681; // second turn, directly above dot 9
-  const VERT_END = 0.956;      // long final descent complete
-  // Grow the instant the line lands on dot 9 — a real hold here read as a dead
-  // scroll gap between the connection and the outward burst. 0.004 (~7vh) is a
-  // sub-tick beat so a slow scroll still shows one completed-connection frame.
+  // runway comment) over the 1149vh scrollable distance.
+  const INTRO_END = 0.0574;
+  // Finale camera route: keep panning right at cruise depth through the jog
+  // (no diagonal drop), then descend once the anchor column is centered —
+  // right, then down. The line still draws its V-H-V; only the camera holds
+  // its depth until the corner.
+  const FINALE_TURN = 0.7128;   // story cruise ends; the right-pan jog begins (dot 5 centered)
+  const FINALE_CORNER = 0.8033; // anchor column centered; the descent begins
+  const VERT_END = 0.9339;      // long final descent complete
+  // Grow the instant the line lands on dot 6 — a real hold here read as a dead
+  // scroll gap between the connection and the outward burst. 0.004 (~4.6svh) is
+  // a sub-tick beat so a slow scroll still shows one completed-connection frame.
   const EXPANSION_START = VERT_END + 0.004;
-  const EXPANSION_END = 0.994;
+  const EXPANSION_END = 0.9904;
 
   const CONNECT_X = 80;
-  const FINALE_ELBOW_T = 0.25;
+  // Finale elbow height: the first turn sits at 25 + (anchor−25)×T svh. The
+  // horizontal leg must pass below node 5's (video) card. The video is capped
+  // at 55svh−96px so the card's floor sits ≈65–69svh on short/mid viewports
+  // (the fixed 420px height governs on tall ones), and T=0.30 puts the turn
+  // at 73.9svh desktop / 71.5svh mobile — ≈5svh under the card floor at every
+  // measured height, with ≈26svh of runway still below the turn. At the
+  // original 0.25 the leg sat at ~65.75svh and crossed the card on desktop.
+  const FINALE_ELBOW_T = 0.30;
   const FINALE_NODE_Y = window.matchMedia("(min-width: 768px)").matches ? 188 : 180;
-  const FINALE_TURN_Y = 25 + (FINALE_NODE_Y - 25) * FINALE_ELBOW_T;
-  const PAN_END_X = -1620;                  // 1670vw dot centered at 50vw
-  const PAN_TURN_Y = 50 - FINALE_TURN_Y;    // first/second turn centered vertically
+  const PAN_END_X = -990;                   // 1040vw dot centered at 50vw
   const PAN_END_Y = 50 - FINALE_NODE_Y;     // final dot centered vertically
 
   const PAN_KEYFRAMES: Array<{ t: number; x: number; y: number }> = [
     { t: 0, x: 0, y: 0 },
     { t: INTRO_END, x: 0, y: 0 },
-    { t: FINALE_TURN, x: -1470, y: 0 },
-    { t: FINALE_MID, x: -1545, y: PAN_TURN_Y },
-    { t: FINALE_CORNER, x: PAN_END_X, y: PAN_TURN_Y },
+    { t: FINALE_TURN, x: -840, y: 0 },
+    { t: FINALE_CORNER, x: PAN_END_X, y: 0 },   // right-pan at cruise depth, no diagonal
     { t: VERT_END, x: PAN_END_X, y: PAN_END_Y },
     { t: 1, x: PAN_END_X, y: PAN_END_Y }
   ];
@@ -667,11 +588,12 @@
     return targetX <= PAN_KEYFRAMES[PAN_KEYFRAMES.length - 1].x ? 1 : 0;
   }
 
-  // Reveal beats in progress units, sized against the 1713vh runway so the pop
-  // keeps its original scroll length (~21.5vh, ~24vw of pan) on the shorter track.
-  const REVEAL_WINDOW = 0.0126;
-  const STAGGER_DATE = 0.0025;
-  const STAGGER_DESC = 0.005;
+  // Reveal beats in progress units, re-derived over the 1149vh scrollable
+  // distance so the pop keeps its shipped absolute scroll length
+  // (~21.6svh, ~24vw of pan).
+  const REVEAL_WINDOW = 0.0188;
+  const STAGGER_DATE = 0.0037;
+  const STAGGER_DESC = 0.0075;
 
   let cleanupFns: Array<() => void> = [];
   let resizeTimeout: ReturnType<typeof setTimeout> | undefined;
@@ -702,9 +624,6 @@
     const node3 = document.getElementById("node-3");
     const node4 = document.getElementById("node-4");
     const node5 = document.getElementById("node-5");
-    const node6 = document.getElementById("node-6");
-    const node7 = document.getElementById("node-7");
-    const node8 = document.getElementById("node-8");
 
     const dot1 = document.getElementById("dot-1");
     const dot2 = document.getElementById("dot-2");
@@ -712,10 +631,7 @@
     const dot4 = document.getElementById("dot-4");
     const dot5 = document.getElementById("dot-5");
     const dot6 = document.getElementById("dot-6");
-    const dot7 = document.getElementById("dot-7");
-    const dot8 = document.getElementById("dot-8");
-    const dot9 = document.getElementById("dot-9");
-    const dot9Anchor = document.getElementById("dot-9-anchor");
+    const dot6Anchor = document.getElementById("dot-6-anchor");
 
 
     const line1 = document.getElementById("line-1");
@@ -723,9 +639,6 @@
     const line3 = document.getElementById("line-3");
     const line4 = document.getElementById("line-4");
     const line5 = document.getElementById("line-5");
-    const line6 = document.getElementById("line-6");
-    const line7 = document.getElementById("line-7");
-    const line8 = document.getElementById("line-8");
 
     if (
       !section ||
@@ -738,26 +651,17 @@
       !node3 ||
       !node4 ||
       !node5 ||
-      !node6 ||
-      !node7 ||
-      !node8 ||
       !dot1 ||
       !dot2 ||
       !dot3 ||
       !dot4 ||
       !dot5 ||
       !dot6 ||
-      !dot7 ||
-      !dot8 ||
-      !dot9 ||
       !(line1 instanceof SVGPathElement) ||
       !(line2 instanceof SVGPathElement) ||
       !(line3 instanceof SVGPathElement) ||
       !(line4 instanceof SVGPathElement) ||
-      !(line5 instanceof SVGPathElement) ||
-      !(line6 instanceof SVGPathElement) ||
-      !(line7 instanceof SVGPathElement) ||
-      !(line8 instanceof SVGPathElement)
+      !(line5 instanceof SVGPathElement)
     ) {
       return;
     }
@@ -768,10 +672,7 @@
       2: { date: "bottom", photo: "top", desc: "top" },
       3: { photo: "bottom", date: "bottom", desc: "top" },
       4: { photo: "bottom", date: "top", desc: "top" },
-      5: { photo: "bottom", date: "top", desc: "top" },
-      6: { photo: "bottom", date: "top", desc: "top" },
-      7: { photo: "bottom", date: "top", desc: "top" },
-      8: { date: "bottom", photo: "top", desc: "top" }
+      5: { date: "bottom", photo: "top", desc: "top" }
     };
 
     const applyRevealOrigins = () => {
@@ -796,19 +697,20 @@
         };
       };
 
+      // Sequence-ordered, matching the renumbered DOM ids 1:1 after the trim:
+      // index 4 is #dot-5 and index 5 the finale anchor (#dot-6-anchor), so
+      // connect(n) is both the sequence index AND the DOM id — connect(5) is
+      // the dot-5 connection.
       const points = [
         getCenter(dot1),
         getCenter(dot2),
         getCenter(dot3),
         getCenter(dot4),
         getCenter(dot5),
-        getCenter(dot6),
-        getCenter(dot7),
-        getCenter(dot8),
-        getCenter(dot9Anchor!)
+        getCenter(dot6Anchor!)
       ];
 
-      // Use the 5-April connector as the single shape language for lines 1–7:
+      // Use the 5-April connector as the single shape language for lines 1–3:
       // one broad S with horizontal tangents and no short turn/straight-tail mix.
       type Pt = { x: number; y: number };
 
@@ -820,8 +722,8 @@
         return line.getTotalLength();
       };
 
-      const setSmoothIntoNode8 = (line: SVGPathElement, a: Pt, b: Pt) => {
-        // On the narrowest layout, end the S just before node 8's centered card
+      const setSmoothIntoNode5 = (line: SVGPathElement, a: Pt, b: Pt) => {
+        // On the narrowest layout, end the S just before node 5's centered card
         // then approach the dot horizontally; this preserves the same curve feel
         // without putting the stroke behind the photo.
         if (window.innerWidth < 360) {
@@ -849,11 +751,8 @@
         setSmooth(line1, points[0], points[1]),
         setSmooth(line2, points[1], points[2]),
         setSmooth(line3, points[2], points[3]),
-        setSmooth(line4, points[3], points[4]),
-        setSmooth(line5, points[4], points[5]),
-        setSmooth(line6, points[5], points[6]),
-        setSmoothIntoNode8(line7, points[6], points[7]),
-        setFinale(line8, points[7], points[8])
+        setSmoothIntoNode5(line4, points[3], points[4]),
+        setFinale(line5, points[4], points[5])
       ];
 
       return { lens, points };
@@ -866,13 +765,14 @@
       }
 
       // Connect thresholds derived from the measured dot centers (all vw, so
-      // viewport-invariant — safe to bake into keyframes at init).
+      // viewport-invariant — safe to bake into keyframes at init). connect(n)
+      // indexes `points`, whose order matches the renumbered DOM ids 1:1.
       const nodeXVw = points.map((p) => (p.x / window.innerWidth) * 100);
       const connect = (nodeNum: number) => progressAtPanX(-(nodeXVw[nodeNum - 1] - CONNECT_X));
-      const NODE8_CONTENT_AT = connect(8);
+      const NODE5_CONTENT_AT = connect(5);
 
       // Height-only `resize` events are mobile browser chrome collapsing, not a
-      // layout change: every measured coordinate here is vw/lvh-based, so the dot
+      // layout change: every measured coordinate here is vw/svh-based, so the dot
       // geometry is identical before and after. Recomputing would only burn a
       // full rect/path pass on every URL-bar transition, mid-scroll.
       let lastResizeWidth = window.innerWidth;
@@ -929,12 +829,12 @@
       cleanupFns.push(scroll(titleBottomFadeAnim, { target: section, offset: ["start start", "end end"] }));
 
       // 3. Horizontal Pan + Vertical Scroll at end
-      // Constant cruise slope across the horizontal phase (no node-8 kink),
+      // Constant cruise slope across the horizontal phase (no node-5 kink),
       // vertical finale pan at the end. Keyframes come from the shared
       // PAN_KEYFRAMES table so the inverse mappings stay in sync.
-      // Node tops are lvh (with a vh fallback), so the final vertical pan must use
-      // the same unit or dot-9 misses the expansion-circle center on phones.
-      const vUnit = CSS.supports("height", "1lvh") ? "lvh" : "vh";
+      // Node tops are svh (with a vh fallback), so the final vertical pan must use
+      // the same unit or dot-6 misses the expansion-circle center on phones.
+      const vUnit = CSS.supports("height", "1svh") ? "svh" : "vh";
       const trackTransformValues = PAN_KEYFRAMES.map((k) => `translate(${k.x}vw, ${k.y}${vUnit})`);
       const trackTimes = PAN_KEYFRAMES.map((k) => k.t);
       const trackAnim = animate(
@@ -944,18 +844,18 @@
       );
       cleanupFns.push(scroll(trackAnim, { target: section, offset: ["start start", "end end"] }));
 
-      // node-9 counters the track pan for the expansion hand-off. It reuses
-      // the SAME vw/lvh strings as the track (not px-resolved copies), so a
+      // node-6 counters the track pan for the expansion hand-off. It reuses
+      // the SAME vw/svh strings as the track (not px-resolved copies), so a
       // real layout resize (width change, not just chrome collapse) re-resolves
-      // both identically, keeping dot-9 pinned to the expansion-circle center
+      // both identically, keeping dot-6 pinned to the expansion-circle center
       // across resizes without rebuilding keyframes here. (The legacy px baking
       // desynced after any width change because onResize never rebuilt it.)
-      const node9TransformAnim = animate(
-        document.getElementById("node-9")!,
+      const node6TransformAnim = animate(
+        document.getElementById("node-6")!,
         { transform: trackTransformValues },
         { ease: "linear", times: trackTimes }
       );
-      cleanupFns.push(scroll(node9TransformAnim, { target: section, offset: ["start start", "end end"] }));
+      cleanupFns.push(scroll(node6TransformAnim, { target: section, offset: ["start start", "end end"] }));
       
             // 4. Node 1 Reveal
             // Fade the authored dot in just before the shrinking background
@@ -1096,20 +996,17 @@
               );
             }
       
-            // Content stays authored on each dot; node 8 intentionally keeps its side card.
+            // Content stays authored on each dot; node 5 intentionally keeps its side card.
             setupNodeAnimation(2, connect(2));
             setupNodeAnimation(3, connect(3));
             setupNodeAnimation(4, connect(4));
-            setupNodeAnimation(5, connect(5));
-            setupNodeAnimation(6, connect(6));
-            setupNodeAnimation(7, connect(7));
-            setupNodeAnimation(8, connect(8), NODE8_CONTENT_AT);
+            setupNodeAnimation(5, connect(5), NODE5_CONTENT_AT);
 
             // Form the final dot while it is still below the viewport. It then enters
             // naturally during the long descent instead of spawning at the landing.
-            const finalDotReady = FINALE_CORNER + 0.038;
+            const finalDotReady = FINALE_CORNER + 0.0566;
             const finalDotAnim = animate(
-              dot9,
+              dot6,
               {
                 opacity: [0, 0, 1, 1],
                 transform: ["scale(0.9)", "scale(0.9)", "scale(1)", "scale(1)"]
@@ -1122,9 +1019,9 @@
             cleanupFns.push(scroll(finalDotAnim, { target: section, offset: ["start start", "end end"] }));
 
       
-                        // Line animations (continued): line-N draws from just after node
-            // N's pop (connect(N) + 0.025) until its tip meets dot-(N+1)
-            // exactly at connect(N+1).
+            // Line animations (continued): line-N draws from just after the
+            // earlier dot's pop (connect(N) + 0.0373) until its tip meets the
+            // next dot exactly at connect(N+1).
             const lineDraw = (line: SVGPathElement, start: number, end: number) => {
               const anim = animate(
                 line,
@@ -1134,33 +1031,29 @@
               scrubWithScroll(anim);
             };
 
-            lineDraw(line2, connect(2) + 0.025, connect(3));
-            lineDraw(line3, connect(3) + 0.025, connect(4));
-            lineDraw(line4, connect(4) + 0.025, connect(5));
-            lineDraw(line5, connect(5) + 0.025, connect(6));
-            lineDraw(line6, connect(6) + 0.025, connect(7));
-            lineDraw(line7, connect(7) + 0.025, connect(8));
+            lineDraw(line2, connect(2) + 0.0373, connect(3));
+            lineDraw(line3, connect(3) + 0.0373, connect(4));
+            lineDraw(line4, connect(4) + 0.0373, connect(5));
       
-            // Derive draw fractions from the measured V-H-V path. The tip and
-            // camera meet at the halfway point, second turn, and final dot, so the
-            // line remains in-frame instead of outrunning the viewport.
-            const line8Start = connect(8) + 0.006;
-            const finaleMidY = points[7].y + (points[8].y - points[7].y) * FINALE_ELBOW_T;
-            const firstLeg = Math.abs(finaleMidY - points[7].y);
-            const horizontalLeg = Math.abs(points[8].x - points[7].x);
-            const firstTurnFraction = firstLeg / lens[7];
-            const halfwayFraction = (firstLeg + horizontalLeg * 0.5) / lens[7];
-            const secondTurnFraction = (firstLeg + horizontalLeg) / lens[7];
-            const line8Anim = animate(
-              line8,
+            // Derive draw fractions from the measured V-H-V path so the tip
+            // tracks the L-route camera: the horizontal leg draws at exactly
+            // the camera's pan rate through the jog (tip rides the centerline
+            // at elbow depth), then the final leg draws during the descent.
+            const line5Start = connect(5) + 0.0089;
+            const finaleMidY = points[4].y + (points[5].y - points[4].y) * FINALE_ELBOW_T;
+            const firstLeg = Math.abs(finaleMidY - points[4].y);
+            const horizontalLeg = Math.abs(points[5].x - points[4].x);
+            const firstTurnFraction = firstLeg / lens[4];
+            const secondTurnFraction = (firstLeg + horizontalLeg) / lens[4];
+            const line5Anim = animate(
+              line5,
               {
-                opacity: [0, 0, 1, 1, 1, 1, 1, 1],
+                opacity: [0, 0, 1, 1, 1, 1, 1],
                 pathLength: [
                   0,
                   0,
                   0,
                   firstTurnFraction,
-                  halfwayFraction,
                   secondTurnFraction,
                   1,
                   1
@@ -1170,17 +1063,16 @@
                 ease: "linear",
                 times: [
                   0,
-                  connect(8),
-                  line8Start,
+                  connect(5),
+                  line5Start,
                   FINALE_TURN,
-                  FINALE_MID,
                   FINALE_CORNER,
                   VERT_END,
                   1
                 ]
               }
             );
-            scrubWithScroll(line8Anim);
+            scrubWithScroll(line5Anim);
       
             // 10. Circle Expansion (End)
             // The grow begins the moment the line completes on the dot, so the

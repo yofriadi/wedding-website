@@ -74,7 +74,7 @@ On initial page load the ZoomParallax component SHALL bind its scroll-driven ani
 
 ### Requirement: Pinned stages are sized to the chrome-hidden viewport
 
-The scroll runways and sticky stages of HeroZoom, ZoomParallax and TimelineScroll, and their viewport-height-dependent element positions, SHALL be sized in `lvh` (the large viewport: browser chrome hidden) with a `vh` fallback declaration — because every mobile browser retracts its URL bar on the first downward scroll, so the chrome-hidden viewport is the state a pinned sequence is actually watched in. Runways and stage geometry SHALL NOT use `dvh`, and scroll-driven geometry derived in JavaScript SHALL NOT be measured from the dynamic viewport (`window.innerHeight`), because both re-resolve while browser chrome collapses and would change a scrub's length or alignment mid-scroll.
+The scroll runways and sticky stages of HeroZoom and ZoomParallax, and their viewport-height-dependent element positions, SHALL be sized in `lvh` (the large viewport: browser chrome hidden) with a `vh` fallback declaration — because every mobile browser retracts its URL bar on the first downward scroll, so the chrome-hidden viewport is the state a pinned sequence is actually watched in. TimelineScroll's sticky stage and scroll runway SHALL be sized in `svh` (with a `vh` fallback declaration) so the stage does not jump when browser chrome expands during reverse scrolling. Runways and stage geometry SHALL NOT use `dvh`, and scroll-driven geometry derived in JavaScript SHALL NOT be measured from the dynamic viewport (`window.innerHeight`), because both re-resolve while browser chrome collapses and would change a scrub's length or alignment mid-scroll.
 
 #### Scenario: Mobile browser with its URL bar retracted
 
@@ -131,12 +131,12 @@ Each TimelineScroll node's photo, date, and description SHALL be driven by the s
 
 ### Requirement: Timeline finale grows from an infinitesimal seed
 
-The TimelineScroll closing expansion circle SHALL grow from an infinitesimal seed radius (sub-pixel, e.g. `0.001px`) rather than appearing from `circle(0px)`, so the final "Menikah" reveal grows outward from the timeline's end dot instead of popping into existence. The authored (pre-JS) clip value SHALL match keyframe 0 exactly.
+The TimelineScroll closing expansion circle SHALL grow from an infinitesimal seed radius (sub-pixel, e.g. `0.001px`) rather than appearing from `circle(0px)`, so the final "Menikah" reveal grows outward from the timeline's end dot instead of popping into existence.
 
 #### Scenario: Reaching the end of the timeline
 
 - **WHEN** the user scrubs past the final node toward the end of the section
-- **THEN** the black closing circle visibly grows outward from the timeline's end dot — at no point does it switch abruptly from invisible to visible at a finite size
+- **THEN** the closing circle visibly grows outward from the timeline's end dot — at no point does it switch abruptly from invisible to visible at a finite size, and the authored (pre-JS) clip value matches keyframe 0 exactly
 
 ### Requirement: QuranVerse honors reduced motion
 
@@ -163,7 +163,7 @@ The QuranVerse word spans' `will-change` hint SHALL apply only until the reveal 
 
 ### Requirement: Timeline connectors render as fluid curves
 
-Connector lines between consecutive timeline dots (line-1 through line-7) SHALL render as fluid curves rather than hard 90° corners, using the single shipped curve builder — one cubic Bézier S-curve per connector (M a C midX a.y, midX b.y, b.x b.y), giving horizontal tangents at both dots with no intermediate vertices — computed from the measured dot centers. The final connector into the finale (line-8, dot-8 to the dot-9 anchor) SHALL remain orthogonal (V–H–V).
+Connector lines between consecutive timeline dots (line-1 through line-7) SHALL render as fluid curves rather than hard 90° corners, using the single shipped curve builder — one cubic Bézier S-curve per connector (M a C midX a.y, midX b.y, b.x b.y), giving horizontal tangents at both dots with no intermediate vertices — computed from the measured dot centers. The final connector into the finale (line-8, dot-8 to the dot-9 anchor) SHALL remain orthogonal (V–H–V) regardless of style.
 
 #### Scenario: Default fluid curves
 
@@ -187,7 +187,7 @@ Consecutive timeline nodes SHALL be spaced uniformly and materially wider than t
 #### Scenario: Constant cruise speed
 
 - **WHEN** the user scrolls through one full node-to-node cycle
-- **THEN** the track pans at approximately 1.12 viewport widths per viewport height of scroll, with no slope kink across the horizontal phase
+- **THEN** the track pans at approximately 1.12 viewport widths per viewport height of scroll, with no node-8 slope kink across the horizontal phase
 
 #### Scenario: Non-horizontal phases keep their scroll duration
 
@@ -196,7 +196,7 @@ Consecutive timeline nodes SHALL be spaced uniformly and materially wider than t
 
 ### Requirement: Node content pops only upon connection
 
-A timeline node's content (photo, date, description) SHALL remain fully hidden until the connector line reaches its dot; the reveal SHALL NOT begin before the connect moment. The reveal SHALL be a pop — a rapid fade-in combined with a scale overshoot (growing past 100% and settling back) — staggered across photo, date, and description, with each part's transform origin pointing toward the dot.
+A timeline node's content (photo, date, description) SHALL remain fully hidden until the connector line reaches its dot; the reveal SHALL NOT begin before the connect moment. The reveal SHALL be a pop — a rapid fade-in combined with a scale overshoot (growing past 100% and settling back) — staggered across photo, date, and description, with each part's transform origin pointing toward the dot. Node 8's side-staged content (positioned ~50vw right of its dot) SHALL pop only while it is off-screen, entering the viewport fully formed — the pop timing is deliberately decoupled from the content's centering moment (see Open Questions in the change's design).
 
 #### Scenario: Content hidden before connection
 
