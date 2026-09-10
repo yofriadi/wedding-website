@@ -4,7 +4,12 @@
 /* See the TailwindCSS v4 docs for more info: https://tailwindcss.com/docs/v4-beta */
 
 @theme {
-  --font-sans: "Inter", sans-serif;
+  /* Geist (variable, loaded via @fontsource-variable/geist in Layout.astro) —
+     the stack Magic UI's docs use. The previous "Inter" token resolved to a
+     family that was never loaded anywhere, so the whole site silently fell
+     back to system sans; the token now names a font that actually exists. */
+  --font-sans: "Geist Variable", "Geist", sans-serif;
+  --font-serif: "Fraunces Variable", "Fraunces", serif;
 
   /* Motion easing tokens. JS twin: EASE_OUT_EXPO = [0.16, 1, 0.3, 1] — keep in sync. */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -14,7 +19,7 @@
   --ease-out-standard: cubic-bezier(0, 0, 0.2, 1);
   /* HeroZoom — the scroll-scrubbed image zoom. */
   --ease-out-zoom: cubic-bezier(0.33, 1, 0.68, 1);
-  /* QuranVerse — the blur-reveal word entrance. */
+  /* EventTimes — the event-time panels' blur reveal. */
   --ease-blur-reveal: cubic-bezier(0.25, 0.1, 0.25, 1);
 
   --animate-shimmer: shimmer 2s linear infinite;
@@ -27,4 +32,8 @@
       background-position: -200% 0;
     }
   }
+}
+
+body {
+  font-family: var(--font-sans);
 }

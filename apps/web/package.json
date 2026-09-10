@@ -14,6 +14,9 @@
   },
   "dependencies": {
     "@astrojs/node": "^11.1.0",
+    "@fontsource-variable/fraunces": "^5.3.0",
+    "@fontsource-variable/geist": "^5.3.0",
+    "@fontsource/geist-sans": "^5.3.0",
     "@libsql/client": "catalog:",
     "@wedding-website/db": "workspace:*",
     "@wedding-website/env": "workspace:*",
