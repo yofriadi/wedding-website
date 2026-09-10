@@ -14,7 +14,7 @@
         <div class="relative h-4 w-4">
           <div class="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 whitespace-nowrap text-center">
             <h2 class="max-w-[18ch] text-center font-serif tracking-wide text-[color:var(--timeline-ink)] text-4xl md:text-6xl px-6">
-              Mula-mula
+              Awal mula
             </h2>
           </div>
         </div>
@@ -25,8 +25,8 @@
     <!-- z-10: Above bottom title, below top circle overlay -->
     <div
       id="timeline-track"
-      class="relative z-10 h-[250vh] w-[1090vw] will-change-transform"
-      style="transform: translate(0vw, 0vh); width: 1090vw;"
+      class="relative z-10 h-[250lvh] w-[1090vw] will-change-transform"
+      style="transform: translate(0vw, 0lvh); width: 1090vw;"
     >
       <!-- SVG connectors live INSIDE the track -->
       <svg class="absolute inset-0 z-40 h-full w-full pointer-events-none" xmlns="http://www.w3.org/2000/svg">
@@ -52,7 +52,7 @@
             id="node-1-label"
             class="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 whitespace-nowrap text-center text-[color:var(--timeline-ink)]"
           >
-            <h2 class="max-w-[18ch] text-center font-serif tracking-wide text-inherit text-4xl md:text-6xl px-6">Mula-mula</h2>
+            <h2 class="max-w-[18ch] text-center font-serif tracking-wide text-inherit text-4xl md:text-6xl px-6">Awal mula</h2>
           </div>
         </div>
       </div>
@@ -113,7 +113,7 @@
             </div>
             <div data-node3-date style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
               <div class="whitespace-nowrap font-serif text-2xl text-[color:var(--timeline-ink)] text-center">
-                5 April 2025
+                Oktober 2025
               </div>
             </div>
           </div>
@@ -148,7 +148,7 @@
 
           <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+22px)] w-[320px] flex flex-col items-center">
             <div data-node4-date style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
-              <div class="font-serif text-2xl text-[color:var(--timeline-ink)] text-center">28 Juni 2025</div>
+              <div class="font-serif text-2xl text-[color:var(--timeline-ink)] text-center">November 2025</div>
             </div>
             <div data-node4-desc class="text-center" style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
               <p class="mt-2 text-sm leading-relaxed text-[color:var(--timeline-muted)] text-center text-pretty">
@@ -226,7 +226,7 @@
         <div class="relative h-4 w-4">
           <div class="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 whitespace-nowrap text-center">
             <h2 class="max-w-[18ch] text-center font-serif tracking-wide text-[color:var(--timeline-overlay-ink)] text-4xl md:text-6xl px-6">
-              Mula-mula
+              Awal mula
             </h2>
           </div>
         </div>
@@ -264,7 +264,7 @@
     <div
       id="node-6"
       class="timeline-node absolute z-50 pointer-events-none"
-      style="left: 0; top: 0; width: 100%; height: 100%; transform: translate(0vw, 0vh); will-change-transform;"
+      style="left: 0; top: 0; width: 100%; height: 100%; transform: translate(0vw, 0lvh); will-change-transform;"
     >
       <div style="position: absolute; left: 1040vw; transform: translate(-50%, -50%);">
         <div
@@ -322,71 +322,65 @@
 
   /* Pinned runway: 210vw story gaps (the 280vw original cut by a quarter, with
      the node verticals compressed to match so no connector steepens) and the
-     same compact 150vw finale jog, on the six-node track. Scrollable = 1149vh:
+     same compact 150vw finale jog, on the six-node track. Scrollable = 1149lvh:
      intro 66 + horizontal 753 + jog 104 + descent 150 + expansion 65 + tail 11
      — only the horizontal phase shrank (four gaps at the shipped ≈1.12 vw/vh
      cruise), so every other phase and reveal beat keeps its shipped absolute
      scroll length.
 
-  /* Pinned runway: 210vw story gaps (the 280vw original cut by a quarter, with
-     the node verticals compressed to match so no connector steepens) and the
-     same compact 150vw finale jog, on the six-node track. Scrollable = 1149vh:
-     intro 66 + horizontal 753 + jog 104 + descent 150 + expansion 65 + tail 11
-     — only the horizontal phase shrank (four gaps at the shipped ≈1.12 vw/vh
-     cruise), so every other phase and reveal beat keeps its shipped absolute
-     scroll length.
-
-     svh, not lvh/dvh: svh represents the stable small viewport height across
-     both forward and backward scroll, preventing the stage from jumping when
-     mobile browser chrome expands on reverse scroll. Never dvh: dvh re-resolves
-     as the chrome moves, changing the scrub length mid-scroll. */
+     lvh, not svh: lvh is the viewport with browser chrome HIDDEN, which is the
+     only state this section is ever seen in — it starts ~17 viewports down, so the
+     URL bar has long since retracted. svh leaves the stage ~70px short of the
+     screen for the entire pinned run, exposing page background beneath it and
+     preventing the intro/expansion circles from fully covering the viewport.
+     Never dvh: dvh re-resolves as the chrome moves, changing the scrub length mid-scroll. */
   .timeline-section {
     height: 1249vh;
-    height: 1249svh;
+    height: 1249lvh;
   }
 
-  /* Stage: vh fallback, svh so mobile browser chrome expanding/retracting does not shift the stage. */
+  /* Stage: vh fallback, lvh so the pinned stage fills the chrome-hidden viewport without bottom gaps. */
   .timeline-stage {
     height: 100vh;
-    height: 100svh;
+    height: 100lvh;
   }
 
   #timeline-track {
     height: 250vh;
-    height: 250svh;
+    height: 250lvh;
   }
 
-  /* Node vertical positions, keyed by id so each can carry its vh -> svh fallback pair.
+  /* Node vertical positions, keyed by id so each can carry its vh -> lvh fallback pair.
      Verticals follow the 3/4 horizontal cut so no connector steepens: each leg's
      rise/fall is ~0.75 of the original (within ~1vh of exact — node 1 stays the
      circle center at 50 and node 5 stays the 25 the untouched finale is built on,
      which forces 6.25vh of the original drop back into the profile). Net effect:
      the old track shape at 3/4 scale, same broad S-curves, same slopes. */
-  #node-1 { top: 50vh; top: 50svh; }
-  #node-2 { top: 34vh; top: 34svh; }
-  #node-3 { top: 64vh; top: 64svh; }
-  #node-4 { top: 44vh; top: 44svh; }
-  #node-5 { top: 25vh; top: 25svh; }
-  /* Keep the proven 180svh finale on mobile. Wider viewports place it a little
+  #node-1 { top: 50vh; top: 50lvh; }
+  #node-2 { top: 34vh; top: 34lvh; }
+  #node-3 { top: 64vh; top: 64lvh; }
+  #node-4 { top: 44vh; top: 44lvh; }
+  #node-5 { top: 25vh; top: 25lvh; }
+  /* Keep the proven 180lvh finale on mobile. Wider viewports place it a little
      deeper for more clearance beneath the right turn and a longer descent. */
-  #dot-6-anchor, #node-6 > div, #node-6-label-bottom { top: 180vh; top: 180svh; }
+  #dot-6-anchor, #node-6 > div, #node-6-label-bottom { top: 180vh; top: 180lvh; }
   @media (min-width: 768px) {
-    #dot-6-anchor, #node-6 > div, #node-6-label-bottom { top: 188vh; top: 188svh; }
+    #dot-6-anchor, #node-6 > div, #node-6-label-bottom { top: 188vh; top: 188lvh; }
   }
 
-  /* Photo container max-heights: vh fallback, svh for stability */
+  /* Photo container max-heights: vh fallback, lvh for stability */
   [data-node2-photo] > div,
   [data-node3-photo] > div {
     max-height: calc(64vh - 96px);
-    max-height: calc(64svh - 96px);
+    max-height: calc(64lvh - 96px);
   }
   [data-node4-photo] > div {
     max-height: calc(44vh - 36px);
-    max-height: calc(44svh - 36px);
+    max-height: calc(44lvh - 36px);
   }
   [data-node5-photo] > div {
     max-height: calc(55vh - 96px);
-    max-height: calc(55svh - 96px);
+    max-height: calc(55lvh - 96px);
   }
 
   /* Reduced motion: readable vertical story instead of the pinned scrub sequence. */
@@ -404,7 +398,7 @@
     #timeline-circle-expansion {
       display: none !important;
     }
-    /* The intro "Mula-mula" card is authored as an absolute overlay on the
+    /* The intro "Awal mula" card is authored as an absolute overlay on the
        pinned stage; without this rule it stays absolute inside the reflowed
        (relative, auto-height) stage and paints centered mid-story, over node
        content. Reflow it as the story's opening heading instead. The heading's
@@ -528,7 +522,7 @@
 </style>
 
 <script>
-  import { animate, scroll } from "motion";
+  import { animate } from "motion";
 
   // JS twin of the CSS --ease-out-expo token; keep in sync.
   const EASE_OUT_EXPO = [0.16, 1, 0.3, 1] as const;
@@ -546,19 +540,19 @@
   const FINALE_CORNER = 0.8033; // anchor column centered; the descent begins
   const VERT_END = 0.9339;      // long final descent complete
   // Grow the instant the line lands on dot 6 — a real hold here read as a dead
-  // scroll gap between the connection and the outward burst. 0.004 (~4.6svh) is
+  // scroll gap between the connection and the outward burst. 0.004 (~4.6lvh) is
   // a sub-tick beat so a slow scroll still shows one completed-connection frame.
   const EXPANSION_START = VERT_END + 0.004;
   const EXPANSION_END = 0.9904;
 
   const CONNECT_X = 80;
-  // Finale elbow height: the first turn sits at 25 + (anchor−25)×T svh. The
+  // Finale elbow height: the first turn sits at 25 + (anchor−25)×T lvh. The
   // horizontal leg must pass below node 5's (video) card. The video is capped
-  // at 55svh−96px so the card's floor sits ≈65–69svh on short/mid viewports
+  // at 55lvh−96px so the card's floor sits ≈65–69lvh on short/mid viewports
   // (the fixed 420px height governs on tall ones), and T=0.30 puts the turn
-  // at 73.9svh desktop / 71.5svh mobile — ≈5svh under the card floor at every
-  // measured height, with ≈26svh of runway still below the turn. At the
-  // original 0.25 the leg sat at ~65.75svh and crossed the card on desktop.
+  // at 73.9lvh desktop / 71.5lvh mobile — ≈5lvh under the card floor at every
+  // measured height, with ≈26lvh of runway still below the turn. At the
+  // original 0.25 the leg sat at ~65.75lvh and crossed the card on desktop.
   const FINALE_ELBOW_T = 0.30;
   const FINALE_NODE_Y = window.matchMedia("(min-width: 768px)").matches ? 188 : 180;
   const PAN_END_X = -990;                   // 1040vw dot centered at 50vw
@@ -710,7 +704,7 @@
         getCenter(dot6Anchor!)
       ];
 
-      // Use the 5-April connector as the single shape language for lines 1–3:
+      // Use the Oktober connector as the single shape language for lines 1–3:
       // one broad S with horizontal tangents and no short turn/straight-tail mix.
       type Pt = { x: number; y: number };
 
@@ -772,7 +766,7 @@
       const NODE5_CONTENT_AT = connect(5);
 
       // Height-only `resize` events are mobile browser chrome collapsing, not a
-      // layout change: every measured coordinate here is vw/svh-based, so the dot
+      // layout change: every measured coordinate here is vw/lvh-based, so the dot
       // geometry is identical before and after. Recomputing would only burn a
       // full rect/path pass on every URL-bar transition, mid-scroll.
       let lastResizeWidth = window.innerWidth;
@@ -782,6 +776,9 @@
         clearTimeout(resizeTimeout);
         resizeTimeout = setTimeout(() => {
           updatePaths();
+          measureGeometry();
+          lastProgress = -1;
+          updateProgress();
         }, 120);
       };
       window.addEventListener("resize", onResize);
@@ -790,7 +787,16 @@
 
       settleTimeout = setTimeout(() => {
         updatePaths();
+        measureGeometry();
+        lastProgress = -1;
+        updateProgress();
       }, 220);
+      const stage = section.querySelector<HTMLElement>(".timeline-stage");
+      const scrubAnims: Array<{ pause(): void; time: number; duration: number }> = [];
+      const scrubWithScroll = (anim: { pause(): void; time: number; duration: number }) => {
+        anim.pause();
+        scrubAnims.push(anim);
+      };
 
       // ANIMATIONS
 
@@ -809,7 +815,7 @@
         },
         { ease: "linear", times: [0, INTRO_END, 1] }
       );
-      cleanupFns.push(scroll(bgClipAnim, { target: section, offset: ["start start", "end end"] }));
+      scrubWithScroll(bgClipAnim);
 
       // Once the 8px-radius overlay exactly matches dot 1, hand off to the dot.
       const bgOpacityAnim = animate(
@@ -817,7 +823,7 @@
         { opacity: [1, 1, 0, 0] },
         { ease: "linear", times: [0, INTRO_END, INTRO_END + 0.001, 1] }
       );
-      cleanupFns.push(scroll(bgOpacityAnim, { target: section, offset: ["start start", "end end"] }));
+      scrubWithScroll(bgOpacityAnim);
 
       // 2. Fade out title layers AFTER the circle has shrunk
       // Only fade the bottom layer (black text on white) - the overlay already shrinks via clip-path
@@ -826,15 +832,15 @@
         { opacity: [1, 1, 0, 0] },
         { ease: "linear", times: [0, INTRO_END, INTRO_END + 0.001, 1] }
       );
-      cleanupFns.push(scroll(titleBottomFadeAnim, { target: section, offset: ["start start", "end end"] }));
+      scrubWithScroll(titleBottomFadeAnim);
 
       // 3. Horizontal Pan + Vertical Scroll at end
       // Constant cruise slope across the horizontal phase (no node-5 kink),
       // vertical finale pan at the end. Keyframes come from the shared
       // PAN_KEYFRAMES table so the inverse mappings stay in sync.
-      // Node tops are svh (with a vh fallback), so the final vertical pan must use
+      // Node tops are lvh (with a vh fallback), so the final vertical pan must use
       // the same unit or dot-6 misses the expansion-circle center on phones.
-      const vUnit = CSS.supports("height", "1svh") ? "svh" : "vh";
+      const vUnit = CSS.supports("height", "1lvh") ? "lvh" : "vh";
       const trackTransformValues = PAN_KEYFRAMES.map((k) => `translate(${k.x}vw, ${k.y}${vUnit})`);
       const trackTimes = PAN_KEYFRAMES.map((k) => k.t);
       const trackAnim = animate(
@@ -842,10 +848,10 @@
         { transform: trackTransformValues },
         { ease: "linear", times: trackTimes }
       );
-      cleanupFns.push(scroll(trackAnim, { target: section, offset: ["start start", "end end"] }));
+      scrubWithScroll(trackAnim);
 
       // node-6 counters the track pan for the expansion hand-off. It reuses
-      // the SAME vw/svh strings as the track (not px-resolved copies), so a
+      // the SAME vw/lvh strings as the track (not px-resolved copies), so a
       // real layout resize (width change, not just chrome collapse) re-resolves
       // both identically, keeping dot-6 pinned to the expansion-circle center
       // across resizes without rebuilding keyframes here. (The legacy px baking
@@ -855,243 +861,263 @@
         { transform: trackTransformValues },
         { ease: "linear", times: trackTimes }
       );
-      cleanupFns.push(scroll(node6TransformAnim, { target: section, offset: ["start start", "end end"] }));
+      scrubWithScroll(node6TransformAnim);
       
-            // 4. Node 1 Reveal
-            // Fade the authored dot in just before the shrinking background
-            // reaches the same 8px radius, making the handoff continuous.
-            const node1Anim = animate(
-              node1,
-              {
-                opacity: [0, 0, 1, 1],
-                transform: ["translate(-50%, -50%)", "translate(-50%, -50%)", "translate(-50%, -50%)", "translate(-50%, -50%)"]
-              },
-              { ease: "linear", times: [0, INTRO_END, INTRO_END + 0.001, 1] }
-            );
-            cleanupFns.push(scroll(node1Anim, { target: section, offset: ["start start", "end end"] }));
-            cleanupFns.push(
-              scroll(
-                (progress: number) => {
-                  node1.style.visibility = progress >= INTRO_END ? "visible" : "hidden";
-                },
-                { target: section, offset: ["start start", "end end"] }
-              )
-            );
-      
-            // motion v13 attaches WAAPI tracks (opacity/transform) to the native
-            // ViewTimeline using the requested offset, but drives JS-only tracks
-            // (pathLength -> stroke-dasharray) with the timeline's full cover-range
-            // progress. That desyncs the line draw from the pan. Scrub manually from
-            // the JS scroll progress so every track shares one correct clock.
-            const scrubWithScroll = (anim: { pause(): void; time: number; duration: number }) => {
-              anim.pause();
-              cleanupFns.push(
-                scroll(
-                  (progress: number) => {
-                    anim.time = progress * anim.duration;
-                  },
-                  { target: section, offset: ["start start", "end end"] }
-                )
-              );
-            };
-      
-            // 5. Line 1 Animation
-            // Line-N (dot-N → dot-N+1) completes exactly at connect(N+1);
-            // line-1 starts drawing when the intro ends.
-            const line1Anim = animate(
-              line1,
-              {
-                opacity: [0, 1, 1, 1],
-                pathLength: [0, 0, 1, 1]
-              },
-              { ease: "linear", times: [0, INTRO_END, connect(2), 1] }
-            );
-            scrubWithScroll(line1Anim);
-      
-            // Reusable Node Animation Helper
-            // Reveals are scroll-scrubbed pops: each part pops inside one
-            // REVEAL_WINDOW-wide window opening exactly at its connect
-            // threshold — nothing is visible before the line reaches the dot.
-            // Photo leads; date trails +STAGGER_DATE, desc +STAGGER_DESC.
-            // Partial scroll maps to partial pops; backward scroll reverses
-            // them. Each block's transform-origin points at its dot and is
-            // maintained by applyRevealOrigins().
-            const REVEAL_TOTAL = 0.61;
+      // 4. Node 1 Reveal
+      // Fade the authored dot in just before the shrinking background
+      // reaches the same 8px radius, making the handoff continuous.
+      const node1Anim = animate(
+        node1,
+        {
+          opacity: [0, 0, 1, 1],
+          transform: ["translate(-50%, -50%)", "translate(-50%, -50%)", "translate(-50%, -50%)", "translate(-50%, -50%)"]
+        },
+        { ease: "linear", times: [0, INTRO_END, INTRO_END + 0.001, 1] }
+      );
+      scrubWithScroll(node1Anim);
 
-            function setupNodeAnimation(nodeNum: number, connectAt: number, contentConnectAt: number = connectAt) {
-              const dot = document.getElementById(`dot-${nodeNum}`);
-              const photo = document.querySelector(`[data-node${nodeNum}-photo]`);
-              const date = document.querySelector(`[data-node${nodeNum}-date]`);
-              const desc = document.querySelector(`[data-node${nodeNum}-desc]`);
-      
-              if (!dot) return;
-      
-              const setHidden = () => {
-                dot.style.opacity = nodeNum === 9 ? "0" : "1";
-                dot.style.transform = nodeNum === 9 ? "scale(1)" : "scale(0.6)";
-                if (photo instanceof HTMLElement) {
-                  photo.style.opacity = "0";
-                  photo.style.transform = "scale(0.6)";
-                }
-                if (date instanceof HTMLElement) {
-                  date.style.opacity = "0";
-                  date.style.transform = "scale(0.6)";
-                }
-                if (desc instanceof HTMLElement) {
-                  desc.style.opacity = "0";
-                  desc.style.transform = "scale(0.6)";
-                }
-              };
-      
-              setHidden();
+      // 5. Line 1 Animation
+      // Line-N (dot-N → dot-N+1) completes exactly at connect(N+1);
+      // line-1 starts drawing when the intro ends.
+      const line1Anim = animate(
+        line1,
+        {
+          opacity: [0, 1, 1, 1],
+          pathLength: [0, 0, 1, 1]
+        },
+        { ease: "linear", times: [0, INTRO_END, connect(2), 1] }
+      );
+      scrubWithScroll(line1Anim);
 
-              const parts: Array<{ start: number; anims: Array<{ pause(): void; time: number; duration: number }> }> = [];
+      // Reusable Node Animation Helper
+      // Reveals are scroll-scrubbed pops: each part pops inside one
+      // REVEAL_WINDOW-wide window opening exactly at its connect
+      // threshold — nothing is visible before the line reaches the dot.
+      // Photo leads; date trails +STAGGER_DATE, desc +STAGGER_DESC.
+      // Partial scroll maps to partial pops; backward scroll reverses
+      // them. Each block's transform-origin points at its dot and is
+      // maintained by applyRevealOrigins().
+      const REVEAL_TOTAL = 0.61;
+      const allNodeParts: Array<{ start: number; anims: Array<{ pause(): void; time: number; duration: number }> }> = [];
 
-              // Normal dots use the existing overshoot. The finale dot arrives
-              // at full 20px size, then becomes the seed for the expanding fill.
-              parts.push({
-                start: connectAt,
-                anims: [
-                  animate(
-                    dot,
-                    nodeNum === 9
-                      ? { opacity: [0, 1, 1], transform: ["scale(1)", "scale(1)", "scale(1)"] }
-                      : { opacity: [1, 1, 1, 1], transform: ["scale(0.6)", "scale(1.35)", "scale(1)", "scale(1)"] },
-                    nodeNum === 9
-                      ? { duration: REVEAL_TOTAL, ease: "linear", times: [0, 0.2, 1] }
-                      : { duration: REVEAL_TOTAL, ease: [EASE_OUT_EXPO, EASE_OUT_EXPO, "linear"], times: [0, 0.492, 0.984, 1] }
-                  )
-                ]
-              });
+      function setupNodeAnimation(nodeNum: number, connectAt: number, contentConnectAt: number = connectAt) {
+        const dot = document.getElementById(`dot-${nodeNum}`);
+        const photo = document.querySelector(`[data-node${nodeNum}-photo]`);
+        const date = document.querySelector(`[data-node${nodeNum}-date]`);
+        const desc = document.querySelector(`[data-node${nodeNum}-desc]`);
 
-              // Pop: opacity completes in the first ~40% of the window while
-              // the scale overshoots 0.6 → 1.06 and settles back to 1.
-              const popAnimate = (el: HTMLElement) =>
-                animate(
-                  el,
-                  {
-                    opacity: [0, 1, 1],
-                    transform: ["scale(0.6)", "scale(1.06)", "scale(1)"]
-                  },
-                  { duration: 1, ease: [EASE_OUT_EXPO, EASE_OUT_EXPO], times: [0, 0.4, 1] }
-                );
+        if (!dot) return;
 
-              if (photo instanceof HTMLElement) parts.push({ start: contentConnectAt, anims: [popAnimate(photo)] });
-              if (date instanceof HTMLElement) parts.push({ start: contentConnectAt + STAGGER_DATE, anims: [popAnimate(date)] });
-              if (desc instanceof HTMLElement) parts.push({ start: contentConnectAt + STAGGER_DESC, anims: [popAnimate(desc)] });
+        const setHidden = () => {
+          dot.style.opacity = "1";
+          dot.style.transform = "scale(0.6)";
+          if (photo instanceof HTMLElement) {
+            photo.style.opacity = "0";
+            photo.style.transform = "scale(0.6)";
+          }
+          if (date instanceof HTMLElement) {
+            date.style.opacity = "0";
+            date.style.transform = "scale(0.6)";
+          }
+          if (desc instanceof HTMLElement) {
+            desc.style.opacity = "0";
+            desc.style.transform = "scale(0.6)";
+          }
+        };
 
-              // Scrub only opacity/scale. Position stays authored on the dot and
-              // moves solely with the timeline track—never with a second transform.
-              parts.forEach((part) => part.anims.forEach((anim) => anim.pause()));
-              cleanupFns.push(
-                scroll(
-                  (progress: number) => {
-                    for (const part of parts) {
-                      const local = Math.min(1, Math.max(0, (progress - part.start) / REVEAL_WINDOW));
-                      for (const anim of part.anims) anim.time = local * anim.duration;
-                    }
-                  },
-                  { target: section!, offset: ["start start", "end end"] }
-                )
-              );
-            }
-      
-            // Content stays authored on each dot; node 5 intentionally keeps its side card.
-            setupNodeAnimation(2, connect(2));
-            setupNodeAnimation(3, connect(3));
-            setupNodeAnimation(4, connect(4));
-            setupNodeAnimation(5, connect(5), NODE5_CONTENT_AT);
+        setHidden();
 
-            // Form the final dot while it is still below the viewport. It then enters
-            // naturally during the long descent instead of spawning at the landing.
-            const finalDotReady = FINALE_CORNER + 0.0566;
-            const finalDotAnim = animate(
-              dot6,
-              {
-                opacity: [0, 0, 1, 1],
-                transform: ["scale(0.9)", "scale(0.9)", "scale(1)", "scale(1)"]
-              },
-              {
-                ease: ["linear", EASE_OUT_EXPO, "linear"],
-                times: [0, FINALE_CORNER, finalDotReady, 1]
-              }
-            );
-            cleanupFns.push(scroll(finalDotAnim, { target: section, offset: ["start start", "end end"] }));
+        const parts: Array<{ start: number; anims: Array<{ pause(): void; time: number; duration: number }> }> = [];
 
-      
-            // Line animations (continued): line-N draws from just after the
-            // earlier dot's pop (connect(N) + 0.0373) until its tip meets the
-            // next dot exactly at connect(N+1).
-            const lineDraw = (line: SVGPathElement, start: number, end: number) => {
-              const anim = animate(
-                line,
-                { opacity: [0, 0, 1, 1, 1], pathLength: [0, 0, 0, 1, 1] },
-                { ease: "linear", times: [0, start, start, end, 1] }
-              );
-              scrubWithScroll(anim);
-            };
+        // Normal dots use the existing overshoot.
+        parts.push({
+          start: connectAt,
+          anims: [
+            animate(
+              dot,
+              { opacity: [1, 1, 1, 1], transform: ["scale(0.6)", "scale(1.35)", "scale(1)", "scale(1)"] },
+              { duration: REVEAL_TOTAL, ease: [EASE_OUT_EXPO, EASE_OUT_EXPO, "linear"], times: [0, 0.492, 0.984, 1] }
+            )
+          ]
+        });
 
-            lineDraw(line2, connect(2) + 0.0373, connect(3));
-            lineDraw(line3, connect(3) + 0.0373, connect(4));
-            lineDraw(line4, connect(4) + 0.0373, connect(5));
-      
-            // Derive draw fractions from the measured V-H-V path so the tip
-            // tracks the L-route camera: the horizontal leg draws at exactly
-            // the camera's pan rate through the jog (tip rides the centerline
-            // at elbow depth), then the final leg draws during the descent.
-            const line5Start = connect(5) + 0.0089;
-            const finaleMidY = points[4].y + (points[5].y - points[4].y) * FINALE_ELBOW_T;
-            const firstLeg = Math.abs(finaleMidY - points[4].y);
-            const horizontalLeg = Math.abs(points[5].x - points[4].x);
-            const firstTurnFraction = firstLeg / lens[4];
-            const secondTurnFraction = (firstLeg + horizontalLeg) / lens[4];
-            const line5Anim = animate(
-              line5,
-              {
-                opacity: [0, 0, 1, 1, 1, 1, 1],
-                pathLength: [
-                  0,
-                  0,
-                  0,
-                  firstTurnFraction,
-                  secondTurnFraction,
-                  1,
-                  1
-                ]
-              },
-              {
-                ease: "linear",
-                times: [
-                  0,
-                  connect(5),
-                  line5Start,
-                  FINALE_TURN,
-                  FINALE_CORNER,
-                  VERT_END,
-                  1
-                ]
-              }
-            );
-            scrubWithScroll(line5Anim);
-      
-            // 10. Circle Expansion (End)
-            // The grow begins the moment the line completes on the dot, so the
-            // connection reads as the trigger. The title stays hidden until the
-            // growing circle's edge reaches it — the clip-path sweep itself is
-            // the reveal, the inverse of the opening shrink crossing Mula-mula.
-            const expansionAnim = animate(
-              circleExpansion,
-              {
-                clipPath: [
-                  "circle(0.001px at 50% 50%)",
-                  "circle(0.001px at 50% 50%)",
-                  "circle(100vmax at 50% 50%)",
-                  "circle(100vmax at 50% 50%)"
-                ]
-              },
-              { ease: "linear", times: [0, EXPANSION_START, EXPANSION_END, 1] }
-            );
-            cleanupFns.push(scroll(expansionAnim, { target: section, offset: ["start start", "end end"] }));
+        // Pop: opacity completes in the first ~40% of the window while
+        // the scale overshoots 0.6 → 1.06 and settles back to 1.
+        const popAnimate = (el: HTMLElement) =>
+          animate(
+            el,
+            {
+              opacity: [0, 1, 1],
+              transform: ["scale(0.6)", "scale(1.06)", "scale(1)"]
+            },
+            { duration: 1, ease: [EASE_OUT_EXPO, EASE_OUT_EXPO], times: [0, 0.4, 1] }
+          );
+
+        if (photo instanceof HTMLElement) parts.push({ start: contentConnectAt, anims: [popAnimate(photo)] });
+        if (date instanceof HTMLElement) parts.push({ start: contentConnectAt + STAGGER_DATE, anims: [popAnimate(date)] });
+        if (desc instanceof HTMLElement) parts.push({ start: contentConnectAt + STAGGER_DESC, anims: [popAnimate(desc)] });
+
+        // Scrub only opacity/scale. Position stays authored on the dot and
+        // moves solely with the timeline track—never with a second transform.
+        parts.forEach((part) => {
+          part.anims.forEach((anim) => anim.pause());
+          allNodeParts.push(part);
+        });
+      }
+
+      // Content stays authored on each dot; node 5 intentionally keeps its side card.
+      setupNodeAnimation(2, connect(2));
+      setupNodeAnimation(3, connect(3));
+      setupNodeAnimation(4, connect(4));
+      setupNodeAnimation(5, connect(5), NODE5_CONTENT_AT);
+
+      // Form the final dot while it is still below the viewport. It then enters
+      // naturally during the long descent instead of spawning at the landing.
+      const finalDotReady = FINALE_CORNER + 0.0566;
+      const finalDotAnim = animate(
+        dot6,
+        {
+          opacity: [0, 0, 1, 1],
+          transform: ["scale(0.9)", "scale(0.9)", "scale(1)", "scale(1)"]
+        },
+        {
+          ease: ["linear", EASE_OUT_EXPO, "linear"],
+          times: [0, FINALE_CORNER, finalDotReady, 1]
+        }
+      );
+      scrubWithScroll(finalDotAnim);
+
+      // Line animations (continued): line-N draws from just after the
+      // earlier dot's pop (connect(N) + 0.0373) until its tip meets the
+      // next dot exactly at connect(N+1).
+      const lineDraw = (line: SVGPathElement, start: number, end: number) => {
+        const anim = animate(
+          line,
+          { opacity: [0, 0, 1, 1, 1], pathLength: [0, 0, 0, 1, 1] },
+          { ease: "linear", times: [0, start, start, end, 1] }
+        );
+        scrubWithScroll(anim);
+      };
+
+      lineDraw(line2, connect(2) + 0.0373, connect(3));
+      lineDraw(line3, connect(3) + 0.0373, connect(4));
+      lineDraw(line4, connect(4) + 0.0373, connect(5));
+
+      // Derive draw fractions from the measured V-H-V path so the tip
+      // tracks the L-route camera: the horizontal leg draws at exactly
+      // the camera's pan rate through the jog (tip rides the centerline
+      // at elbow depth), then the final leg draws during the descent.
+      const line5Start = connect(5) + 0.0089;
+      const finaleMidY = points[4].y + (points[5].y - points[4].y) * FINALE_ELBOW_T;
+      const firstLeg = Math.abs(finaleMidY - points[4].y);
+      const horizontalLeg = Math.abs(points[5].x - points[4].x);
+      const firstTurnFraction = firstLeg / lens[4];
+      const secondTurnFraction = (firstLeg + horizontalLeg) / lens[4];
+      const line5Anim = animate(
+        line5,
+        {
+          opacity: [0, 0, 1, 1, 1, 1, 1],
+          pathLength: [
+            0,
+            0,
+            0,
+            firstTurnFraction,
+            secondTurnFraction,
+            1,
+            1
+          ]
+        },
+        {
+          ease: "linear",
+          times: [
+            0,
+            connect(5),
+            line5Start,
+            FINALE_TURN,
+            FINALE_CORNER,
+            VERT_END,
+            1
+          ]
+        }
+      );
+      scrubWithScroll(line5Anim);
+
+      // 10. Circle Expansion (End)
+      // The grow begins the moment the line completes on the dot, so the
+      // connection reads as the trigger. The title stays hidden until the
+      // growing circle's edge reaches it — the clip-path sweep itself is
+      // the reveal, the inverse of the opening shrink crossing Awal mula.
+      const expansionAnim = animate(
+        circleExpansion,
+        {
+          clipPath: [
+            "circle(0.001px at 50% 50%)",
+            "circle(0.001px at 50% 50%)",
+            "circle(100vmax at 50% 50%)",
+            "circle(100vmax at 50% 50%)"
+          ]
+        },
+        { ease: "linear", times: [0, EXPANSION_START, EXPANSION_END, 1] }
+      );
+      scrubWithScroll(expansionAnim);
+
+      // Unified scrub: drive all animations from static lvh-based scroll progress,
+      // completely decoupled from the dynamic viewport (dvh) so mobile browser chrome
+      // expanding/retracting on reverse scroll never shifts or jumps the timeline.
+      const applyProgress = (progress: number) => {
+        for (const anim of scrubAnims) {
+          anim.time = progress * anim.duration;
+        }
+        node1.style.visibility = progress >= INTRO_END ? "visible" : "hidden";
+        for (const part of allNodeParts) {
+          const local = Math.min(1, Math.max(0, (progress - part.start) / REVEAL_WINDOW));
+          for (const anim of part.anims) {
+            anim.time = local * anim.duration;
+          }
+        }
+      };
+
+      let lastProgress = -1;
+      let sectionTop = 0;
+      let travel = 0;
+
+      const measureGeometry = () => {
+        if (!stage) return;
+        sectionTop = section.getBoundingClientRect().top + window.scrollY;
+        travel = section.offsetHeight - stage.offsetHeight;
+      };
+
+      measureGeometry();
+
+      let sectionVisible = true;
+      const observer = new IntersectionObserver(
+        (entries) => {
+          sectionVisible = entries.some((e) => e.isIntersecting);
+          if (sectionVisible) {
+            measureGeometry();
+            updateProgress();
+          }
+        },
+        { rootMargin: "100% 0px" }
+      );
+      observer.observe(section);
+      cleanupFns.push(() => observer.disconnect());
+
+      const updateProgress = () => {
+        if (!sectionVisible && lastProgress >= 0) return;
+        if (travel <= 0) return;
+        const scrolled = window.scrollY - sectionTop;
+        const progress = Math.min(1, Math.max(0, scrolled / travel));
+        if (progress === lastProgress) return;
+        lastProgress = progress;
+        applyProgress(progress);
+      };
+
+      window.addEventListener("scroll", updateProgress, { passive: true });
+      cleanupFns.push(() => window.removeEventListener("scroll", updateProgress));
+
+      // Initial scrub to current scroll position
+      updateProgress();
     });
   }
 

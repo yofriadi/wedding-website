@@ -38,7 +38,7 @@ All edits are in `apps/web/src/components/TimelineScroll.astro` unless noted. Ge
 
 - [x] 5.1 `node apps/web/scripts/capture-scroll.mjs` passes at 320/375/390/1440: exclusivity, line clearance (strict ≥768px), node-6 hand-off, and reduced-motion probes all green; eyeball `09-*`→… stops so line-4 draws as one continuous S into dot-5 with the `<360px` guard active at 320. (Passed 2026-09-08 after the addendum fixes: 84 exclusivity + 84 line-clearance + 4 hand-off + reduced-motion, zero violations; desktop strict clearance green, mobile crossings the accepted exception, guard verified in the 320 run.)
 - [x] 5.2 Manual dev pass: scrub forward and backward through the whole section (desktop ~1440 and a mobile width); confirm pops land on their dots, node 8's card enters formed, dot-9 forms below the viewport during the descent, and the expansion lands centered on dot-9.
-- [x] 5.3 Reduced-motion pass: exactly six nodes in document order (Mula-mula heading, Feb 2025, 5 Apr 2025, 28 Jun 2025, 11 Apr 2026, 10 Oct 2026), nothing clipped or overlapped.
+- [x] 5.3 Reduced-motion pass: exactly six nodes in document order (Mula-mula heading, Feb 2025, Oktober 2025, November 2025, 11 Apr 2026, 10 Oct 2026), nothing clipped or overlapped.
 
 ## 6. Session addenda (user-directed, 2026-09-08)
 

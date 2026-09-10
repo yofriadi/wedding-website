@@ -74,7 +74,7 @@ On initial page load the ZoomParallax component SHALL bind its scroll-driven ani
 
 ### Requirement: Pinned stages are sized to the chrome-hidden viewport
 
-The scroll runways and sticky stages of HeroZoom and ZoomParallax, and their viewport-height-dependent element positions, SHALL be sized in `lvh` (the large viewport: browser chrome hidden) with a `vh` fallback declaration — because every mobile browser retracts its URL bar on the first downward scroll, so the chrome-hidden viewport is the state a pinned sequence is actually watched in. TimelineScroll's sticky stage and scroll runway SHALL be sized in `svh` (with a `vh` fallback declaration) so the stage does not jump when browser chrome expands during reverse scrolling. Runways and stage geometry SHALL NOT use `dvh`, and scroll-driven geometry derived in JavaScript SHALL NOT be measured from the dynamic viewport (`window.innerHeight`), because both re-resolve while browser chrome collapses and would change a scrub's length or alignment mid-scroll.
+The scroll runways and sticky stages of HeroZoom, ZoomParallax, and TimelineScroll, and their viewport-height-dependent element positions, SHALL be sized in `lvh` (the large viewport: browser chrome hidden) with a `vh` fallback declaration — because every mobile browser retracts its URL bar on the first downward scroll, so the chrome-hidden viewport is the state a pinned sequence is actually watched in. Runways and stage geometry SHALL NOT use `dvh`, and scroll-driven geometry derived in JavaScript SHALL NOT be measured from the dynamic viewport (`window.innerHeight`), because both re-resolve while browser chrome collapses and would change a scrub's length or alignment mid-scroll.
 
 #### Scenario: Mobile browser with its URL bar retracted
 

@@ -8,13 +8,13 @@
 x (vw)   50    260    470    680    890    1100   1310   1520   1670
          n1    n2     n3     n4     n5     n6     n7     n8     n9-anchor
 y(lvh)   50    34     64     44     59     35     49     25     180/188
-              Feb    5 Apr  28 Jun 26 Okt 1 Nov  29-30  11 Apr 10 Okt 2026
+              Feb    Okt    Nov    26 Okt 1 Nov  29-30  11 Apr 10 Okt 2026
               2025   2025   2025   2025   2025   Nov 25 2026
 Runway: 1813lvh = 1713 scrollable (intro 66 + horizontal 1317 + jog 104
                   + descent 150 + expansion 65 + tail 11) + 100 stage
 ```
 
-The story is cut to six nodes: n5/n6/n7 (the three late-2025 beats) leave, and 28 Juni 2025 flows straight into 11 April 2026. The user chose **re-tightening** (option B) over leaving a long empty sweep (option A), and chose to leave the now-unreferenced image assets in `apps/web/public` in place.
+The story is cut to six nodes: n5/n6/n7 (the three late-2025 beats) leave, and November 2025 flows straight into 11 April 2026. The user chose **re-tightening** (option B) over leaving a long empty sweep (option A), and chose to leave the now-unreferenced image assets in `apps/web/public` in place.
 
 ## Goals / Non-Goals
 
@@ -38,7 +38,7 @@ The story is cut to six nodes: n5/n6/n7 (the three late-2025 beats) leave, and 2
 
 ### D1 — Pull node 8 left to restore uniform gaps (over leaving a long sweep)
 
-Two readings of "remove the nodes between 28 Juni and 11 April":
+Two readings of "remove the nodes between November 2025 and 11 April":
 
 ```
 A. long sweep          B. uniform rhythm (CHOSEN)

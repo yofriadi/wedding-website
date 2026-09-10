@@ -9,7 +9,7 @@ When the user prefers reduced motion, the TimelineScroll component SHALL present
 #### Scenario: Reduced-motion user reads the story
 
 - **WHEN** `prefers-reduced-motion: reduce` is active and the user reaches the timeline section
-- **THEN** all six nodes' dates, photos, and descriptions are visible in document order as a vertical flow (Mula-mula intro, Februari 2025, 5 April 2025, 28 Juni 2025, 11 April 2026, and the 10 October 2026 finale), the connector SVG and both circle overlays are hidden, and the section height is content-driven rather than the animated scrub runway
+- **THEN** all six nodes' dates, photos, and descriptions are visible in document order as a vertical flow (Mula-mula intro, Februari 2025, Oktober 2025, November 2025, 11 April 2026, and the 10 October 2026 finale), the connector SVG and both circle overlays are hidden, and the section height is content-driven rather than the animated scrub runway
 
 #### Scenario: Reduced-motion user sees the intro heading first
 
@@ -33,17 +33,17 @@ When the user prefers reduced motion, the TimelineScroll component SHALL present
 
 ### Requirement: Timeline connectors render as fluid curves
 
-Connector lines between consecutive story dots (line-1 through line-4) SHALL render as fluid curves rather than hard 90° corners, using the single shipped curve builder — one cubic Bézier S-curve per connector (M a C midX a.y, midX b.y, b.x b.y), giving horizontal tangents at both dots with no intermediate vertices — computed from the measured dot centers. The connector from dot-4 (28 Juni 2025) to dot-5 (11 April 2026) SHALL use the same S-curve construction (via the shared `setSmoothIntoNode5` builder, including its <360px narrow-screen guard that ends the curve short of node 5's centered card before approaching the dot horizontally). The final connector into the finale (line-5, dot-5 to the dot-6 anchor) SHALL remain orthogonal (V–H–V), with its first turn dropped low enough that the horizontal leg passes below node 5's popped content on desktop widths (≥768px).
+Connector lines between consecutive story dots (line-1 through line-4) SHALL render as fluid curves rather than hard 90° corners, using the single shipped curve builder — one cubic Bézier S-curve per connector (M a C midX a.y, midX b.y, b.x b.y), giving horizontal tangents at both dots with no intermediate vertices — computed from the measured dot centers. The connector from dot-4 (November 2025) to dot-5 (11 April 2026) SHALL use the same S-curve construction (via the shared `setSmoothIntoNode5` builder, including its <360px narrow-screen guard that ends the curve short of node 5's centered card before approaching the dot horizontally). The final connector into the finale (line-5, dot-5 to the dot-6 anchor) SHALL remain orthogonal (V–H–V), with its first turn dropped low enough that the horizontal leg passes below node 5's popped content on desktop widths (≥768px).
 
 #### Scenario: Default fluid curves
 
 - **WHEN** the timeline renders
 - **THEN** lines 1–4 contain no sharp corners and leave/arrive horizontally at each connected dot
 
-#### Scenario: June-to-April is one continuous curve
+#### Scenario: November-to-April is one continuous curve
 
 - **WHEN** the timeline renders
-- **THEN** the 28 Juni 2025 → 11 April 2026 gap is bridged by a single S-curve connector with no intermediate dots and no intermediate vertices, leaving dot-4 and arriving at dot-5 horizontally
+- **THEN** the November 2025 → 11 April 2026 gap is bridged by a single S-curve connector with no intermediate dots and no intermediate vertices, leaving dot-4 and arriving at dot-5 horizontally
 
 #### Scenario: Finale connector stays angular
 
