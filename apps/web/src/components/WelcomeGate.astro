@@ -67,12 +67,14 @@ const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
     </p>
   </div>
 
-  <!-- Greeting: just the invitee's name, centered as text on the patterned
-       surface. Anonymous visitors render the element empty (spec: no placeholder). -->
+  <!-- Greeting: invitee's name styled with Aceternity shooting-stars gradient:
+       sans-serif, tight tracking, medium weight.
+       Dark theme: grey to white. Light theme: grey to black.
+       Anonymous visitors render the element empty (spec: no placeholder). -->
   <div class="relative flex h-full items-center justify-center px-6">
     <div
       id="gate-greeting"
-      class="gate-guest-name max-w-3xl text-balance text-center font-serif text-3xl font-light tracking-wide md:text-5xl"
+      class="gate-guest-name max-w-5xl text-balance text-center text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl md:leading-none bg-clip-text text-transparent"
     >
       {displayName}
     </div>
@@ -142,6 +144,7 @@ const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
     --gate-fg: #ededed;            /* Vercel foreground on black */
     --gate-dots: #3f3f46;          /* neutral-700 */
     --gate-hint: #a1a1aa;          /* neutral-400 */
+    --gate-name-gradient: linear-gradient(to bottom, #262626 0%, #ffffff 50%, #ffffff 100%);
   }
 
   @media (prefers-color-scheme: light) {
@@ -150,9 +153,18 @@ const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
       --gate-fg: #0a0a0a;
       --gate-dots: #d4d4d4;          /* neutral-300 */
       --gate-hint: #71717a;          /* neutral-500 */
+      --gate-name-gradient: linear-gradient(to bottom, #9ca3af 0%, #000000 75%, #000000 100%);
     }
   }
 
+  :global(.light),
+  :global([data-theme="light"]) {
+    --gate-bg: #ffffff;
+    --gate-fg: #0a0a0a;
+    --gate-dots: #d4d4d4;
+    --gate-hint: #71717a;
+    --gate-name-gradient: linear-gradient(to bottom, #9ca3af 0%, #000000 75%, #000000 100%);
+  }
   .gate-surface {
     background-color: var(--gate-bg);
     color: var(--gate-fg);
@@ -185,10 +197,45 @@ const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
 
   /* --- Greeting text ------------------------------------------------------ */
 
-  /* The name is plain centered text on the patterned surface; utilities on the
-     element handle font/size/centering. This just guards long names. */
+  /* Greeting text styled like Aceternity's Shooting Stars and Stars Background:
+     bold sans-serif, tight tracking, large display scale (up to text-6xl / 60px).
+     Dark theme: high-contrast dark charcoal to bright white (matches Aceternity).
+     Light theme: visible grey to solid black. */
   .gate-guest-name {
     overflow-wrap: anywhere;              /* long names wrap instead of clipping */
+    font-size: 2.25rem;                   /* 36px (text-4xl) */
+    line-height: 2.5rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    background-image: var(--gate-name-gradient);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  @media (min-width: 640px) {
+    .gate-guest-name {
+      font-size: 3rem;                    /* 48px (text-5xl) */
+      line-height: 1.15;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .gate-guest-name {
+      font-size: 3.75rem;                 /* 60px (text-6xl) */
+      line-height: 1.1;
+    }
+  }
+
+  @media (prefers-color-scheme: light) {
+    .gate-guest-name {
+      background-image: var(--gate-name-gradient, linear-gradient(to bottom, #9ca3af 0%, #000000 75%, #000000 100%));
+    }
+  }
+
+  :global(.light) .gate-guest-name,
+  :global([data-theme="light"]) .gate-guest-name {
+    background-image: linear-gradient(to bottom, #9ca3af 0%, #000000 75%, #000000 100%);
   }
 </style>
 
