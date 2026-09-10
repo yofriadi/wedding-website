@@ -208,6 +208,191 @@ test.describe("welcome gate", () => {
     // Anonymous (no cookie): no metric ever fires.
     expect(metric.posts).toBe(0);
   });
+  test("swipe up below threshold turns back and bounces with height proportional to pull distance", async ({
+    page,
+  }) => {
+    test.slow();
+    await page.goto("/");
+    await waitForLoaderDismissed(page);
+
+    const gate = page.locator("#welcome-gate");
+    await expect(gate).toBeVisible();
+
+    const sampleReleaseBounce = async (pullPx: number) => {
+      return await page.evaluate(async (pull) => {
+        const el = document.getElementById("welcome-gate")!;
+        let hitBottom = false;
+        let reboundPeak = 0;
+        let done = false;
+
+        const tick = () => {
+          const t = getComputedStyle(el).transform;
+          if (t && t !== "none") {
+            const m = new DOMMatrixReadOnly(t);
+            // Once the curtain falls back to near 0, track the rebound height
+            if (m.m42 >= -4) {
+              hitBottom = true;
+            }
+            if (hitBottom && m.m42 < reboundPeak) {
+              reboundPeak = m.m42;
+            }
+          }
+          if (!done) requestAnimationFrame(tick);
+        };
+        requestAnimationFrame(tick);
+
+        // Pull up by `pull` px
+        el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientY: 500, button: 0 }));
+        await new Promise((r) => setTimeout(r, 30));
+        window.dispatchEvent(new MouseEvent("mousemove", { bubbles: true, clientY: 500 - pull }));
+        // Pause so velocity settles below flick threshold (> 100ms)
+        await new Promise((r) => setTimeout(r, 150));
+        window.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientY: 500 - pull }));
+
+        // Wait for bounce animation to complete
+        await new Promise((r) => setTimeout(r, 700));
+        done = true;
+        return Math.abs(reboundPeak);
+      }, pullPx);
+    };
+
+    const reboundShort = await sampleReleaseBounce(35);
+    await page.waitForTimeout(200);
+    const reboundHigh = await sampleReleaseBounce(90);
+
+    // Rebound from 90px pull is significantly harder than from 35px pull
+    expect(reboundHigh).toBeGreaterThan(reboundShort * 1.8);
+    expect(reboundShort).toBeGreaterThan(4);
+
+    // Settle back to rest at the bottom (translateY(0))
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const el = document.getElementById("welcome-gate");
+            return el ? getComputedStyle(el).transform : "removed";
+          }),
+        { timeout: 3_000 },
+      )
+      .toMatch(/^(none|matrix\(1, 0, 0, 1, 0, 0\))$/);
+
+    // Gate is still armed and scroll locked
+    await expect(gate).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe("hidden");
+  });
+
+  test("tapping bounces upward and settles to the bottom without opening the gate", async ({
+    page,
+  }) => {
+    test.slow();
+    const metric = countOpenMetricPosts(page);
+
+    await page.goto("/");
+    await waitForLoaderDismissed(page);
+
+    const gate = page.locator("#welcome-gate");
+    await expect(gate).toBeVisible();
+
+    // Tap the gate and record translateY samples across the bounce
+    const bounceResult = await page.evaluate(async () => {
+      const el = document.getElementById("welcome-gate")!;
+      let minTranslateY = 0;
+      let sampledCount = 0;
+      let done = false;
+
+      const tick = () => {
+        const t = getComputedStyle(el).transform;
+        if (t && t !== "none") {
+          const m = new DOMMatrixReadOnly(t);
+          if (m.m42 < minTranslateY) minTranslateY = m.m42;
+          sampledCount++;
+        }
+        if (!done) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+
+      // Simulate a tap (mousedown + mouseup without dragging)
+      el.dispatchEvent(new MouseEvent("mousedown", { bubbles: true, clientY: 400, button: 0 }));
+      await new Promise((r) => setTimeout(r, 50));
+      el.dispatchEvent(new MouseEvent("mouseup", { bubbles: true, clientY: 400, button: 0 }));
+      el.dispatchEvent(new MouseEvent("click", { bubbles: true, clientY: 400 }));
+
+      // Wait for bounce animation to complete (~520ms)
+      await new Promise((r) => setTimeout(r, 700));
+      done = true;
+      return { minTranslateY, sampledCount };
+    });
+
+    // The curtain bounced up (negative translateY peaking around -54px)
+    expect(bounceResult.minTranslateY).toBeLessThan(-30);
+
+    // Settled back to rest at the bottom (translateY(0))
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const el = document.getElementById("welcome-gate");
+            return el ? getComputedStyle(el).transform : "removed";
+          }),
+        { timeout: 3_000 },
+      )
+      .toMatch(/^(none|matrix\(1, 0, 0, 1, 0, 0\))$/);
+
+    // Tapping did NOT open the gate: gate is still visible, scroll still locked, no metric fired
+    await expect(gate).toBeVisible();
+    expect(metric.posts).toBe(0);
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe("hidden");
+
+    // Can still swipe/drag past threshold to open
+    const viewport = page.viewportSize();
+    if (!viewport) throw new Error("viewport not set");
+    await touchDrag(page, {
+      fromY: viewport.height * 0.75,
+      toY: viewport.height * 0.33,
+      stepDelayMs: 16,
+    });
+    await expect(gate).toHaveCount(0);
+  });
+  test("touch tap via touchscreen bounces and does not open gate", async ({ page }) => {
+    test.slow();
+    const metric = countOpenMetricPosts(page);
+
+    await page.goto("/");
+    await waitForLoaderDismissed(page);
+
+    const gate = page.locator("#welcome-gate");
+    await expect(gate).toBeVisible();
+
+    const viewport = page.viewportSize();
+    if (!viewport) throw new Error("viewport not set");
+
+    // Real touch tap (0 travel)
+    await touchDrag(page, {
+      fromY: viewport.height * 0.5,
+      toY: viewport.height * 0.5,
+      steps: 1,
+    });
+
+    // Gate must NOT open
+    await expect(gate).toBeVisible();
+    expect(metric.posts).toBe(0);
+
+    // Settle to rest at bottom
+    await expect
+      .poll(
+        () =>
+          page.evaluate(() => {
+            const el = document.getElementById("welcome-gate");
+            return el ? getComputedStyle(el).transform : "removed";
+          }),
+        { timeout: 3_000 },
+      )
+      .toMatch(/^(none|matrix\(1, 0, 0, 1, 0, 0\))$/);
+
+    // Still armed and scroll locked
+    await expect(gate).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.style.overflow)).toBe("hidden");
+  });
 
   test("reduced motion dismisses instantly on first click with no slide", async ({ page }) => {
     test.slow();

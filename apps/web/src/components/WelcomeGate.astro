@@ -112,6 +112,8 @@ const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
        iOS rubber-band may leak through to the page behind. */
     touch-action: none;
     overscroll-behavior: none;
+    user-select: none;
+    -webkit-user-select: none;
     /* Transform-only reveal: keep the exit on the compositor. */
     will-change: transform;
     /* Failsafe (D6): if the inline gesture script never arms, the gate must
@@ -263,9 +265,17 @@ const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
     var COMMIT_MS = 400;
     var SPRING_MS = 250;
     var STALE_VELOCITY_MS = 100;
+    var TAP_THRESHOLD = 10; // px displacement: movement below this is treated as a tap
+    var BOUNCE_PEAK = 54; // px upward peek on tap
+    var BOUNCE_MS = 520;
     // iOS-like drawer curve for both non-tracking transitions (commit sweep and
     // snap-back) — a full-viewport physical surface earns more than bare ease-out.
     var GATE_EASE = 'cubic-bezier(0.32, 0.72, 0, 1)';
+
+    var touchStartClientY = 0;
+    var dragDistance = 0;
+    var lastPointerEndTime = 0;
+    var bounceAnim = null;
 
     // Root-only scroll lock, deliberately NOT `<body>` as well.
     //
@@ -354,6 +364,10 @@ const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
     function commit() {
       if (committed) return;
       committed = true;
+      if (bounceAnim) {
+        bounceAnim.cancel();
+        bounceAnim = null;
+      }
       disarm();
 
       startMusicNow();
@@ -379,25 +393,231 @@ const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
       setTimeout(finish, COMMIT_MS + 100);
     }
 
+    // --- Motion interruption & bounce --------------------------------------
+
+    function stopMotion() {
+      if (bounceAnim) {
+        try {
+          var style = window.getComputedStyle(gate);
+          var transform = style.transform;
+          if (transform && transform !== 'none') {
+            var m = new DOMMatrixReadOnly(transform);
+            currentY = m.m42;
+          } else {
+            currentY = 0;
+          }
+        } catch (err) {
+          currentY = 0;
+        }
+        bounceAnim.cancel();
+        bounceAnim = null;
+      } else {
+        try {
+          var s = window.getComputedStyle(gate);
+          var t = s.transform;
+          if (t && t !== 'none') {
+            var matrix = new DOMMatrixReadOnly(t);
+            currentY = matrix.m42;
+          } else {
+            currentY = 0;
+          }
+        } catch (err) {
+          currentY = 0;
+        }
+      }
+      gate.style.transition = 'none';
+      gate.style.transform = 'translateY(' + currentY + 'px)';
+    }
+
+    function triggerTapBounce() {
+      if (committed || tracking) return;
+      if (bounceAnim) {
+        bounceAnim.cancel();
+        bounceAnim = null;
+      }
+      gate.style.transition = 'none';
+
+      // Original iPhone-like lockscreen tap bounce:
+      // The curtain hops up a little (-54px) against gravity (ease-out),
+      // drops to bottom under gravity (ease-in), bounces up to -14px, drops,
+      // micro-rebounds to -3.5px, and settles at rest (translateY(0)).
+      var startTransform = currentY < 0 ? 'translateY(' + currentY + 'px)' : 'translateY(0px)';
+      var targetPeak = Math.min(-BOUNCE_PEAK, currentY - 20);
+      var keyframes = [
+        { transform: startTransform, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
+        { transform: 'translateY(' + targetPeak + 'px)', offset: 0.30, easing: 'cubic-bezier(0.55, 0, 0.9, 0.4)' },
+        { transform: 'translateY(0px)', offset: 0.58, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
+        { transform: 'translateY(-14px)', offset: 0.76, easing: 'cubic-bezier(0.55, 0, 0.9, 0.4)' },
+        { transform: 'translateY(0px)', offset: 0.88, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' },
+        { transform: 'translateY(-3.5px)', offset: 0.95, easing: 'cubic-bezier(0.55, 0, 0.9, 0.4)' },
+        { transform: 'translateY(0px)', offset: 1 }
+      ];
+
+      if (typeof gate.animate === 'function') {
+        bounceAnim = gate.animate(keyframes, {
+          duration: BOUNCE_MS,
+          fill: 'forwards'
+        });
+        bounceAnim.onfinish = function () {
+          gate.style.transform = 'translateY(0)';
+          if (bounceAnim) {
+            bounceAnim.cancel();
+            bounceAnim = null;
+          }
+          currentY = 0;
+        };
+      } else {
+        gate.style.transition = 'transform 250ms ' + GATE_EASE;
+        gate.style.transform = 'translateY(-' + BOUNCE_PEAK + 'px)';
+        setTimeout(function () {
+          if (committed || tracking) return;
+          gate.style.transition = 'transform 250ms ' + GATE_EASE;
+          gate.style.transform = 'translateY(0)';
+          currentY = 0;
+        }, 250);
+      }
+    }
+
+    // --- Swiped up release: turn back and bounce based on pull distance ---
+
+    function triggerPullBounce(pullDistance, vel) {
+      if (committed || tracking) return;
+      if (bounceAnim) {
+        bounceAnim.cancel();
+        bounceAnim = null;
+      }
+      gate.style.transition = 'none';
+
+      var dist = Math.max(1, pullDistance);
+      var downwardVel = (typeof vel === 'number' && vel < 0) ? -vel : 0;
+      var impactBoost = Math.min(80, downwardVel * 100);
+      var effectiveDist = dist + impactBoost;
+
+      // Restitution factor: rebound height is directly proportional to how far
+      // the curtain was pulled up before release.
+      var RESTITUTION = 0.28;
+      var b1 = Math.round(effectiveDist * RESTITUTION * 10) / 10;
+      var b2 = Math.round(b1 * RESTITUTION * 10) / 10;
+      var b3 = Math.round(b2 * RESTITUTION * 10) / 10;
+
+      // Durations derived from square-root physical kinematics (px -> ms)
+      var tFall = Math.max(80, Math.min(240, Math.round(70 + Math.sqrt(dist) * 10)));
+      var tB1 = Math.max(40, Math.min(140, Math.round(30 + Math.sqrt(b1) * 12)));
+      var tB2 = b1 >= 5 ? Math.max(30, Math.min(90, Math.round(20 + Math.sqrt(b2) * 12))) : 0;
+      var tB3 = b2 >= 4 ? Math.max(20, Math.min(60, Math.round(15 + Math.sqrt(b3) * 12))) : 0;
+
+      var totalMs = tFall + 2 * tB1 + (tB2 ? 2 * tB2 : 0) + (tB3 ? 2 * tB3 : 0);
+
+      var keyframes = [];
+      var elapsed = 0;
+
+      // Start: from the pulled-up position, accelerating downward to floor under gravity
+      keyframes.push({
+        transform: 'translateY(' + currentY + 'px)',
+        offset: 0,
+        easing: 'cubic-bezier(0.55, 0, 0.9, 0.4)'
+      });
+
+      // Impact 1 at floor
+      elapsed += tFall;
+      keyframes.push({
+        transform: 'translateY(0px)',
+        offset: Math.min(0.99, Math.round((elapsed / totalMs) * 1000) / 1000),
+        easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
+      });
+
+      // Rebound 1 apex
+      elapsed += tB1;
+      keyframes.push({
+        transform: 'translateY(-' + b1 + 'px)',
+        offset: Math.min(0.99, Math.round((elapsed / totalMs) * 1000) / 1000),
+        easing: 'cubic-bezier(0.55, 0, 0.9, 0.4)'
+      });
+
+      // Impact 2 at floor
+      elapsed += tB1;
+      keyframes.push({
+        transform: 'translateY(0px)',
+        offset: tB2 ? Math.min(0.99, Math.round((elapsed / totalMs) * 1000) / 1000) : 1,
+        easing: tB2 ? 'cubic-bezier(0.22, 1, 0.36, 1)' : undefined
+      });
+
+      if (tB2) {
+        // Rebound 2 apex
+        elapsed += tB2;
+        keyframes.push({
+          transform: 'translateY(-' + b2 + 'px)',
+          offset: Math.min(0.99, Math.round((elapsed / totalMs) * 1000) / 1000),
+          easing: 'cubic-bezier(0.55, 0, 0.9, 0.4)'
+        });
+
+        // Impact 3 at floor
+        elapsed += tB2;
+        keyframes.push({
+          transform: 'translateY(0px)',
+          offset: tB3 ? Math.min(0.99, Math.round((elapsed / totalMs) * 1000) / 1000) : 1,
+          easing: tB3 ? 'cubic-bezier(0.22, 1, 0.36, 1)' : undefined
+        });
+      }
+
+      if (tB3) {
+        // Rebound 3 apex
+        elapsed += tB3;
+        keyframes.push({
+          transform: 'translateY(-' + b3 + 'px)',
+          offset: Math.min(0.99, Math.round((elapsed / totalMs) * 1000) / 1000),
+          easing: 'cubic-bezier(0.55, 0, 0.9, 0.4)'
+        });
+
+        keyframes.push({
+          transform: 'translateY(0px)',
+          offset: 1
+        });
+      }
+
+      if (typeof gate.animate === 'function') {
+        bounceAnim = gate.animate(keyframes, {
+          duration: totalMs,
+          fill: 'forwards'
+        });
+        bounceAnim.onfinish = function () {
+          gate.style.transform = 'translateY(0)';
+          if (bounceAnim) {
+            bounceAnim.cancel();
+            bounceAnim = null;
+          }
+          currentY = 0;
+        };
+      } else {
+        gate.style.transition = 'transform ' + totalMs + 'ms ' + GATE_EASE;
+        gate.style.transform = 'translateY(0)';
+        currentY = 0;
+      }
+    }
+
     // --- Touch: Level-2 finger-tracked swipe -------------------------------
 
     function onTouchStart(e) {
       if (committed || tracking || e.touches.length !== 1) return;
+      stopMotion();
       tracking = true;
-      startY = e.touches[0].clientY;
-      currentY = 0;
-      lastY = 0;
+      var clientY = e.touches[0].clientY;
+      touchStartClientY = clientY;
+      startY = clientY - currentY;
+      dragDistance = 0;
+      lastY = currentY;
       lastT = e.timeStamp;
       velocity = 0;
-      gate.style.transition = 'none';
     }
 
     function onTouchMove(e) {
       if (!tracking || committed) return;
       // Non-passive listener: stop scroll chaining / rubber-band leak.
       e.preventDefault();
+      var clientY = e.touches[0].clientY;
+      dragDistance = Math.max(dragDistance, Math.abs(clientY - touchStartClientY));
       // 1:1 upward tracking, clamped — the gate never travels downward.
-      var y = Math.min(0, e.touches[0].clientY - startY);
+      var y = Math.min(0, clientY - startY);
       currentY = y;
       var dt = e.timeStamp - lastT;
       if (dt > 0) {
@@ -411,6 +631,8 @@ const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
     function onTouchEnd(e) {
       if (!tracking || committed) return;
       tracking = false;
+      lastPointerEndTime = Date.now();
+
       // A finger that rested before release carries no flick.
       if (e.timeStamp - lastT > STALE_VELOCITY_MS) velocity = 0;
 
@@ -421,20 +643,95 @@ const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
         // listener so startMusic isn't invoked twice in one window.
         e.stopPropagation();
         commit();
+      } else if (dragDistance < TAP_THRESHOLD && -currentY < TAP_THRESHOLD) {
+        // Tapping does not open the gate: hop up a little and bounce to the bottom
+        triggerTapBounce();
       } else {
-        gate.style.transition = 'transform ' + SPRING_MS + 'ms ' + GATE_EASE;
-        gate.style.transform = 'translateY(0)';
+        // Swiped up and released below threshold:
+        // Turn back and bounce at the bottom, with hardness based on pulled length
+        triggerPullBounce(-currentY, velocity);
       }
     }
 
     function onTouchCancel() {
       if (!tracking) return;
       tracking = false;
-      gate.style.transition = 'transform ' + SPRING_MS + 'ms ' + GATE_EASE;
-      gate.style.transform = 'translateY(0)';
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      if (-currentY >= TAP_THRESHOLD) {
+        triggerPullBounce(-currentY, 0);
+      } else {
+        gate.style.transition = 'transform ' + SPRING_MS + 'ms ' + GATE_EASE;
+        gate.style.transform = 'translateY(0)';
+        currentY = 0;
+      }
     }
 
-    // --- Desktop: functional dismissal, no physics --------------------------
+    // --- Mouse: Desktop click and drag -------------------------------------
+
+    function onMouseDown(e) {
+      if (committed || tracking || e.button !== 0) return;
+      // Ignore synthesized mouse events after touch
+      if (Date.now() - lastPointerEndTime < 500) return;
+      e.preventDefault();
+      stopMotion();
+      tracking = true;
+      var clientY = e.clientY;
+      touchStartClientY = clientY;
+      startY = clientY - currentY;
+      dragDistance = 0;
+      lastY = currentY;
+      lastT = e.timeStamp;
+      velocity = 0;
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    }
+
+    function onMouseMove(e) {
+      if (!tracking || committed) return;
+      var clientY = e.clientY;
+      dragDistance = Math.max(dragDistance, Math.abs(clientY - touchStartClientY));
+      var y = Math.min(0, clientY - startY);
+      currentY = y;
+      var dt = e.timeStamp - lastT;
+      if (dt > 0) {
+        velocity = (lastY - y) / dt;
+        lastY = y;
+        lastT = e.timeStamp;
+      }
+      gate.style.transform = 'translateY(' + y + 'px)';
+    }
+
+    function onMouseUp(e) {
+      if (!tracking) return;
+      tracking = false;
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      lastPointerEndTime = Date.now();
+
+      if (committed) return;
+      if (e.timeStamp - lastT > STALE_VELOCITY_MS) velocity = 0;
+
+      var threshold = window.innerHeight * COMMIT_DISTANCE;
+      if (-currentY >= threshold || velocity >= COMMIT_VELOCITY) {
+        commit();
+      } else if (dragDistance < TAP_THRESHOLD && -currentY < TAP_THRESHOLD) {
+        triggerTapBounce();
+      } else {
+        triggerPullBounce(-currentY, velocity);
+      }
+    }
+
+    function onClick() {
+      if (committed) return;
+      // If pointer interaction (touch or mouse) just completed, the tap bounce
+      // or commit was already handled.
+      if (Date.now() - lastPointerEndTime < 500) return;
+      triggerTapBounce();
+    }
+
+    // --- Desktop: functional dismissal (wheel / keydown) -------------------
 
     function dismissIfArmed(e) {
       if (committed) return;
@@ -447,10 +744,18 @@ const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
     // --- Arming --------------------------------------------------------------
 
     function disarm() {
+      if (bounceAnim) {
+        bounceAnim.cancel();
+        bounceAnim = null;
+      }
       gate.removeEventListener('touchstart', onTouchStart);
       gate.removeEventListener('touchmove', onTouchMove);
       gate.removeEventListener('touchend', onTouchEnd);
       gate.removeEventListener('touchcancel', onTouchCancel);
+      gate.removeEventListener('mousedown', onMouseDown);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      gate.removeEventListener('click', onClick);
       gate.removeEventListener('wheel', dismissIfArmed);
       gate.removeEventListener('click', dismissIfArmed);
       gate.removeEventListener('touchend', dismissIfArmed);
@@ -486,10 +791,11 @@ const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
       gate.addEventListener('touchmove', onTouchMove, { passive: false });
       gate.addEventListener('touchend', onTouchEnd, { passive: true });
       gate.addEventListener('touchcancel', onTouchCancel, { passive: true });
+      gate.addEventListener('mousedown', onMouseDown);
+      gate.addEventListener('click', onClick);
       // Wheel carries no user activation; music stays on the homepage's
       // armed-gesture fallback for desktop.
       gate.addEventListener('wheel', dismissIfArmed, { passive: true });
-      gate.addEventListener('click', dismissIfArmed, { passive: true });
       window.addEventListener('keydown', dismissIfArmed, { passive: true });
     }
 
