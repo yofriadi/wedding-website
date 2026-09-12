@@ -37,3 +37,11 @@
 body {
   font-family: var(--font-sans);
 }
+
+@media (prefers-reduced-motion: reduce) {
+  [data-scroll-fade] {
+    opacity: 1 !important;
+    transform: none !important;
+    will-change: auto !important;
+  }
+}

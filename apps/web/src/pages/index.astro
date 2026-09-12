@@ -123,7 +123,7 @@ const showMockStoryTiles = !hasAnyGuestPhoto;
     <source src="/Lee Soo Young - ONE - ENGLISH Version.mp3" type="audio/mpeg" />
   </audio>
 
-  <main class="relative bg-neutral-950">
+  <main class="relative">
     <HeroZoom />
     <QuranVerse />
     <ZoomParallax />
@@ -133,9 +133,11 @@ const showMockStoryTiles = !hasAnyGuestPhoto;
          --memories-* tokens live in this file's :root (rsvp-* precedent) —
          StoryViewer, AddStoryTile and the guest-rail's dynamically built
          tiles read them by inheritance. -->
-    <section id="memories-section" class="relative overflow-hidden" data-progressive-section>
-      <div class="mx-auto max-w-7xl px-6">
-        <h2 class="text-xl font-light text-center mb-4 text-[color:var(--memories-heading)] text-balance">Show Our Memories Together</h2>
+    <section id="memories-section" class="relative overflow-hidden py-12 md:py-16" data-progressive-section>
+      <div class="mx-auto max-w-7xl px-6 mb-12 md:mb-16 text-center" data-scroll-fade>
+        <h2 class="font-serif text-3xl font-light text-[color:var(--memories-heading)] md:text-4xl text-balance">
+          Show Our Memories Together
+        </h2>
       </div>
     <div data-story-rail class="flex gap-2 overflow-x-auto pb-2 no-scrollbar snap-x px-6">
         {/* Add-story tile (guest-submissions 4.1): invite-only entry point.
@@ -457,6 +459,7 @@ const showMockStoryTiles = !hasAnyGuestPhoto;
   // Guest-submissions client orchestration: add-story flow + rail tiles.
   import { initAddStoryFlow } from "../scripts/add-story-flow";
   import { initGuestRail } from "../scripts/guest-rail";
+  import "../scripts/scroll-fade";
 
   initAddStoryFlow();
   initGuestRail();
@@ -519,10 +522,20 @@ const showMockStoryTiles = !hasAnyGuestPhoto;
     background-color: var(--rsvp-bg);
   }
 
+  main {
+    background-color: #0a0a0a;
+  }
+  @media (prefers-color-scheme: light) {
+    main {
+      background-color: #ffffff;
+    }
+  }
+
   /* Memories section background — same rsvp-* treatment: the section owns
      its chrome so it inverts with the OS theme instead of inheriting main's */
   #memories-section {
     background-color: var(--memories-bg);
+    margin-top: -1px;
   }
 
   /* Reserved rail height (story-rail-attribution D6): real story tiles are
