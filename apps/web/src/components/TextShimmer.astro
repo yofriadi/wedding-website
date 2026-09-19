@@ -41,6 +41,20 @@ const shimmerBaseClasses = [
     pointer-events: none;
   }
 
+  /* Reduced motion: the shimmer is decorative, indefinite movement across the
+     text — the exact thing to drop. This must live in CSS, not only in the
+     script: an instance rendered WITHOUT `phrases` returns before the script's
+     reduced-motion branch can cancel the keyframes (the welcome gate's swipe
+     hint is one), so a JS-only guard leaves it shimmering forever. The text
+     keeps its gradient fill and stays fully legible; only the sweep stops. */
+  @media (prefers-reduced-motion: reduce) {
+    :global(text-shimmer [data-text]),
+    :global(text-shimmer [data-text-out]) {
+      animation: none;
+      background-position: 0 0;
+    }
+  }
+
   /* Dark mode gradient (default): Gray -> White -> Gray */
   :global(text-shimmer [data-text]),
   :global(text-shimmer [data-text-out]) {

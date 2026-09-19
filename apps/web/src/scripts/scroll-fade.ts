@@ -4,15 +4,39 @@
  * Smoothly fades in and slides up elements as they enter the viewport from the bottom,
  * and smoothly reverses back out when scrolling back up or past the top.
  * Honors prefers-reduced-motion.
+ *
+ * Frame discipline (two passes, never interleaved): every element's rect is
+ * READ first, then every element's style is WRITTEN. Reading a rect after a
+ * write forces the browser to flush the pending style change to answer the
+ * geometry question, so a read/write/read/write loop over N elements costs N
+ * synchronous layouts per scroll frame. Split, it costs one.
+ *
+ * `will-change` is rented, not owned: it is set while an element is mid-travel
+ * and cleared once it settles at either end, so the page does not hold a
+ * compositor layer per faded element for the rest of the session (the same
+ * hint-release discipline the retired QuranVerse reveal was held to).
  */
 
-let activeElements: HTMLElement[] = [];
+interface FadeTarget {
+  el: HTMLElement;
+  isCard: boolean;
+  /** Tracks the last written hint so settling clears it exactly once. */
+  hinted: boolean;
+}
+
+let targets: FadeTarget[] = [];
 let listenersAttached = false;
 let ticking = false;
 
-function updateElement(el: HTMLElement, vh: number) {
-  const rect = el.getBoundingClientRect();
-  const isCard = el.getAttribute("data-scroll-fade") === "card";
+interface FadeFrame {
+  target: FadeTarget;
+  opacity: number;
+  y: number;
+}
+
+/** Pure geometry → visual state. No DOM writes, so it is safe in the read pass. */
+function computeFrame(target: FadeTarget, rect: DOMRect, vh: number): FadeFrame {
+  const { isCard } = target;
 
   // Bottom enter threshold:
   // When rect.top >= vh, it hasn't entered (enterProgress = 0).
@@ -38,38 +62,57 @@ function updateElement(el: HTMLElement, vh: number) {
   const maxOffsetUp = isCard ? 20 : 15;
   const y = (1 - easedEnter) * maxOffsetDown - (1 - easedExit) * maxOffsetUp;
 
-  el.style.opacity = opacity.toFixed(4);
-  el.style.transform = `translate3d(0, ${y.toFixed(2)}px, 0)`;
+  return { target, opacity, y };
 }
 
 function onScroll() {
-  if (!ticking) {
-    ticking = true;
-    requestAnimationFrame(() => {
-      const vh = window.innerHeight;
-      activeElements.forEach((el) => updateElement(el, vh));
-      ticking = false;
-    });
-  }
+  if (ticking) return;
+  ticking = true;
+  requestAnimationFrame(() => {
+    ticking = false;
+    const vh = window.innerHeight;
+
+    // Pass 1 — read every rect. No writes in this loop.
+    const frames: FadeFrame[] = targets.map((target) =>
+      computeFrame(target, target.el.getBoundingClientRect(), vh),
+    );
+
+    // Pass 2 — write. Layout is already settled, so none of these flush it.
+    for (const { target, opacity, y } of frames) {
+      const { el } = target;
+      el.style.opacity = opacity.toFixed(4);
+      el.style.transform = `translate3d(0, ${y.toFixed(2)}px, 0)`;
+
+      // Mid-travel elements keep the hint; settled ones give their layer back.
+      const moving = y !== 0 && opacity > 0;
+      if (moving !== target.hinted) {
+        el.style.willChange = moving ? "transform, opacity" : "auto";
+        target.hinted = moving;
+      }
+    }
+  });
 }
 
 export function initScrollFade() {
-  activeElements = Array.from(document.querySelectorAll<HTMLElement>("[data-scroll-fade]"));
-  if (activeElements.length === 0) return;
+  const elements = Array.from(document.querySelectorAll<HTMLElement>("[data-scroll-fade]"));
+  if (elements.length === 0) return;
 
   const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   if (prefersReducedMotion) {
-    activeElements.forEach((el) => {
+    targets = [];
+    for (const el of elements) {
       el.style.opacity = "1";
       el.style.transform = "none";
       el.style.willChange = "auto";
-    });
+    }
     return;
   }
 
-  activeElements.forEach((el) => {
-    el.style.willChange = "transform, opacity";
-  });
+  targets = elements.map((el) => ({
+    el,
+    isCard: el.getAttribute("data-scroll-fade") === "card",
+    hinted: false,
+  }));
 
   onScroll();
 

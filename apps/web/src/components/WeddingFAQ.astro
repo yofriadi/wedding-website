@@ -3,43 +3,37 @@ const items = [
   {
     id: "rsvp",
     number: "01",
-    title: "When is the RSVP deadline?",
-    content: "Please RSVP by October 4th, 2026. We need to get the final headcount to our caterers, so we kindly ask that you respond before then."
+    title: "Batas waktu konfirmasi kehadiran",
+    content: "Untuk memudahkan estimasi tamu & undangan yang hadir, mohon konfirmasi kehadiran paling lambat 5 Oktober 2026."
   },
   {
     id: "dress-code",
     number: "02",
-    title: "What is the dress code?",
-    content: "The dress code is Black Tie Optional. We ask that men wear a tuxedo or a dark suit and tie, and women wear an evening gown or midi-length cocktail dress."
+    title: "Ketentuan pakaian (dress code)",
+    content: "Dress code acara adalah Black Tie Optional. Tamu pria disarankan mengenakan tuksedo atau setelan jas gelap dan dasi, sedangkan tamu wanita disarankan mengenakan gaun malam atau gaun koktail panjang midi."
   },
   {
     id: "plus-one",
     number: "03",
-    title: "Can I bring a plus one?",
-    content: "Due to limited venue capacity, we are unable to accommodate plus ones unless specifically indicated on your invitation. When you RSVP, you'll confirm your attendance."
+    title: "Apakah boleh datang berdua?",
+    content: "Ya."
   },
   {
-    id: "children",
+    id: "dining",
     number: "04",
-    title: "Are children welcome?",
-    content: "We love your little ones, but this will be an adults-only celebration. We hope you take this opportunity to let your hair down and enjoy the night off!"
-  },
-  {
-    id: "transport",
-    number: "05",
-    title: "Will there be transportation?",
-    content: "Yes, we will provide shuttle service from the main hotel to the venue and back. Shuttles depart at 4:30 PM."
+    title: "Piring Terbang",
+    content: "Kami menggunakan tradisi khas Solo dan Jawa Tengah, yaitu Piring Terbang (Ladosan). Tamu undangan tidak perlu mengantre prasmanan—cukup duduk santai dan menikmati acara, seluruh rangkaian hidangan akan disajikan langsung ke tempat duduk Anda."
   },
   {
     id: "parking",
-    number: "06",
-    title: "Where should I park?",
-    content: "Valet parking will be provided at the venue entrance. There is also a public parking garage one block east on Main St."
+    number: "05",
+    title: "Tempat parkir",
+    content: "Area parkir cukup luas tapi tetap tidak cukup besar untuk mengakomodir semua tamu undangan."
   }
 ];
 ---
 
-<div class="w-full bg-[color:var(--faq-background)]" id="wedding-faq">
+<div class="w-full bg-(--faq-background)" id="wedding-faq">
   <div class="space-y-0 max-w-3xl mx-auto px-4 pt-2 pb-10">
     {items.map((item) => (
       <div class="accordion-item group border-b border-[color:var(--faq-border)]" data-id={item.id}>
@@ -202,7 +196,10 @@ const items = [
       
       if (numberText) animate(numberText, { color: primaryForeground }, { duration: 0.15 });
       
-      if (titleText) animate(titleText, { color: foreground }, { type: spring, stiffness: 400, damping: 30 });
+      // Color has no momentum to simulate, so a spring here is an unbounded
+      // main-thread rAF for something that should just ease. Matches the
+      // 150ms color tweens on numberText/iconSvg either side of it.
+      if (titleText) animate(titleText, { color: foreground }, { duration: 0.15, ease: "easeOut" });
       
       if (icon) {
         if (reducedMotion) {
@@ -251,7 +248,7 @@ const items = [
       
       if (numberText) animate(numberText, { color: mutedForeground }, { duration: 0.15 });
       
-      if (titleText) animate(titleText, { color: mutedForeground }, { type: spring, stiffness: 400, damping: 30 });
+      if (titleText) animate(titleText, { color: mutedForeground }, { duration: 0.15, ease: "easeOut" });
       
       if (icon) {
         if (reducedMotion) {
