@@ -44,18 +44,22 @@ Notes:
 
 ## Pointing a domain at it
 
-Cheapest reliable option: install Caddy on the host (one static binary) as a
-reverse proxy with automatic HTTPS:
+Caddy runs as a compose service — no proxy binary on the host, so the VPS
+stays 100% Docker. The override adds Caddy with automatic Let's Encrypt
+certificates (persisted in the `caddy-data` volume) and rebinds the app to
+localhost only, so the site is reachable solely via `https://<your-domain>`:
 
-```
-# /etc/caddy/Caddyfile
-wedding.example.com {
-    reverse_proxy 127.0.0.1:4321
-}
+```sh
+# 1. Point the domain's DNS A record at this host first, then:
+cp Caddyfile.example Caddyfile   # and put your real domain inside
+
+# 2. Launch with both files (the app itself stays reachable on 127.0.0.1:4321):
+docker compose -f docker-compose.yml -f docker-compose.caddy.yml up -d --build
 ```
 
-Then change the compose port mapping to `"127.0.0.1:4321:4321"` so the app is
-only reachable through Caddy.
+Requires `docker compose` v2.24+ (for the `!override` port tag). To go back to
+plain IP access, run without the second `-f` file. Only ports 80/443 are
+exposed; the certificate renews itself.
 
 ## Updating after a code change
 

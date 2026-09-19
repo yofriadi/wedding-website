@@ -87,6 +87,8 @@ skills-lock.json
 # Optional personal soundtrack (untracked; see DEPLOY.md — the private-deploy
 # restore script puts it back).
 apps/web/public/*.mp3
+# Real Caddyfile for a custom domain (copy of Caddyfile.example); keep local.
+/Caddyfile
 
 # Guest photo storage (guest-submissions D4): dev fallback root is ./var/photos
 /var/

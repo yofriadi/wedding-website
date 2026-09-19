@@ -1,0 +1,37 @@
+# Optional HTTPS reverse proxy for a custom domain — keeps the host 100% clean
+# (no Caddy binary on the VPS; everything stays in Docker).
+#
+# Usage:
+#   cp Caddyfile.example Caddyfile      # edit in your real domain
+#   docker compose -f docker-compose.yml -f docker-compose.caddy.yml up -d --build
+#
+# This adds a Caddy container (automatic Let's Encrypt certificates, stored in
+# the caddy-data volume) and rebinds the app to localhost only, so the site is
+# reachable solely via https://<your-domain>. Point the domain's A record at
+# this host before starting. Requires docker compose v2.24+ (for !override).
+
+services:
+  web:
+    # Replace (not merge with) the base file's public 4321 mapping: the app
+    # stays reachable on the host loopback for curl checks / debugging, but is
+    # no longer exposed to the internet — Caddy proxies it over the compose
+    # network instead.
+    ports: !override
+      - "127.0.0.1:4321:4321"
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - web
+
+volumes:
+  caddy-data:
+  caddy-config:
