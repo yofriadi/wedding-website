@@ -10,7 +10,9 @@ FROM node:24-slim AS base
 WORKDIR /app
 
 FROM base AS build
-RUN npm install -g pnpm@11.21.0
+# Match pnpm to the repo's packageManager pin dynamically so dependency
+# bumps can't silently desync the Docker build from the lockfile format.
+RUN npm install -g pnpm@$(node -e "console.log(require('./package.json').packageManager.slice(5))")
 # First copy only the manifests so dependency install is a cacheable layer.
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml turbo.json tsconfig.json ./
 COPY apps/web/package.json apps/web/package.json
