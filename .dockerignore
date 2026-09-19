@@ -24,6 +24,7 @@ packages/db/local.db-wal
 **/test-results
 **/playwright-report
 .playwright
+**/.playwright
 
 # Local-only artifacts (huge, regenerated any time)
 **/.artifacts

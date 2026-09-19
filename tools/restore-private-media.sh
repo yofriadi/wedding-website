@@ -16,3 +16,8 @@ fi
 cp -v "$src"/apps/web/public/* apps/web/public/
 
 echo "Private media restored. Placeholders are now overlaid with the real photos, video, and soundtrack."
+echo ""
+echo "WARNING: the restored files sit at paths git tracks as placeholders."
+echo "  - NEVER 'git add -A' in this state — you would commit the private media."
+echo "  - Revert with 'git checkout -- apps/web/public' before committing anything."
+echo "  - For a private deploy, build now (docker compose up -d --build / pnpm run build)."

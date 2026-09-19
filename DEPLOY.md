@@ -68,11 +68,11 @@ docker image prune -f            # optional: drop the dangling old image
 
 ## Backups
 
-The database and uploaded photos live in the `wedding-website_wedding-data`
-volume. Back it up periodically:
+The database and uploaded photos live in the `wedding_wedding-data`
+volume (the compose project `name: wedding` prefixes the volume name). Back it up periodically:
 
 ```sh
-docker run --rm -v wedding-website_wedding-data:/data -v "$PWD/backup":/backup \
+docker run --rm -v wedding_wedding-data:/data -v "$PWD/backup":/backup \
   alpine tar czf /backup/wedding-data-$(date +%F).tar.gz -C /data .
 ```
 

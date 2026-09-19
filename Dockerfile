@@ -37,9 +37,13 @@ ENV NODE_ENV=production \
 WORKDIR /app
 # Copy the built workspace; pnpm's node_modules symlinks survive the COPY.
 COPY --from=build /app /app
-RUN mkdir -p /data/photos
+# /data is owned by the unprivileged runtime user; a named volume
+# initialized from here inherits that ownership on first mount.
+RUN mkdir -p /data/photos && chown -R node:node /data
 VOLUME /data
 EXPOSE 4321
+# Run as the unprivileged node user, not root.
+USER node
 # Apply migrations before starting the server, then hand off PID 1 to node
 # so SIGTERM from `docker compose down` stops the server promptly.
 CMD ["sh", "-c", "node packages/db/scripts/migrate.mjs && exec node apps/web/dist/server/entry.mjs"]
