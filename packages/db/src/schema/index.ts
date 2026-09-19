@@ -1,3 +1,3 @@
 export * from "./invites";
 export * from "./rsvps";
-export * from "./submissions";
+export * from "./guest-photos";

@@ -5,36 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1769330890328,
-      "tag": "0000_sweet_mole_man",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1787631170119,
-      "tag": "0001_faulty_purple_man",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1787799243467,
-      "tag": "0002_faithful_marvel_boy",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1787848891685,
-      "tag": "0003_flippant_killer_shrike",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1788643371731,
-      "tag": "0004_sharp_roulette",
+      "when": 1789550550423,
+      "tag": "0000_initial",
       "breakpoints": true
     }
   ]

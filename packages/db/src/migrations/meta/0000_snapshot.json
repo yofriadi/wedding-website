@@ -1,9 +1,73 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "710eecaa-69b3-4ea1-b66f-437c49fabecb",
+  "id": "fe166b6a-2e9b-4a44-b585-2d2c01d6b265",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
+    "guest_photos": {
+      "name": "guest_photos",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "invite_id": {
+          "name": "invite_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "guest_photos_invite_id_unique": {
+          "name": "guest_photos_invite_id_unique",
+          "columns": ["invite_id"],
+          "isUnique": true
+        },
+        "guest_photos_key_unique": {
+          "name": "guest_photos_key_unique",
+          "columns": ["key"],
+          "isUnique": true
+        },
+        "guest_photos_created_at_id_idx": {
+          "name": "guest_photos_created_at_id_idx",
+          "columns": ["created_at", "id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "guest_photos_invite_id_invites_id_fk": {
+          "name": "guest_photos_invite_id_invites_id_fk",
+          "tableFrom": "guest_photos",
+          "tableTo": "invites",
+          "columnsFrom": ["invite_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "invites": {
       "name": "invites",
       "columns": {
@@ -42,10 +106,79 @@
           "notNull": true,
           "autoincrement": false,
           "default": 0
+        },
+        "opened_at": {
+          "name": "opened_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "opened_count": {
+          "name": "opened_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
         }
       },
       "indexes": {},
       "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "rsvps": {
+      "name": "rsvps",
+      "columns": {
+        "invite_id": {
+          "name": "invite_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "attending": {
+          "name": "attending",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "responded_at": {
+          "name": "responded_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "rsvps_attending_idx": {
+          "name": "rsvps_attending_idx",
+          "columns": ["attending"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "rsvps_invite_id_invites_id_fk": {
+          "name": "rsvps_invite_id_invites_id_fk",
+          "tableFrom": "rsvps",
+          "tableTo": "invites",
+          "columnsFrom": ["invite_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "checkConstraints": {}

@@ -15,9 +15,6 @@ catalogs:
     dotenv:
       specifier: ^17.4.2
       version: 17.4.2
-    libsql:
-      specifier: 0.5.29
-      version: 0.5.29
     typescript:
       specifier: ^6.0.3
       version: 6.0.3
@@ -63,6 +60,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@alerix/m3-loading-indicator':
+        specifier: 1.0.5
+        version: 1.0.5
       '@astrojs/node':
         specifier: ^11.1.0
         version: 11.1.0(astro@7.2.0(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.3)(@types/node@26.1.2)(jiti@2.7.0)(tsx@4.23.1)(yaml@2.9.0))
@@ -99,9 +99,6 @@ importers:
       leaflet:
         specifier: 2.0.0-alpha.1
         version: 2.0.0-alpha.1
-      libsql:
-        specifier: 'catalog:'
-        version: 0.5.29
       motion:
         specifier: ^13.0.0
         version: 13.0.0
@@ -153,12 +150,6 @@ importers:
       drizzle-orm:
         specifier: ^0.45.2
         version: 0.45.2(@libsql/client@0.17.4)
-      libsql:
-        specifier: 'catalog:'
-        version: 0.5.29
-      zod:
-        specifier: 'catalog:'
-        version: 4.4.3
     devDependencies:
       '@wedding-website/config':
         specifier: workspace:*
@@ -193,6 +184,23 @@ importers:
         version: 6.0.3
 
 packages:
+
+  '@alerix/m3-loading-indicator@1.0.5':
+    resolution: {integrity: sha512-BMoiNaeXZSsIG4HA+hP3igqnqYyzqXO4bCKeIuwLsGZflvvglES6pxqqhhOyh35Imhfl0K7CawjeYybnMXHoDw==}
+    peerDependencies:
+      react: '>=18.0.0'
+      react-dom: '>=18.0.0'
+      svelte: '>=5.0.0'
+      vue: '>=3.3.0'
+    peerDependenciesMeta:
+      react:
+        optional: true
+      react-dom:
+        optional: true
+      svelte:
+        optional: true
+      vue:
+        optional: true
 
   '@astrojs/check@0.9.10':
     resolution: {integrity: sha512-zgx/UQMozdjOa3bOxjgeCFdtpE3c9rRX6xHwa+2QXvy8z8Akifu2AtubHyv/zzC2znO8dl8fFWL4K+Ba9kS8HQ==}
@@ -3213,6 +3221,8 @@ packages:
     resolution: {integrity: sha512-bXE4cR/kVZhKZX/RjPEflHaKVhUVl85noU3v6b8apfQEc1x4A+zBxjZ4lN8LqGd6WZ3dl98pY4o717VFmoPp+A==}
 
 snapshots:
+
+  '@alerix/m3-loading-indicator@1.0.5': {}
 
   '@astrojs/check@0.9.10(prettier@3.9.6)(typescript@6.0.3)':
     dependencies:

@@ -6,13 +6,9 @@ export const env = createEnv({
   server: {
     DATABASE_URL: z.string().min(1),
     DATABASE_AUTH_TOKEN: z.string().min(1).optional(),
-    CORS_ORIGIN: z.url().optional(),
     INVITE_ADMIN_TOKEN: z.string().min(32).optional(),
     INVITE_COOKIE_DAYS: z.coerce.number().int().positive().default(30),
-    // Guest photo storage root (guest-submissions D4): a local content
-    // directory OUTSIDE the web root, e.g. /srv/wedding/photos/. Falls back
-    // to a dev-relative dir so local runs work without config; production
-    // sets it explicitly.
+    // Guest photos live outside the public web root. Set an absolute path in production.
     PHOTO_STORAGE_DIR: z.string().min(1).default("./var/photos"),
     // AVIF variant generation (photo-normalization): AVIF is ~35% smaller than
     // the canonical WebP but ~4x slower to encode. It runs in a background
