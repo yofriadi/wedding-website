@@ -207,7 +207,7 @@ function checkLineClearance(page, label) {
 // year's numbers (the old harness silently captured the wrong moments).
 async function deriveStops(page) {
   return page
-    .evaluate((CONNECT_X) => {
+    .evaluate(() => {
       // Sequence-ordered, matching the renumbered DOM ids 1:1: index 4 is
       // #dot-5 and index 5 the finale anchor. connect(N) indexes THIS array —
       // connect(5) is the dot-5 connection.
@@ -222,7 +222,7 @@ async function deriveStops(page) {
       const r6 = dot6Anchor.getBoundingClientRect();
       dots.push(((r6.left + r6.width / 2) / innerWidth) * 100);
       return dots;
-    }, CONNECT_X)
+    })
     .then((dotsVw) => {
       // connect(N): the pan at which sequence dot N sits CONNECT_X from the
       // viewport's left edge — i.e. track pan = -(dotXvw - CONNECT_X).
@@ -426,6 +426,85 @@ async function captureReducedMotion(browser, url, report) {
   }
 }
 
+// families-text-reveal: the timeline stop list above never lands on the
+// families section (it sits ABOVE the timeline), so the reveal sweep needs
+// its own capture pass. The reveal is TRAVELLING (viewport-position-driven,
+// no pin), so the stops scroll the section through the viewport: entering at
+// ghost, mid-sweep with the band crossing the copy, and fully inked above —
+// plus a reverse frame back down for the un-reveal eyeball.
+async function captureFamiliesReveal(browser, url, width, report) {
+  const height = width < 768 ? 800 : 900;
+  const context = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: 1 });
+  const page = await context.newPage();
+  await page.goto(url, { waitUntil: "networkidle", timeout: 90000 });
+  await page.evaluate(() => {
+    document.documentElement.style.overflow = "visible";
+    document.body.style.overflow = "visible";
+  });
+  // The loader holds a 2.6s minimum dwell before fading; without this wait
+  // every capture photographs the overlay instead of the section. (The
+  // timeline pass above survives without it only because its warm-up loop
+  // spans the dwell.)
+  await page.locator("#loading-screen").waitFor({ state: "detached", timeout: 45000 });
+  await page
+    .locator("#welcome-gate")
+    .first()
+    .click({ force: true })
+    .catch(() => {});
+  await page.evaluate(() => document.fonts.ready);
+  await page.waitForTimeout(400);
+
+  const geom = await page.evaluate(() => {
+    const section = document.getElementById("families-section");
+    if (!section) throw new Error("#families-section not found");
+    return {
+      top: section.getBoundingClientRect().top + window.scrollY,
+      height: section.offsetHeight,
+      vh: window.innerHeight,
+    };
+  });
+  // Scroll positions as viewport fractions of the section's travel through
+  // the frame: 0 = top edge at the bottom edge; 1 = bottom edge at the top.
+  const stops = [0, 0.25, 0.5, 0.75, 1];
+  for (const f of stops) {
+    await page.evaluate(
+      ({ top, height, vh, f }) => window.scrollTo(0, Math.max(0, top - vh + f * (height + vh))),
+      { ...geom, f },
+    );
+    await page.waitForTimeout(300);
+    const state = await page.evaluate(() => {
+      const words = [...document.querySelectorAll("#families-section .fw")];
+      const section = document.getElementById("families-section");
+      return {
+        y: section?.style.getPropertyValue("--families-y") || "authored",
+        inked: words.filter((el) => Number(getComputedStyle(el).opacity) >= 0.9).length,
+        ghosting: words.filter((el) => Number(getComputedStyle(el).opacity) <= 0.2).length,
+        total: words.length,
+      };
+    });
+    state.label = `${width}/families-${f}`;
+    report.families.push(state);
+    // Once the section has fully passed, everything must be inked; while it
+    // is entering, the trailing words must still be ghost.
+    if (f === 1 && state.inked !== state.total) {
+      report.violations.push({ ...state, note: "words did not stay inked above the band" });
+    }
+    if (f === 0 && state.ghosting < state.total - 1) {
+      report.violations.push({ ...state, note: "entering words should sit at the ghost floor" });
+    }
+    await page.screenshot({ path: path.join(OUT_DIR, `local-${width}-families-${f}.png`) });
+  }
+  // Reverse-scrub frame: back to mid-travel after the full pass.
+  await page.evaluate(
+    ({ top, height, vh }) => window.scrollTo(0, Math.max(0, top - vh + 0.25 * (height + vh))),
+    geom,
+  );
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: path.join(OUT_DIR, `local-${width}-families-0.25-reverse.png`) });
+
+  await context.close();
+}
+
 async function main() {
   await mkdir(OUT_DIR, { recursive: true });
   const browser = await chromium.launch();
@@ -436,6 +515,7 @@ async function main() {
     lineClearance: [],
     pins: [],
     reducedMotion: [],
+    families: [],
     violations: [],
   };
 
@@ -451,6 +531,11 @@ async function main() {
 
   await captureReducedMotion(browser, url, report);
   console.log("Reduced-motion captures done.");
+
+  for (const width of WIDTHS) {
+    await captureFamiliesReveal(browser, url, width, report);
+    console.log(`Families-reveal captures done for ${width}px.`);
+  }
 
   await browser.close();
 

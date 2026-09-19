@@ -1,0 +1,278 @@
+---
+// Positioned within the memories section. Native sticky positioning keeps the
+// button at the viewport bottom, then parks it beneath the trail at its end.
+---
+
+<photo-trail-controls class="photo-cta">
+  <div class="photo-cta__track">
+    <div class="photo-cta__sticky">
+      <button
+        type="button"
+        class="photo-cta__button"
+        data-add-image
+        hidden
+        aria-describedby="photo-upload-help photo-upload-error"
+        aria-busy="false"
+        aria-disabled="false"
+        data-state="idle"
+      >
+        <span class="photo-cta__label" data-photo-label>Tambah punyamu</span>
+        <span class="photo-cta__icon" aria-hidden="true">
+          <canvas class="photo-cta__indicator" data-photo-indicator></canvas>
+          <svg data-photo-icon="add" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          <svg data-photo-icon="success" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m5 12 4 4 10-10" />
+          </svg>
+        </span>
+      </button>
+      <p id="photo-upload-error" class="photo-cta__error" data-photo-error role="alert" hidden></p>
+    </div>
+  </div>
+  <input
+    type="file"
+    accept="image/jpeg,image/png,image/webp,image/avif"
+    aria-label="Pilih satu gambar"
+    aria-describedby="photo-upload-help"
+    data-photo-input
+    hidden
+  />
+  <p id="photo-upload-help" class="sr-only">
+    Pilih satu gambar JPEG, PNG, WebP, atau AVIF, maksimal 10 MB.
+    Gambar langsung diunggah dan dapat dilihat semua orang.
+  </p>
+  <p class="sr-only" data-photo-status role="status" aria-live="polite" aria-atomic="true"></p>
+</photo-trail-controls>
+
+<style>
+  .photo-cta {
+    --cta-bottom: max(1.5rem, env(safe-area-inset-bottom));
+    /* Match SlideToConfirm's solid grey track in both themes. */
+    --cta-bg: #262626;
+    --cta-fg: #f5f5f7;
+    --cta-icon-bg: #f5f5f7;
+    --cta-icon-fg: #1d1d1f;
+    --cta-rise-duration: 200ms;
+    /* A rare marketing reveal, not interaction feedback: let the morph read. */
+    --cta-expand-duration: 500ms;
+    /* Reserve room for the success label so uploading never shifts the pill. */
+    --cta-pill-width: 15rem;
+    --cta-collapsed-inset: calc((var(--cta-pill-width) - 3.5rem) / 2);
+    display: block;
+    height: 7rem;
+    pointer-events: none;
+  }
+
+  .photo-cta__track {
+    position: absolute;
+    inset: 0 0 var(--cta-bottom);
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  .photo-cta__sticky {
+    position: sticky;
+    top: calc(100vh - var(--cta-bottom) - 3.5rem);
+    top: calc(100dvh - var(--cta-bottom) - 3.5rem);
+    display: flex;
+    justify-content: center;
+    height: 3.5rem;
+  }
+
+  .photo-cta__button {
+    position: relative;
+    width: var(--cta-pill-width);
+    height: 3.5rem;
+    flex-shrink: 0;
+    border: 1px solid rgba(128, 128, 128, 0.18);
+    border-radius: 999px;
+    background: var(--cta-bg);
+    color: var(--cta-fg);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    white-space: nowrap;
+    cursor: pointer;
+    touch-action: manipulation;
+    opacity: 0;
+    transform: translateY(50%) scale(0.95);
+    clip-path: inset(0 var(--cta-collapsed-inset) round 1.75rem);
+    pointer-events: none;
+    /* Exit: collapse in place first, then lower/fade the circle. Native sticky
+       positioning stays active for the entire sequence. The pill contracts to
+       its circle over --cta-expand-duration, and only then does the circle
+       lower and fade — the reverse of the entrance's order, and the reason the
+       opacity/transform delays are the expand duration rather than zero. */
+    transition:
+      opacity var(--cta-rise-duration) var(--ease-out-strong) var(--cta-expand-duration),
+      transform var(--cta-rise-duration) var(--ease-out-strong) var(--cta-expand-duration),
+      clip-path var(--cta-expand-duration) var(--ease-in-out-strong),
+      background-color 160ms ease;
+  }
+
+  .photo-cta__button[hidden] { display: none; }
+
+  .photo-cta__label {
+    display: block;
+    padding-inline: 1.25rem 3.5rem;
+    opacity: 0;
+    transition: opacity 160ms var(--ease-out-strong);
+  }
+
+  .photo-cta__icon {
+    position: absolute;
+    inset-block-start: 0.4375rem;
+    inset-inline-end: 0.4375rem;
+    display: grid;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    background: var(--cta-icon-bg);
+    color: var(--cta-icon-fg);
+    transform: translateX(calc(-1 * var(--cta-collapsed-inset)));
+    transition: transform var(--cta-expand-duration) var(--ease-in-out-strong);
+  }
+
+  /* The canvas replaces the solid circle only after its first paint. Keep it
+     mounted through completion so the live M3 silhouette can return to a circle. */
+  .photo-cta__icon[data-indicator-ready] { background: transparent; }
+  .photo-cta__indicator {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  .photo-cta__icon svg {
+    position: relative;
+    width: 1.375rem;
+    height: 1.375rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 160ms var(--ease-out-strong), visibility 0s linear 160ms;
+  }
+  [data-state="idle"] [data-photo-icon="add"],
+  [data-state="success"] [data-photo-icon="success"] {
+    opacity: 1;
+    visibility: visible;
+    transition-delay: 0s;
+  }
+  /* Stack glyphs above the shape without rotating the plus/checkmark. */
+  [data-photo-icon] { grid-area: 1 / 1; }
+  .photo-cta__button[aria-disabled="true"] { cursor: default; }
+
+  .photo-cta__error {
+    position: absolute;
+    bottom: calc(100% + 0.75rem);
+    width: max-content;
+    max-width: min(24rem, calc(100vw - 2rem));
+    padding: 0.625rem 0.875rem;
+    border: 1px solid rgba(128, 128, 128, 0.18);
+    border-radius: 0.75rem;
+    background: var(--cta-bg);
+    color: var(--cta-fg);
+    font-size: 0.8125rem;
+    line-height: 1.5;
+    text-align: center;
+  }
+  .photo-cta__error[hidden] { display: none; }
+
+  .photo-cta[data-revealed] .photo-cta__button,
+  .photo-cta__button:focus-visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    clip-path: inset(0 0 round 1.75rem);
+    pointer-events: auto;
+  }
+
+  /* Entrance reverses the order: circle rises, then opens without a pause. */
+  .photo-cta[data-revealed] .photo-cta__button {
+    transition-delay: 0ms, 0ms, var(--cta-rise-duration), 0ms;
+  }
+
+  .photo-cta[data-revealed] .photo-cta__label,
+  .photo-cta[data-revealed] .photo-cta__icon,
+  .photo-cta__button:focus-visible span {
+    opacity: 1;
+    transform: none;
+    transition-delay: var(--cta-rise-duration);
+  }
+
+  /* Fade the text only after the rise and pill expansion have finished. */
+  .photo-cta[data-revealed] .photo-cta__label {
+    transition-delay: calc(var(--cta-rise-duration) + var(--cta-expand-duration));
+  }
+
+  .photo-cta .photo-cta__button:focus-visible {
+    outline: 2px solid var(--cta-fg);
+    outline-offset: 4px;
+    clip-path: none;
+    transition: none;
+  }
+
+  .photo-cta .photo-cta__button:focus-visible span { transition: none; }
+
+  .photo-cta[data-revealed] .photo-cta__button:active:not([aria-disabled="true"]) {
+    transform: scale(0.97);
+    /* Scope the press timing to `transform` only. A bare `transition-duration`
+       retimes every property in the base shorthand, so a tap also snapped the
+       clip-path morph and the opacity fade to 100ms. */
+    transition: transform 100ms var(--ease-out-strong);
+  }
+
+  @media (prefers-color-scheme: light) {
+    .photo-cta {
+      --cta-bg: #f5f5f5;
+      --cta-fg: #1d1d1f;
+      --cta-icon-bg: #1d1d1f;
+      --cta-icon-fg: #f5f5f7;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .photo-cta__button,
+    .photo-cta[data-revealed] .photo-cta__button,
+    .photo-cta[data-revealed] .photo-cta__button:active:not([aria-disabled="true"]) {
+      transform: none;
+      clip-path: none;
+      transition: opacity 160ms ease;
+    }
+    .photo-cta .photo-cta__label,
+    .photo-cta .photo-cta__icon,
+    .photo-cta[data-revealed] .photo-cta__label,
+    .photo-cta[data-revealed] .photo-cta__icon {
+      transform: none;
+      opacity: 1;
+      transition: none;
+    }
+    .photo-cta .photo-cta__button:focus-visible { transition: none; }
+  }
+
+  @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+    .photo-cta__button {
+      background: var(--cta-icon-fg);
+      border-color: var(--cta-fg);
+    }
+  }
+</style>
+
+<script>
+  import { initPhotoTrail } from "../scripts/photo-trail";
+
+  class PhotoTrailControls extends HTMLElement {
+    private cleanup?: () => void;
+
+    connectedCallback() {
+      this.cleanup?.();
+      this.cleanup = initPhotoTrail(this);
+    }
+
+    disconnectedCallback() { this.cleanup?.(); }
+  }
+
+  if (!customElements.get("photo-trail-controls")) {
+    customElements.define("photo-trail-controls", PhotoTrailControls);
+  }
+</script>

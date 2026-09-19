@@ -1,0 +1,385 @@
+---
+/**
+ * FamiliesReveal — the hosts' families section.
+ *
+ * Canvas-style scroll progression:
+ * - The section is an expansive canvas (longer than the viewport, ~220lvh).
+ * - As the guest scrolls, text elements enter from the bottom in a faint shade of grey.
+ * - Around 16% from the bottom of the viewport, words begin turning black,
+ *   reaching full black by ~38% from the bottom, word-by-word.
+ * - Words stay solid black as they continue moving upward through the center and out of view.
+ * - Family 2 follows below it down the canvas with the same continuous reveal behavior.
+ */
+
+/** One article per family: the lineage line, the hero name with its
+ *  underline, and the parents line that the wave divider precedes. */
+const FAMILY_SECTIONS = [
+	{
+		patternId: "wave-pattern-bride",
+		street: "Ya Allah, izinkanlah putra-putri kami menikah",
+		lines: [
+			"Aisha Astri Amalia",
+			"Putri dari Ibu Siti Mufrodah & Bapak M. David R. Wijaya",
+			"Bapak Ch. Fuad Ery Pribadi - Ibu Siti Mufrodah",
+		],
+	},
+	{
+		patternId: "wave-pattern-groom",
+		street: "dengan",
+		lines: [
+			"Muhammad Yofri Adi Yahya",
+			"Putra dari Ibu Nur Faizah & Bapak Ahmad Tukul",
+			"Bapak Hermansyah - Ibu Nur Faizah",
+		],
+	},
+];
+
+const splitWords = (line: string): string[] => line.split(/\s+/).filter(Boolean);
+const NON_NAMES = new Set(["Putri", "dari", "Ibu", "Bapak", "&", "-", "Putra", "Keluarga", "Hj.", "(Eyang)"]);
+const isName = (w: string) => !NON_NAMES.has(w);
+---
+
+<section id="families-section" class="relative z-0 overflow-hidden">
+	<div class="mx-auto max-w-4xl px-6">
+		<div class="families-canvas flex flex-col items-start">
+
+			{FAMILY_SECTIONS.map((section) => (
+				<article class="families-block flex flex-col items-start text-left">
+					<p class="families-row families-street-text mb-3 sm:mb-4 flex flex-wrap justify-start">
+						{splitWords(section.street).map((word, i, arr) => (
+							<span class="fw" style={`--s: ${i / arr.length}; --n: ${arr.length}`}>
+								{word}
+							</span>
+						))}
+					</p>
+					<div class="families-narrative-group w-full flex flex-col items-start gap-1 sm:gap-2">
+						{section.lines.map((line, idx) => {
+							const words = splitWords(line);
+							const n = words.length;
+							const isHero = idx === 0;
+							const isWaveBefore = idx === 2;
+							return (
+								<>
+									{isWaveBefore && (
+										<div class="families-wave-divider families-row my-2 sm:my-3 w-full" style="--s: 0; --n: 1;">
+											<svg class="w-full h-[10px] text-[var(--families-rule)]" fill="none" xmlns="http://www.w3.org/2000/svg">
+												<defs>
+													<pattern id={section.patternId} width="20" height="10" patternUnits="userSpaceOnUse" x="0">
+														<path d="M 0 5 Q 5 0, 10 5 T 20 5" stroke="currentColor" stroke-width="1.75" fill="none" stroke-linecap="round" />
+														<animate attributeName="x" from="0" to="20" dur="1.6s" repeatCount="indefinite" />
+													</pattern>
+												</defs>
+												<rect width="100%" height="10" fill={`url(#${section.patternId})`} />
+											</svg>
+										</div>
+									)}
+									<div class="families-row families-names flex flex-wrap items-baseline justify-start">
+										{words.map((word, i) => (
+											<span
+												class={`fw ${isName(word) ? "fw-name" : "fw-honorific"}`}
+												style={`--s: ${i / n}; --n: ${n}`}
+											>
+												{word}
+											</span>
+										))}
+									</div>
+									{isHero && (
+										<div class="families-name-underline families-row mb-2 sm:mb-3" style="--s: 0; --n: 1;" />
+									)}
+								</>
+							);
+						})}
+					</div>
+				</article>
+			))}
+		</div>
+	</div>
+</section>
+
+<script>
+	/**
+	 * Reveal band:
+	 * Start turning black around 16% from bottom (fromBottom = 0.16 * vh)
+	 * Fully black by 38% from bottom (fromBottom = 0.38 * vh)
+	 * Travel distance = (0.38 - 0.16) * vh = 0.22 * vh
+	 */
+	const START_FROM_BOTTOM = 0.16;
+	const END_FROM_BOTTOM = 0.38;
+	const TRAVEL_FRACTION = END_FROM_BOTTOM - START_FROM_BOTTOM; // 0.22
+
+	const cleanupFns: Array<() => void> = [];
+	let resizeTimeout: number | undefined;
+	let measuredWidth = 0;
+	let lvhPx = 0;
+
+	function measureLvh(): number {
+		const probe = document.createElement("div");
+		probe.style.cssText =
+			"position:fixed;top:0;left:0;width:0;height:100lvh;visibility:hidden;pointer-events:none;";
+		document.body.appendChild(probe);
+		const height = probe.getBoundingClientRect().height;
+		probe.remove();
+		return height;
+	}
+
+	function measureRowPositions(section: HTMLElement): void {
+		const travelPx = TRAVEL_FRACTION * lvhPx;
+		const scrollY = window.scrollY;
+		section.querySelectorAll<HTMLElement>(".families-row").forEach((el) => {
+			const rect = el.getBoundingClientRect();
+			const docCenter = rect.top + scrollY + rect.height / 2;
+			el.style.setProperty("--d", (docCenter / travelPx).toFixed(6));
+		});
+	}
+
+	function initFamiliesReveal() {
+		const section = document.getElementById("families-section");
+		if (!section) return;
+
+		measuredWidth = window.innerWidth;
+		lvhPx = measureLvh();
+
+		// Reduced motion: the authored state (--families-y huge ⇒ every word at full ink)
+		if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+			// SMIL <animate> is invisible to CSS, so `prefers-reduced-motion` cannot
+			// reach the wave dividers' indefinite scroll — it keeps ticking even while
+			// the divider is clipped to zero width. Freeze it explicitly; the wave's
+			// shape stays drawn, it just stops travelling.
+			//
+			// pauseAnimations() on the owning <svg>, NOT removing the <animate>
+			// nodes: removal is irreversible, so a guest who turns the OS setting
+			// back off mid-session would never get the motion back (this component
+			// re-inits on width change, but a deleted node cannot return). Pausing
+			// the SVG timeline is the reversible equivalent and needs no try/catch.
+			section.querySelectorAll<SVGSVGElement>("svg").forEach((svg) => {
+				svg.pauseAnimations?.();
+			});
+			return;
+		}
+
+		// Motion is allowed: undo any pause a previous reduced-motion init applied
+		// (the OS setting can be flipped back off while the page is open).
+		section.querySelectorAll<SVGSVGElement>("svg").forEach((svg) => {
+			svg.unpauseAnimations?.();
+		});
+
+		measureRowPositions(section);
+		document.fonts?.ready.then(() => measureRowPositions(section)).catch(() => {});
+
+		cleanupFns.forEach((fn) => fn());
+		cleanupFns.length = 0;
+
+		const travelPx = TRAVEL_FRACTION * lvhPx;
+		const offsetPx = (1 - START_FROM_BOTTOM) * lvhPx; // 0.74 * lvhPx
+		let lastY = 100000;
+		let sectionVisible = true;
+
+		const writeY = (scrollY: number) => {
+			lastY = (scrollY + offsetPx) / travelPx;
+			section.style.setProperty("--families-y", lastY.toFixed(6));
+		};
+
+		const visibility = new IntersectionObserver(
+			(entries) => {
+				sectionVisible = entries.some((entry) => entry.isIntersecting);
+				if (sectionVisible) writeY(window.scrollY);
+			},
+			{ rootMargin: "150% 0px" },
+		);
+		visibility.observe(section);
+		cleanupFns.push(() => visibility.disconnect());
+
+		let ticking = false;
+		const onScroll = () => {
+			if (!ticking) {
+				requestAnimationFrame(() => {
+					if (sectionVisible) writeY(window.scrollY);
+					ticking = false;
+				});
+				ticking = true;
+			}
+		};
+
+		window.addEventListener("scroll", onScroll, { passive: true });
+		cleanupFns.push(() => window.removeEventListener("scroll", onScroll));
+
+		writeY(window.scrollY);
+	}
+
+	function handleResize() {
+		if (window.innerWidth === measuredWidth) return;
+		clearTimeout(resizeTimeout);
+		resizeTimeout = setTimeout(initFamiliesReveal, 150) as unknown as number;
+	}
+
+	window.addEventListener("resize", handleResize);
+	if (document.readyState === "loading") {
+		document.addEventListener("DOMContentLoaded", initFamiliesReveal);
+	} else {
+		initFamiliesReveal();
+	}
+</script>
+
+<style>
+	@property --families-y {
+		syntax: "<number>";
+		inherits: true;
+		initial-value: 100000;
+	}
+
+	#families-section {
+		--families-name-size: clamp(2.5rem, 7vw, 5.25rem);
+		--families-bg: #0a0a0a;
+		--families-ink: #ffffff;
+		--families-ghost-opacity: 0.14;
+		--families-rule: color-mix(in oklab, var(--families-ink) 80%, transparent);
+
+		--families-y: 100000; /* authored state: reveal-complete */
+
+		position: relative;
+		z-index: 0;
+		padding-block: 30vh;
+		padding-block: 30lvh;
+		background-color: var(--families-bg);
+		color: var(--families-ink);
+		font-family: var(--font-sans, "Geist", sans-serif);
+	}
+
+	@media (prefers-color-scheme: light) {
+		#families-section {
+			--families-bg: #ffffff;
+			--families-ink: #000000;
+			/* Shade of grey for unrevealed state in light theme */
+			--families-ghost-opacity: 0.14;
+			--families-rule: color-mix(in oklab, var(--families-ink) 80%, transparent);
+		}
+	}
+
+	.families-canvas {
+		width: 100%;
+		gap: 25vh;
+		gap: 25lvh;
+	}
+
+	.families-block {
+		width: 100%;
+		/* The reveal drives ~50 word opacities from one inherited property, so a
+		 * frame can dirty every word in the section at once. `contain: paint`
+		 * bounds each block's repaint to its own box, keeping an invalidation in
+		 * one block from costing a full-section repaint (the mitigation named in
+		 * the families-text-reveal design). Safe here because the blocks never
+		 * overflow their bounds and nothing inside them is sticky. */
+		contain: paint;
+	}
+
+	/*
+	 * Each row calculates its reveal progress --p from the global --families-y
+	 * and its pre-measured document center --d.
+	 * Default fallback is -100 so with authored y=100000, --p evaluates strictly >= 1.
+	 */
+	.families-row {
+		--p: clamp(0, calc(var(--families-y) - var(--d, -100)), 1);
+		margin: 0;
+	}
+
+	/* Magic UI Typography: Geist Sans, bold and prominent */
+	.families-street-text,
+	.families-address {
+		font-size: clamp(1rem, 2.2vw, 1.25rem);
+		font-weight: 400;
+		line-height: 1.6;
+		letter-spacing: -0.01em;
+	}
+
+	.families-hero-name,
+	.families-name-text,
+	.families-heading,
+	.families-names {
+		font-size: var(--families-name-size);
+		font-weight: 700;
+		letter-spacing: -0.03em;
+		line-height: 1.25;
+	}
+	.families-name-underline {
+		width: 100%;
+		height: 2px;
+		margin-top: 0.35rem;
+		margin-inline: 0;
+		background-color: var(--families-rule);
+		transform-origin: left center;
+		transform: scaleX(clamp(0, calc((var(--p) - var(--s)) * var(--n)), 1));
+		opacity: clamp(var(--families-ghost-opacity), calc(var(--families-ghost-opacity) + (1 - var(--families-ghost-opacity)) * ((var(--p) - var(--s)) * var(--n))), 1);
+	}
+	.families-wave-divider {
+		width: 100%;
+		margin-inline: 0;
+		/* Reveal forward at constant, natural wavelength (no spring pulling) */
+		clip-path: inset(0 calc((1 - clamp(0, calc((var(--p) - var(--s)) * var(--n)), 1)) * 100%) 0 0);
+		opacity: clamp(var(--families-ghost-opacity), calc(var(--families-ghost-opacity) + (1 - var(--families-ghost-opacity)) * ((var(--p) - var(--s)) * var(--n))), 1);
+	}
+
+	.families-subname-text {
+		font-size: calc(var(--families-name-size) * 0.5);
+		font-weight: 500;
+		letter-spacing: -0.01em;
+		line-height: 1.35;
+	}
+
+	.families-names {
+		list-style: none;
+		margin: 0;
+		padding: 0;
+	}
+
+	.families-names li {
+		font-size: inherit;
+		font-weight: inherit;
+	}
+
+	/* Divider */
+	.families-divider {
+		width: min(240px, 60%);
+		height: 1px;
+		margin-block: 1rem;
+		margin-inline: 0;
+		background-color: var(--families-rule);
+		transform-origin: left center;
+		transform: scaleX(clamp(0, calc((var(--p) - var(--s)) * var(--n)), 1));
+		opacity: clamp(var(--families-ghost-opacity), calc(var(--families-ghost-opacity) + (1 - var(--families-ghost-opacity)) * ((var(--p) - var(--s)) * var(--n))), 1);
+	}
+
+	/* Single-tier Word Structure */
+	.fw {
+		display: inline-block;
+		margin-inline-end: 0.26em;
+		color: var(--families-ink);
+		opacity: clamp(var(--families-ghost-opacity), calc(var(--families-ghost-opacity) + (1 - var(--families-ghost-opacity)) * ((var(--p) - var(--s)) * var(--n))), 1);
+	}
+	.fw-honorific {
+		font-size: 0.5em;
+		font-weight: 500;
+		letter-spacing: normal;
+		margin-inline-end: 0.35em;
+	}
+
+	.fw-name {
+		font-size: 1em;
+		font-weight: 700;
+	}
+
+	@media (prefers-reduced-motion: reduce) {
+		#families-section {
+			--families-y: 100000 !important;
+			min-height: auto;
+			padding-block: 8vh;
+		}
+
+		.families-canvas {
+			gap: 4rem;
+		}
+
+		.fw, .families-divider {
+			opacity: 1 !important;
+		}
+	}
+</style>
