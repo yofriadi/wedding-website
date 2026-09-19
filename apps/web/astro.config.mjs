@@ -18,7 +18,7 @@ export default defineConfig({
       include: ["motion"],
     },
     server: {
-      allowedHosts: [".trycloudflare.com", ".bore.pub", "bore.pub"],
+      allowedHosts: [".trycloudflare.com"],
     },
   },
 });

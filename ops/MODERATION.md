@@ -1,45 +1,44 @@
-# Moderation runbook (guest-submissions 5.3)
+# Guest-photo moderation and offline reconciliation
 
-Post-once is the whole moderation story: a bad actor gets one submission per
-invite, and a manual removal path is near-free insurance when the couple wants
-one gone anyway.
+Photos are public. Each invitation can own one `guest_photos` row. Invitation display names remain private to invitation/admin features, not photo labels.
 
-Attribution is partial by design (story-rail-attribution). A STORY tile shows
-the poster's first name to every visitor — derived at read time from that
-invite's `display_name` (first whitespace token), never snapshotted, so
-renaming an invite renames its tiles and the wall needs no cleanup.
-Submissions are photo-only (retire-wishes-story-intro): there is no wish text
-to moderate.
+## Remove one photo
 
-## Remove a whole submission (photos)
+1. Confirm the exact database and `PHOTO_STORAGE_DIR` from the running service. Take a matched database/photo backup. Stop application writers and all AVIF jobs before manual filesystem changes.
+2. Inspect the chosen photo using a read-only connection:
 
-Find the submission id first (stories render newest-first on the wall):
+   ```sql
+   SELECT id, invite_id, key, created_at FROM guest_photos ORDER BY created_at DESC, id DESC;
+   ```
 
-```sh
-sqlite3 /srv/wedding/local.db \
-  "SELECT s.id, s.created_at, COUNT(p.id) AS photos
-     FROM submissions s LEFT JOIN submission_photos p ON p.submission_id = s.id
-    GROUP BY s.id ORDER BY s.created_at DESC;"
-```
+   Treat `invite_id` as private invitation access data. Do not paste it into public logs or issue trackers.
 
-```sh
-# 1. delete the row (FK: submission_photos rows go with it via ON DELETE…
-#    no action — delete children first:)
-sqlite3 /srv/wedding/local.db \
-  "DELETE FROM submission_photos WHERE submission_id = '<submission-id>'; DELETE FROM submissions WHERE id = '<submission-id>';"
+3. After confirming the exact row, use a bound parameter and foreign keys enabled to delete only that photo, in a transaction:
 
-# 2. remove the files:
-rm -rf /srv/wedding/photos/submissions/<submission-id>
-```
+   ```sql
+   PRAGMA foreign_keys=ON;
+   BEGIN IMMEDIATE;
+   DELETE FROM guest_photos WHERE id = :reviewed_photo_id;
+   COMMIT;
+   ```
 
-The guest's invite keeps its `UNIQUE(invite_id)` slot freed — they can post
-again. (If you'd rather they NOT be able to repost, remove the invite from
-`invites` too.)
+   `:reviewed_photo_id` is an operator-bound value, not a command to run literally. Verify exactly one row changed. Never disable foreign keys to force a deletion.
 
-## Notes
+4. Remove or quarantine only `PHOTO_STORAGE_DIR/guest-photos/<reviewed-photo-id>/`. Validate the 12-character URL-safe ID and that the resolved directory stays under the configured root. Do not touch `apps/web/public/` or other upload directories. Restart only after database/filesystem handling is complete.
 
-- Backups still contain the removed content until the 30-day tree rotation
-  prunes it. If that matters, re-run `ops/backup.sh` after moderation and
-  manually delete older backup trees.
-- No restart is needed; the app reads live from SQLite.
-- The couple owns root on the VM; this runbook assumes `ssh` as root or sudo.
+Deleting the row frees that invitation's unique upload slot, so it can post again. **Do not delete the invitation as a ban**: dependent RSVP/photo foreign keys and shared-link semantics require a separate policy. No moderation API or ban feature is implemented.
+
+Browser/CDN caches can keep already-served immutable photos; local removal does not remotely revoke them. Backups also retain removed content until their retention policy expires. Account for both if removal is privacy-sensitive.
+
+## Offline orphan reconciliation
+
+The upload pipeline completes a file before publishing its row. A crash between those steps, an uncertain database commit, or cleanup failure may leave a directory that requires review.
+
+1. Stop all application/variant writers and record the exact database/storage targets. Take a backup before changing anything.
+2. Read `id, key` from `guest_photos` and inventory immediate `guest-photos/<id>/` directories. Never run this against public family assets.
+3. Check that each row has canonical key `guest-photos/<id>/photo.webp` and that the file exists. A missing referenced canonical is data loss: investigate/restore it rather than silently deleting its row. A missing AVIF is not data loss; it can be regenerated later.
+4. Compute directory IDs absent from the complete database row set. Validate key containment and investigate each against logs for unresolved publication. With remote replication or uncertain read freshness, do not assume an absent row is authoritative.
+5. Produce a dry-run inventory first. Quarantine only separately approved, proven-unreferenced directories with writers still stopped. Do not perform automatic live or age-based cleanup. Stale `*.part` files are unpublished; review them offline too, and preserve any still needed for incident analysis.
+6. Recheck foreign keys/integrity and canonical references, then restart. Keep the quarantine until its retention decision is approved.
+
+No SQL or filesystem cleanup script is automatically run during application startup, tests, migration, or proposal generation.
