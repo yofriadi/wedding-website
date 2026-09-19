@@ -14,6 +14,13 @@ const CONFIRMED = "#slide-confirmed";
 async function openFixture(page: Page) {
   await page.goto(FIXTURE);
   await page.locator(FRESH).scrollIntoViewIfNeeded();
+  // Behavioral/palette checks start at rest; the staged entrance has its own tests.
+  await expect(page.locator(CONFIRMED)).toHaveClass(/slide-to-confirm--confirmed/);
+  await expect(page.locator(`${FRESH} [data-slide-to-confirm-text]`)).toHaveCSS("opacity", "1");
+  await expect(page.locator(`${FRESH} [data-slide-to-confirm-handle]`)).toHaveCSS(
+    "transform",
+    "matrix(1, 0, 0, 1, 0, 0)",
+  );
 }
 
 /** A resolved CSS color as numeric sRGB channels (0–255) plus alpha. */
@@ -264,11 +271,12 @@ test.describe("slide-to-confirm", () => {
   test("markup: label and handle — the label is the only text", async ({ page }) => {
     await page.emulateMedia({ colorScheme: "dark" });
     await openFixture(page);
-    // The slider is two layers plus the handle's two icons (chevrons idle,
-    // check confirmed; one is always display:none).
+    // The slider is two layers plus the handle's single glyph: one svg whose
+    // two strokes are redrawn into the check (no second icon to swap to).
     await expect(page.locator(`${FRESH} > .slide-to-confirm__label`)).toHaveCount(1);
     await expect(page.locator(`${FRESH} > .slide-to-confirm__handle`)).toHaveCount(1);
-    expect(await page.locator(`${FRESH} svg`).count()).toBe(2);
+    expect(await page.locator(`${FRESH} svg`).count()).toBe(1);
+    expect(await page.locator(`${FRESH} .slide-to-confirm__stroke`).count()).toBe(2);
     // The handle is presentation: the button's own activation is the
     // accessible control, so the handle must not leak into the a11y tree.
     await expect(page.locator(`${FRESH} > .slide-to-confirm__handle`)).toHaveAttribute(
@@ -295,23 +303,20 @@ test.describe("slide-to-confirm", () => {
       .locator(`${CONFIRMED} [data-slide-to-confirm-handle]`)
       .evaluate((el) => {
         const x = Number.parseFloat(el.style.getPropertyValue("--slide-to-confirm-x"));
+        const strokes = [...el.querySelectorAll<SVGPathElement>(".slide-to-confirm__stroke")];
         return {
           x,
-          chevrons: getComputedStyle(el.querySelector(".slide-to-confirm__icon--chevrons")!)
-            .opacity,
-          // The morph replaces the display swap: the check is always present,
-          // its stroke merely undrawn (dashoffset 1) while idle and fully
-          // drawn (0) once confirmed.
-          check: Number.parseFloat(
-            getComputedStyle(
-              el.querySelector<SVGGeometryElement>(".slide-to-confirm__icon--check path")!,
-            ).strokeDashoffset,
-          ),
+          // The morph is geometry: a confirmed control's two strokes ARE the
+          // check's two arms, both at full opacity (nothing is faded out).
+          shortArm: strokes[0]!.getAttribute("d"),
+          longArm: strokes[1]!.getAttribute("d"),
+          opacities: strokes.map((s) => Number(getComputedStyle(s).opacity)),
         };
       });
     expect(parked.x).toBeGreaterThan(0);
-    expect(Number(parked.chevrons)).toBe(0);
-    expect(Number(parked.check)).toBe(0);
+    expect(parked.shortArm).toBe("M9 17 6.5 14.5 4 12");
+    expect(parked.longArm).toBe("M9 17 14.5 11.5 20 6");
+    expect(parked.opacities).toEqual([1, 1]);
     // The fill is the one deliberate hard-coded color: solid black with
     // near-white text in BOTH themes (the tweak).
     const fill = await page
@@ -347,6 +352,34 @@ test.describe("slide-to-confirm", () => {
     expectFreshPalette(await palette(page, FRESH));
     // Reduced motion wins over the confirmed morph too.
     await expect(page.locator(CONFIRMED)).toHaveCSS("transition-duration", "0s");
+  });
+
+  test("reduced motion: a full slide confirms without firing the volley", async ({ page }) => {
+    // The confetti is the single largest movement on the page. Under reduced
+    // motion it does not fire at all — a smaller burst is still a burst, and
+    // the spec's reduced-motion scenario asks for the confirmed state to apply
+    // "identical to the pre-animation behavior". The celebration survives in
+    // the channels reduced motion keeps: the pill is black, the glyph is a
+    // check, and the label reads "Reservation Confirmed".
+    await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
+    await page.setViewportSize({ width: 900, height: 600 });
+    await openFixture(page);
+
+    const box = (await page.locator(FRESH).boundingBox())!;
+    const y = box.y + box.height / 2;
+    await page.mouse.move(box.x + 28, y);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width, y, { steps: 8 });
+    await page.mouse.up();
+
+    // The state change still lands.
+    await expect(page.locator(FRESH)).toHaveClass(/slide-to-confirm--confirmed/);
+
+    // canvas-confetti appends a full-viewport canvas on its first shot. Give
+    // the non-reduced sequence's full duration (fill 520ms + volley stagger)
+    // a chance to produce one, then assert none ever appeared.
+    await page.waitForTimeout(1_200);
+    expect(await page.locator("canvas").count(), "no volley under reduced motion").toBe(0);
   });
 
   test("no JavaScript: the control still renders, readable and unshifted", async ({ browser }) => {
@@ -499,6 +532,410 @@ test.describe("slide-to-confirm", () => {
     await expect
       .poll(async () => page.locator("canvas").count(), { timeout: 10_000 })
       .toBeGreaterThan(0);
+  });
+
+  // The reset contract (a failed save): the host page owns the truth, so it
+  // can dispatch `slide-to-confirm:reset` to take the celebration back. A
+  // control that stays visually confirmed while its action failed is a lie
+  // with no retry — this is the rollback that keeps the pill honest.
+  test("a slide-to-confirm:reset event rolls a confirmed pill back and leaves it slideable", async ({
+    page,
+  }) => {
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.setViewportSize({ width: 900, height: 600 });
+    await openFixture(page);
+
+    const dragHome = async () => {
+      const box = (await page.locator(FRESH).boundingBox())!;
+      const startX = box.x + 28;
+      const startY = box.y + box.height / 2;
+      await page.mouse.move(startX, startY);
+      await page.mouse.down();
+      await page.mouse.move(startX + box.width, startY, { steps: 6 });
+      await page.mouse.up();
+    };
+    const handleX = () =>
+      page
+        .locator(`${FRESH} [data-slide-to-confirm-handle]`)
+        .evaluate((el) => Number.parseFloat(el.style.getPropertyValue("--slide-to-confirm-x")));
+
+    // --- Settled confirm, then reset: the pill un-confirms and can confirm
+    // again. ---
+    await dragHome();
+    await expect(page.locator(FRESH)).toHaveClass(/slide-to-confirm--confirmed/);
+    await expect
+      .poll(async () => page.locator(FRESH).evaluate((el) => getComputedStyle(el).backgroundColor))
+      .toBe("rgb(0, 0, 0)");
+
+    await page
+      .locator(FRESH)
+      .evaluate((el) => el.dispatchEvent(new CustomEvent("slide-to-confirm:reset")));
+
+    // The paint snaps back (the confirmed transitions lived on the class),
+    // the handle springs home, and the fill's radius unpaints to idle.
+    await expect(page.locator(FRESH)).not.toHaveClass(/slide-to-confirm--confirmed/);
+    await expect
+      .poll(async () => page.locator(FRESH).evaluate((el) => getComputedStyle(el).backgroundColor))
+      .toBe("rgb(38, 38, 38)");
+    await expect.poll(handleX).toBe(0);
+    await expect
+      .poll(async () =>
+        page
+          .locator(FRESH)
+          .evaluate((el) => el.style.getPropertyValue("--slide-to-confirm-fill-r")),
+      )
+      .toBe("0px");
+
+    // --- Reset mid-flight (the fast-failure case): the circle's growth is
+    // stopped, not just overwritten afterwards. ---
+    await dragHome();
+    // Reset while the 520ms fill sweep is still running: dispatch in the
+    // same task-chain as the release, before the sweep can complete.
+    await page
+      .locator(FRESH)
+      .evaluate((el) => el.dispatchEvent(new CustomEvent("slide-to-confirm:reset")));
+    await expect(page.locator(FRESH)).not.toHaveClass(/slide-to-confirm--confirmed/);
+    await expect.poll(handleX).toBe(0);
+    await expect
+      .poll(async () =>
+        page
+          .locator(FRESH)
+          .evaluate((el) => el.style.getPropertyValue("--slide-to-confirm-fill-r")),
+      )
+      .toBe("0px");
+
+    // --- The retry gesture itself must behave like a first drag: the handle
+    // TRACKS the pointer mid-slide (the rollback spring may still be
+    // settling — a live ride must never fight the drag), and the label FADES
+    // under the handle (motion's committed inline styles from the first
+    // celebration must not outlive the rollback). ---
+    const box = (await page.locator(FRESH).boundingBox())!;
+    const startX = box.x + 28;
+    const y = box.y + box.height / 2;
+    await page.mouse.move(startX, y);
+    await page.mouse.down();
+    await page.mouse.move(startX + box.width * 0.5, y, { steps: 10 });
+    const mid = await page.locator(FRESH).evaluate((el) => {
+      const handle = el.querySelector<HTMLElement>("[data-slide-to-confirm-handle]")!;
+      const label = el.querySelector<HTMLElement>("[data-slide-to-confirm-text]")!;
+      return {
+        handleX: Number.parseFloat(handle.style.getPropertyValue("--slide-to-confirm-x")),
+        labelOpacity: Number.parseFloat(getComputedStyle(label).opacity),
+        labelInlineOpacity: label.style.opacity,
+      };
+    });
+    expect(mid.handleX).toBeGreaterThan(box.width * 0.2);
+    expect(mid.labelOpacity).toBeLessThan(0.9);
+    expect(mid.labelInlineOpacity).toBe("");
+    // Release short of the end: the rolled-back control behaves like a fresh
+    // one — the release springs home rather than confirming.
+    await page.mouse.up();
+    await expect.poll(handleX).toBe(0);
+    await expect(page.locator(FRESH)).not.toHaveClass(/slide-to-confirm--confirmed/);
+
+    // --- A rolled-back control still confirms: retryability is the point. ---
+    await dragHome();
+    await expect(page.locator(FRESH)).toHaveClass(/slide-to-confirm--confirmed/);
+    await expect
+      .poll(async () =>
+        page.locator(FRESH).evaluate((el) => {
+          const handle = el.querySelector<HTMLElement>("[data-slide-to-confirm-handle]")!;
+          const range = el.clientWidth - handle.offsetWidth - handle.offsetLeft * 2;
+          return Number.parseFloat(handle.style.getPropertyValue("--slide-to-confirm-x")) - range;
+        }),
+      )
+      .toBe(0);
+
+    // --- Keyboard/AT retry is its own path: Enter activates through the
+    // click listener (detail 0), which must not be left guarded by the
+    // rollback's state. Roll back once more and activate from the keyboard. ---
+    await page
+      .locator(FRESH)
+      .evaluate((el) => el.dispatchEvent(new CustomEvent("slide-to-confirm:reset")));
+    await expect.poll(handleX).toBe(0);
+    await page.waitForTimeout(600); // the rollback spring must finish: Enter mid-spring is swallowed by design
+    await page.locator(FRESH).focus();
+    await page.keyboard.press("Enter");
+    await expect(page.locator(FRESH)).toHaveClass(/slide-to-confirm--confirmed/);
+    await expect.poll(handleX).toBeGreaterThan(200);
+  });
+
+  test("the black grows as a circle out of the parked handle, not a crossfade", async ({
+    page,
+  }) => {
+    // The confirmed fill is an EXPANSION seeded at the gesture's endpoint
+    // (TimelineScroll's finale device, scaled to a pill): a circle centered on
+    // the parked handle whose radius grows until it has swallowed the track.
+    // A plain background-color crossfade would satisfy the confirmed-state
+    // tests above while losing the whole effect, so the geometry is asserted
+    // directly — origin, growth, and the layer order that makes the black look
+    // like it came OUT of the handle.
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.setViewportSize({ width: 900, height: 600 });
+    await openFixture(page);
+
+    const read = () =>
+      page.locator(FRESH).evaluate((node) => {
+        const el = node as HTMLElement;
+        const handle = el.querySelector<HTMLElement>("[data-slide-to-confirm-handle]")!;
+        const style = getComputedStyle(el);
+        const fill = getComputedStyle(el, "::before");
+        const range = el.clientWidth - handle.offsetWidth - handle.offsetLeft * 2;
+        return {
+          r: Number.parseFloat(style.getPropertyValue("--slide-to-confirm-fill-r") || "0"),
+          x: Number.parseFloat(style.getPropertyValue("--slide-to-confirm-fill-x") || "0"),
+          clip: fill.clipPath,
+          fillColor: fill.backgroundColor,
+          fillZ: fill.zIndex,
+          handleZ: getComputedStyle(handle).zIndex,
+          // Where the handle's center comes to rest: the fill's origin must
+          // be exactly this point, or the black is not coming out of it.
+          parkedCenter: handle.offsetLeft + range + handle.offsetWidth / 2,
+          width: el.offsetWidth,
+          height: el.offsetHeight,
+        };
+      });
+
+    // Idle: a zero-radius circle paints nothing at all — the effect has no
+    // resting cost and no state to reset.
+    const idle = await read();
+    expect(idle.r).toBe(0);
+
+    const box = (await page.locator(FRESH).boundingBox())!;
+    const startY = box.y + box.height / 2;
+    await page.mouse.move(box.x + 28, startY);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width, startY, { steps: 6 });
+    await page.mouse.up();
+
+    // Caught mid-sweep: a real intermediate radius — already growing, but far
+    // short of covering the pill. This is the frame a crossfade cannot
+    // produce, so it is sampled before anything else.
+    const covered = await page.locator(FRESH).evaluate((node) => {
+      const el = node as HTMLElement;
+      const handle = el.querySelector<HTMLElement>("[data-slide-to-confirm-handle]")!;
+      const range = el.clientWidth - handle.offsetWidth - handle.offsetLeft * 2;
+      const center = handle.offsetLeft + range + handle.offsetWidth / 2;
+      return Math.hypot(Math.max(center, el.offsetWidth - center), el.offsetHeight / 2);
+    });
+    await expect.poll(async () => (await read()).r > 0).toBe(true);
+    const growing = await read();
+    expect(growing.clip).toContain("circle(");
+    expect(growing.r).toBeLessThan(covered);
+
+    // Grown to cover: the radius settles at the distance from the handle's
+    // center to the pill's far corner — enough to swallow the track, and not
+    // meaningfully more.
+    await expect.poll(async () => (await read()).r).toBeGreaterThanOrEqual(covered);
+    const grown = await read();
+    expect(grown.r).toBeLessThan(covered + 8);
+
+    // The origin IS the parked handle's center, which is what makes the
+    // expansion read as released by the gesture rather than as the pill
+    // repainting itself.
+    expect(grown.x).toBeCloseTo(grown.parkedCenter, 0);
+    expect(grown.clip).toContain(`${grown.x}px`);
+
+    // The fill is the confirmed black, and it sits UNDER the handle: the
+    // white handle rides above the growing circle (TimelineScroll's dot over
+    // its expansion circle) instead of being washed over by it.
+    expect(grown.fillColor).toBe("rgb(0, 0, 0)");
+    expect(Number(grown.fillZ)).toBeLessThan(Number(grown.handleZ));
+  });
+
+  test("the confetti waits for the fill to cover the pill, then fires", async ({ page }) => {
+    // The volley is the payoff for a FINISHED state, so it is sequenced after
+    // the expansion rather than racing it: fired on the way, the particles
+    // cover the sweep they are supposed to be celebrating.
+    //
+    // The ordering is the whole assertion, and it is only observable WHILE
+    // both are running — once they settle, an early canvas and a late one look
+    // identical. So the fill's radius is captured at the instant the confetti
+    // canvas is inserted, by watching for the insertion itself rather than
+    // sampling and hoping to catch the frame.
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.setViewportSize({ width: 900, height: 600 });
+    await openFixture(page);
+
+    await page.locator(FRESH).evaluate((el) => {
+      const w = window as unknown as { __atVolley: number | null; __full: number };
+      w.__atVolley = null;
+      const radius = () =>
+        Number.parseFloat(getComputedStyle(el).getPropertyValue("--slide-to-confirm-fill-r")) || 0;
+      // canvas-confetti appends its canvas to <body> on the first shot.
+      new MutationObserver((records, observer) => {
+        for (const record of records) {
+          for (const node of record.addedNodes) {
+            if (node instanceof HTMLCanvasElement) {
+              w.__atVolley = radius();
+              observer.disconnect();
+              return;
+            }
+          }
+        }
+      }).observe(document.body, { childList: true, subtree: true });
+    });
+
+    const box = (await page.locator(FRESH).boundingBox())!;
+    const startY = box.y + box.height / 2;
+    await page.mouse.move(box.x + 28, startY);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width, startY, { steps: 6 });
+    await page.mouse.up();
+
+    // The canvas is the volley's own evidence. (The CDN import needs the
+    // network, hence the generous timeout; no canvas means it never ran.)
+    await expect
+      .poll(
+        async () =>
+          page.evaluate(() => (window as unknown as { __atVolley: number | null }).__atVolley),
+        { timeout: 10_000 },
+      )
+      .not.toBeNull();
+
+    // What "covered the pill" means in px, derived from the PILL'S GEOMETRY
+    // rather than from a sampled radius: the distance from the parked handle's
+    // center to the far corner. Reading the live custom property here would be
+    // circular — the poll above resolves on the first shot, so mid-sweep the
+    // property is still small and every comparison against it passes trivially.
+    const covered = await page.locator(FRESH).evaluate((node) => {
+      const el = node as HTMLElement;
+      const handle = el.querySelector<HTMLElement>("[data-slide-to-confirm-handle]")!;
+      const range = el.clientWidth - handle.offsetWidth - handle.offsetLeft * 2;
+      const center = handle.offsetLeft + range + handle.offsetWidth / 2;
+      return Math.hypot(Math.max(center, el.offsetWidth - center), el.offsetHeight / 2);
+    });
+    const atVolley = (await page.evaluate(
+      () => (window as unknown as { __atVolley: number }).__atVolley,
+    ))!;
+
+    // The assertion that matters: by the time the first particle existed, the
+    // circle had already swallowed the pill. Firing during the sweep (the
+    // rejected alternative) lands this near 0 instead.
+    expect(atVolley).toBeGreaterThanOrEqual(covered);
+  });
+
+  test("the handle stays light until the circle is past it", async ({ page }) => {
+    // The ordering that carries the whole idea: the handle is the fill's
+    // SEED, so it must still be the light solid while the black is coming out
+    // from under it. Flipping it to black-on-black at class-add (the obvious
+    // simplification) erases the origin the expansion grows from.
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.setViewportSize({ width: 900, height: 600 });
+    await openFixture(page);
+
+    const handleBg = () =>
+      page
+        .locator(`${FRESH} [data-slide-to-confirm-handle]`)
+        .evaluate((el) => getComputedStyle(el).backgroundColor);
+
+    const box = (await page.locator(FRESH).boundingBox())!;
+    const startY = box.y + box.height / 2;
+    await page.mouse.move(box.x + 28, startY);
+    await page.mouse.down();
+    await page.mouse.move(box.x + box.width, startY, { steps: 6 });
+    await page.mouse.up();
+
+    // The circle is under way (a nonzero radius) while the handle is still
+    // the near-white surface it was during the drag.
+    await expect
+      .poll(async () =>
+        page
+          .locator(FRESH)
+          .evaluate((el) =>
+            Number.parseFloat(
+              getComputedStyle(el).getPropertyValue("--slide-to-confirm-fill-r") || "0",
+            ),
+          ),
+      )
+      .toBeGreaterThan(0);
+    expect(await handleBg()).toBe("rgb(250, 250, 250)");
+
+    // It joins the black only afterwards — the pill ends as one solid.
+    await expect.poll(handleBg).toBe("rgb(0, 0, 0)");
+  });
+
+  test("BOTH strokes reshape into the check's two arms during the drag", async ({ page }) => {
+    // The morph belongs to the gesture, not the release, and it is a genuine
+    // reshape rather than a crossfade: mid-drag each stroke must be a shape
+    // that is NEITHER chevron nor arm, with every point partway between the
+    // two. Two overlaid icons trading opacity would fail this even though it
+    // looks superficially similar at a glance.
+    //
+    // Both strokes are asserted because the mapping is one-to-one — left
+    // chevron becomes the short arm, right becomes the long one. An earlier
+    // implementation morphed only one stroke and collapsed the other to a
+    // hidden stub; that would pass a single-stroke check but fail here.
+    await page.emulateMedia({ colorScheme: "dark" });
+    await page.setViewportSize({ width: 900, height: 600 });
+    await openFixture(page);
+
+    const SHAPES = [
+      { from: "M6 17 11 12 6 7", to: "M9 17 6.5 14.5 4 12", name: "left → short arm" },
+      { from: "M13 17 18 12 13 7", to: "M9 17 14.5 11.5 20 6", name: "right → long arm" },
+    ];
+
+    // Read both strokes' geometry plus the bounding box the renderer derives
+    // from it — the bbox is the engine's own truth about what is on screen, so
+    // a `d` that parsed but never rendered would still fail.
+    const strokes = () =>
+      page.locator(FRESH).evaluate((el) =>
+        [...el.querySelectorAll<SVGPathElement>(".slide-to-confirm__stroke")].map((p) => {
+          const b = (p as unknown as SVGGraphicsElement).getBBox();
+          return {
+            d: p.getAttribute("d"),
+            box: `${b.x.toFixed(1)},${b.width.toFixed(1)}`,
+            opacity: Number(getComputedStyle(p).opacity),
+          };
+        }),
+      );
+
+    const nums = (d: string) => (d.match(/-?[\d.]+/g) ?? []).map(Number);
+    const box = (await page.locator(FRESH).boundingBox())!;
+    const startX = box.x + 28;
+    const startY = box.y + box.height / 2;
+
+    // Idle: the authored chevrons.
+    const idle = await strokes();
+    expect(idle.map((s) => s.d)).toEqual(SHAPES.map((s) => s.from));
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+
+    await page.mouse.move(startX + box.width * 0.35, startY, { steps: 4 });
+    const mid = await strokes();
+    for (const [i, shape] of SHAPES.entries()) {
+      // A real intermediate: neither endpoint, and rendering at neither's box.
+      expect(mid[i]!.d, shape.name).not.toBe(shape.from);
+      expect(mid[i]!.d, shape.name).not.toBe(shape.to);
+      expect(mid[i]!.box, shape.name).not.toBe(idle[i]!.box);
+      // Every coordinate sits between its chevron and its arm value.
+      const [from, to, at] = [nums(shape.from), nums(shape.to), nums(mid[i]!.d!)];
+      for (const [j, v] of at.entries()) {
+        const [lo, hi] = [Math.min(from[j]!, to[j]!), Math.max(from[j]!, to[j]!)];
+        expect(v, `${shape.name} point ${j}`).toBeGreaterThanOrEqual(lo);
+        expect(v, `${shape.name} point ${j}`).toBeLessThanOrEqual(hi);
+      }
+      // Neither stroke is ever faded: both are live geometry throughout.
+      expect(mid[i]!.opacity, shape.name).toBe(1);
+    }
+
+    // Dragging back rewinds both shapes toward the chevrons.
+    await page.mouse.move(startX + box.width * 0.1, startY, { steps: 4 });
+    const back = await strokes();
+    for (const [i, shape] of SHAPES.entries()) {
+      const dist = (d: string) =>
+        nums(d).reduce((s, v, j) => s + Math.abs(v - nums(shape.to)[j]!), 0);
+      expect(dist(back[i]!.d!), `${shape.name} rewound`).toBeGreaterThan(dist(mid[i]!.d!));
+    }
+
+    // Landed: the exact two arms of the check, before any release. Their shared
+    // corner is what makes them read as one glyph rather than two strokes.
+    await page.mouse.move(startX + box.width, startY, { steps: 6 });
+    const end = await strokes();
+    expect(end.map((s) => s.d)).toEqual(SHAPES.map((s) => s.to));
+    expect(nums(end[0]!.d!).slice(0, 2)).toEqual(nums(end[1]!.d!).slice(0, 2));
+    await page.mouse.up();
   });
 
   test("a short slide springs the handle back and stays idle", async ({ page }) => {
