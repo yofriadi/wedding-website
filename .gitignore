@@ -63,10 +63,10 @@ playwright-report/
 
 .playwright/
 
-# Scroll-capture harness output (PNGs ~5.5MB per run + report.json, both
-# regenerated on every run — evidence lives in commit messages / PR review,
-# regenerate any time with `node scripts/capture-scroll.mjs`)
-apps/web/.artifacts/capture-scroll/
+# Scroll-capture and design-iteration artifacts (PNGs, MBs per run, regenerated
+# on every run — evidence lives in commit messages / PR review).
+.artifacts/
+apps/web/.artifacts/
 
 # Misc
 *.tgz
@@ -80,8 +80,13 @@ temp
 # Agent skill lockfile (local)
 skills-lock.json
 
-# Original full-res media sources (kept local, not deployed)
+# Original full-res media sources and the private copies of real personal
+# photos/video/music replaced by placeholders for the public repository.
+# tools/restore-private-media.sh copies them back before a private deploy.
 /originals/
+# Optional personal soundtrack (untracked; see DEPLOY.md — the private-deploy
+# restore script puts it back).
+apps/web/public/*.mp3
 
 # Guest photo storage (guest-submissions D4): dev fallback root is ./var/photos
 /var/

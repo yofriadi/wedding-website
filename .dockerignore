@@ -1,0 +1,39 @@
+# Keep the build context small and the image clean.
+.git
+.github
+node_modules
+**/node_modules
+.turbo
+**/.turbo
+**/dist
+
+# Never bake local state or secrets into the image
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+**/.env.*.local
+packages/db/local.db
+packages/db/local.db-shm
+packages/db/local.db-wal
+*.db
+*.db-shm
+*.db-wal
+**/var
+**/test-results
+**/playwright-report
+.playwright
+
+# Local-only artifacts (huge, regenerated any time)
+**/.artifacts
+**/.wrangler
+**/.astro
+.agents
+.pi
+skills-lock.json
+bts.jsonc
+.DS_Store
+*.log
+*.swp
+/originals

@@ -1,6 +1,22 @@
 # wedding-website
 
+[![docker-image](https://github.com/yofriadi/wedding-website/actions/workflows/docker-image.yml/badge.svg)](https://github.com/yofriadi/wedding-website/actions/workflows/docker-image.yml)
+Licensed under the [MIT license](LICENSE).
+
 Astro + TypeScript + Tailwind, deployed with the standalone Node adapter. SQLite is accessed through Drizzle and libSQL. The application stores invitations, RSVP responses, and one optional guest photo per invitation.
+
+## Media: placeholders vs. private
+
+The public repository ships **placeholder** images (and a short placeholder video) for all personal photos — the memories collage, family photos, the proposal clip, and the soundtrack. The hero photo, event (akad/resepsi) images, and venue map images are the real files. Placeholder filenames and dimensions match the originals exactly, so the layout is unaffected.
+
+Your real media stays **out of git**, preserved in gitignored `originals/private-media/` (same relative paths). To deploy the personal version:
+
+```sh
+tools/restore-private-media.sh   # overlays real media over the placeholders
+pnpm run build                   # or the Docker build — disk state wins, not git
+```
+
+Docker builds read from disk, not git: on a VPS, copy `originals/private-media/` over the clone first (same layout), then `docker compose up -d --build`. The CI image on GHCR always contains placeholders. The soundtrack is never committed (copyright); drop any licensed `*.mp3` at its referenced path — `tools/restore-private-media.sh` restores it too.
 
 ## Development
 
@@ -62,6 +78,10 @@ pnpm run build
 Playwright always starts its own migrated temporary database, photo storage, and server on a free port. It never reuses a running developer server or an inherited database URL. API suites use the same isolated setup helper. The baseline suite uses the real migrator, checks constraints/integrity, verifies repeat migration is a no-op, and guards against legacy database resets.
 
 ## Deployment
+
+**Docker on a VPS (recommended):** see [DEPLOY.md](DEPLOY.md) — one container, data in a named volume, migrations applied on start.
+
+### Manual (bare metal)
 
 The application and both operations scripts must receive the **same explicit targets**. For a fresh installation, after selecting those targets:
 
