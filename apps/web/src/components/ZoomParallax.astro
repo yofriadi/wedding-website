@@ -11,15 +11,23 @@
  */
 
 const pictures = [
-  // 1. Top Right Portrait (single right column)
+  // 1. Top Right Square (single right column, top)
   { 
-    src: "/top-right-portrait.webp", 
-    alt: "Portrait Top Right",
-    grid: { col: 2, row: 0, w: 1, h: 2 },
+    src: "/square-top-right.webp", 
+    alt: "Square Top Right",
+    grid: { col: 2, row: 0, w: 1, h: 1 },
     scale: 9, // Fast (Outer edge)
-    iw: 591, ih: 1280
+    iw: 1024, ih: 1024
   },
-  // 2. Top Left Landscape (two columns on left)
+  // 2. Upper Right Square (single right column, upper)
+  { 
+    src: "/square-upper-right.webp", 
+    alt: "Square Upper Right",
+    grid: { col: 2, row: 1, w: 1, h: 1 },
+    scale: 8, // Fast (Side edge)
+    iw: 1024, ih: 1024
+  },
+  // 3. Top Left Landscape (two columns on left)
   { 
     src: "/landscape-top-left.webp", 
     alt: "Landscape Top Left",
@@ -27,7 +35,7 @@ const pictures = [
     scale: 7, // Medium-Fast (Top edge)
     iw: 1024, ih: 576
   },
-  // 3. Mid Left Landscape (two columns on left)
+  // 4. Mid Left Landscape (two columns on left)
   { 
     src: "/landscape-mid-left.webp", 
     alt: "Landscape Mid Left",
@@ -35,7 +43,7 @@ const pictures = [
     scale: 5, // Slow (Inner ring)
     iw: 1024, ih: 768
   },
-  // 4. Mid Left Square
+  // 5. Mid Left Square
   { 
     src: "/square-mid-left.webp", 
     alt: "Square Mid Left",
@@ -43,7 +51,7 @@ const pictures = [
     scale: 8, // Fast (Side edge)
     iw: 473, ih: 1024
   },
-  // 5. CENTER HERO - The Focus (keeps 9:16 portrait aspect)
+  // 6. CENTER HERO - The Focus (keeps 9:16 portrait aspect)
   { 
     src: "/center-focus.webp", 
     alt: "CENTER FOCUS",
@@ -52,7 +60,7 @@ const pictures = [
     scale: 4,
     iw: 1920, ih: 1280
   },
-  // 6. Mid Right Square
+  // 7. Mid Right Square
   { 
     src: "/square-mid-right.webp", 
     alt: "Square Mid Right",
@@ -60,7 +68,7 @@ const pictures = [
     scale: 8, // Fast (Side edge)
     iw: 1024, ih: 768
   },
-  // 7. Bottom Left Portrait
+  // 8. Bottom Left Portrait
   { 
     src: "/portrait-bottom-left.webp", 
     alt: "Portrait Bottom Left",
@@ -68,7 +76,7 @@ const pictures = [
     scale: 9, // Fast (Corner)
     iw: 768, ih: 1024
   },
-  // 8. Mid Bottom Landscape
+  // 9. Mid Bottom Landscape
   { 
     src: "/landscape-mid-bottom.webp", 
     alt: "Landscape Mid Bottom",
@@ -76,7 +84,7 @@ const pictures = [
     scale: 5, // Slow (Inner ring)
     iw: 1024, ih: 473
   },
-  // 9. Bottom Right Landscape
+  // 10. Bottom Right Landscape
   { 
     src: "/landscape-bottom-right.webp", 
     alt: "Landscape Bottom Right",
@@ -279,15 +287,16 @@ const ROW_H = 20;     // 20lvh per row (5 rows = the stage); vertical geometry l
 
   /* Bento slot vertical geometry: one rule per slot so each top/height pair can */
   /* carry its vh -> lvh fallback. Horizontal vw values stay inline per item.    */
-  [data-slot="0"] .zoom-inner { top: 0vh; top: 0lvh; height: 40vh; height: 40lvh; }
-  [data-slot="1"] .zoom-inner { top: 0vh; top: 0lvh; height: 20vh; height: 20lvh; }
-  [data-slot="2"] .zoom-inner { top: 20vh; top: 20lvh; height: 20vh; height: 20lvh; }
-  [data-slot="3"] .zoom-inner { top: 40vh; top: 40lvh; height: 20vh; height: 20lvh; }
+  [data-slot="0"] .zoom-inner { top: 0vh; top: 0lvh; height: 20vh; height: 20lvh; }
+  [data-slot="1"] .zoom-inner { top: 20vh; top: 20lvh; height: 20vh; height: 20lvh; }
+  [data-slot="2"] .zoom-inner { top: 0vh; top: 0lvh; height: 20vh; height: 20lvh; }
+  [data-slot="3"] .zoom-inner { top: 20vh; top: 20lvh; height: 20vh; height: 20lvh; }
   [data-slot="4"] .zoom-inner { top: 40vh; top: 40lvh; height: 20vh; height: 20lvh; }
   [data-slot="5"] .zoom-inner { top: 40vh; top: 40lvh; height: 20vh; height: 20lvh; }
-  [data-slot="6"] .zoom-inner { top: 60vh; top: 60lvh; height: 40vh; height: 40lvh; }
-  [data-slot="7"] .zoom-inner { top: 60vh; top: 60lvh; height: 20vh; height: 20lvh; }
-  [data-slot="8"] .zoom-inner { top: 80vh; top: 80lvh; height: 20vh; height: 20lvh; }
+  [data-slot="6"] .zoom-inner { top: 40vh; top: 40lvh; height: 20vh; height: 20lvh; }
+  [data-slot="7"] .zoom-inner { top: 60vh; top: 60lvh; height: 40vh; height: 40lvh; }
+  [data-slot="8"] .zoom-inner { top: 60vh; top: 60lvh; height: 20vh; height: 20lvh; }
+  [data-slot="9"] .zoom-inner { top: 80vh; top: 80lvh; height: 20vh; height: 20lvh; }
 
   .zoom-inner {
     /* Subtle border for separation in bento state */
@@ -299,8 +308,11 @@ const ROW_H = 20;     // 20lvh per row (5 rows = the stage); vertical geometry l
     width: 100%;
     height: 100%;
     object-fit: cover;
+    /* `translateZ(0)` alone is enough to keep the image on its own texture
+       during the parent's scale. The scroll scrub transforms .zoom-wrapper,
+       never this element, so hinting `transform` here only doubles the
+       number of full-viewport layers the compositor holds. */
     transform: translateZ(0);
-    will-change: transform;
   }
 
   /* Reduced motion: the bento grid is static, readable content in one viewport. */

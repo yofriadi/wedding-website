@@ -46,6 +46,7 @@ test.describe("EventTimes cards — stacked, full-bleed blurred image, centered 
     await expect(akadTitle).toHaveClass(/font-bold/);
     await expect(akadTitle).toHaveClass(/text-white/);
     await expect(akadCard).toContainText("08:00 WIB");
+    await expect(akadCard).toContainText("Keluarga & Kerabat");
 
     // Card 2: Resepsi
     const resepsiCard = cards.nth(1);
@@ -55,6 +56,7 @@ test.describe("EventTimes cards — stacked, full-bleed blurred image, centered 
     await expect(resepsiTitle).toHaveClass(/font-bold/);
     await expect(resepsiTitle).toHaveClass(/text-white/);
     await expect(resepsiCard).toContainText("10:00 WIB");
+    await expect(resepsiCard).toContainText("Tamu & Undangan");
 
     // Verify stacked layout (Card 1 is above Card 2)
     const isStacked = await page.evaluate(() => {
@@ -87,6 +89,8 @@ test.describe("EventTimes cards — stacked, full-bleed blurred image, centered 
       await expect(h3).toHaveClass(/times-text-shadow/);
       const timeSpan = centerBox.locator("span");
       await expect(timeSpan).toHaveClass(/times-text-shadow/);
+      const audienceP = centerBox.locator("p");
+      await expect(audienceP).toHaveClass(/times-text-shadow/);
     }
   });
 

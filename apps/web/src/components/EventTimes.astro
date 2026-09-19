@@ -16,6 +16,7 @@ const EVENTS = [
     short: "Akad",
     name: "Akad Nikah",
     time: "08:00 WIB",
+    audience: "Keluarga & Kerabat",
     image: "/event-akad",
     width: 768,
     height: 433,
@@ -24,6 +25,7 @@ const EVENTS = [
     short: "Resepsi",
     name: "Resepsi",
     time: "10:00 WIB",
+    audience: "Tamu & Undangan",
     image: "/event-resepsi",
     width: 584,
     height: 525,
@@ -31,24 +33,24 @@ const EVENTS = [
 ];
 ---
 
-<section id="event-times" class="w-full mx-auto" aria-label="Rangkaian Acara">
+<section id="event-times" class="relative z-10 w-full overflow-hidden py-12 md:py-16" aria-label="Rangkaian Acara">
   {/* Section header: Rangkaian Acara in Venue font */}
-  <div class="text-center mb-12 md:mb-16" data-event-header data-scroll-fade>
+  <div class="mx-auto max-w-2xl px-6 text-center mb-10 md:mb-14" data-event-header data-scroll-fade>
     <h2 class="font-serif text-3xl font-light text-[color:var(--times-heading)] md:text-4xl">
       Rangkaian Acara
     </h2>
   </div>
 
   {/* Stacked cards (above and below) */}
-  <div class="flex flex-col gap-8 md:gap-10 items-center">
+  <div class="flex flex-col gap-6 md:gap-8 w-full">
     {
       EVENTS.map((event, i) => (
         <article
-          class="event-card relative aspect-square w-full max-w-[240px] sm:max-w-[260px] md:max-w-[280px] mx-auto overflow-hidden rounded-3xl border text-center"
+          class="event-card relative h-[172px] sm:h-[208px] md:h-[245px] w-full overflow-hidden border-y text-center"
           data-event-card
           data-scroll-fade="card"
           data-index={i}
-          aria-label={`${event.name} pukul ${event.time}`}
+          aria-label={`${event.name} pukul ${event.time} untuk ${event.audience}`}
         >
           {/* Background image — fully covers the card with soft blur */}
           <picture class="pointer-events-none absolute inset-0">
@@ -67,13 +69,16 @@ const EVENTS = [
           <span class="pointer-events-none absolute inset-0 bg-[color:var(--times-scrim)]" />
 
           {/* Centered white text with text shadow */}
-          <div class="times-center-text pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1.5 p-4 sm:p-5 text-center text-white">
+          <div class="times-center-text pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1.5 sm:gap-2 p-4 sm:p-6 text-center text-white">
             <h3 class="font-serif text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white leading-tight times-text-shadow whitespace-nowrap">
               {event.name}
             </h3>
-            <span class="font-serif text-xl sm:text-2xl md:text-3xl font-light tabular-nums text-white times-text-shadow">
+            <span class="font-serif text-xl sm:text-2xl md:text-3xl font-medium tabular-nums text-white times-text-shadow">
               {event.time}
             </span>
+            <p class="font-serif text-base sm:text-lg md:text-xl text-white times-text-shadow">
+              {event.audience}
+            </p>
           </div>
         </article>
       ))
@@ -104,13 +109,17 @@ const EVENTS = [
     border-color: var(--times-border);
     border-top-color: var(--times-border-top);
     box-shadow: var(--times-shadow);
-    will-change: transform, opacity;
+    /* No `will-change` here: scroll-fade.ts owns the hint and rents it only
+       while the card is actually travelling, then releases the layer. A static
+       declaration would pin a compositor layer for the whole session. */
   }
 
   .times-img {
     filter: blur(2.5px);
     transform: scale(1.08);
-    will-change: transform, filter;
+    /* Both values are constant — nothing animates this image. Hinting
+       `filter` would force a re-rasterized layer for a blur that never
+       changes. */
   }
 
   .times-text-shadow {
