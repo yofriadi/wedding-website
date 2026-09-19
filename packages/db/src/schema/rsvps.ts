@@ -1,8 +1,8 @@
 import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { invites } from "./invites";
 
-// NOTE: the FK is documentation-only until PRAGMA foreign_keys is enabled
-// (tracked in guest-submissions); integrity is enforced at the API layer.
+// The application enables foreign keys. Keep first-response and latest-change
+// timestamps even though the public count exposes no per-invitation history.
 export const rsvps = sqliteTable(
   "rsvps",
   {
@@ -10,7 +10,6 @@ export const rsvps = sqliteTable(
       .primaryKey()
       .references(() => invites.id),
     attending: integer("attending", { mode: "boolean" }).notNull(),
-    partySize: integer("party_size").notNull(),
     respondedAt: integer("responded_at").notNull(),
     updatedAt: integer("updated_at").notNull(),
   },

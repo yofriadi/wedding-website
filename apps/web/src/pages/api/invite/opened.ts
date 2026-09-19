@@ -3,18 +3,7 @@ import { db } from "@wedding-website/db";
 import { invites } from "@wedding-website/db/schema";
 import { eq, sql } from "drizzle-orm";
 
-const INVITE_COOKIE_NAME = "ww_invite_id";
-const INVITE_ID_RE = /^[A-Za-z0-9_-]{12}$/;
-
-// Uniform 404 for missing/malformed/unknown cookie — indistinguishable body shape.
-function notFound() {
-  return new Response(null, {
-    status: 404,
-    headers: {
-      "Cache-Control": "no-store",
-    },
-  });
-}
+import { inviteIdFromCookies, notFound } from "../../../lib/invite-session";
 
 function noContent() {
   return new Response(null, {
@@ -28,9 +17,8 @@ function noContent() {
 // Identity comes from the cookie only: the invite id is never accepted from the
 // path or query (see invite-session). The body is ignored entirely.
 export const POST: APIRoute = async ({ cookies }) => {
-  const cookieValue = cookies.get(INVITE_COOKIE_NAME)?.value;
-
-  if (typeof cookieValue !== "string" || !INVITE_ID_RE.test(cookieValue)) {
+  const cookieValue = inviteIdFromCookies(cookies);
+  if (!cookieValue) {
     return notFound();
   }
 

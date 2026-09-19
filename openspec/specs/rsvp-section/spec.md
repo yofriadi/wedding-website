@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The RSVP section UI on the homepage: corrected venue copy ("Graha 58 Gedung Serbaguna UMS / Surakarta, Central Java"), a live confirmed-guest counter with the beui.dev NumberTicker rolling-digit effect implemented as a progressive-enhancement custom element (truthful server-rendered count, `motion`'s `animate()` for the rolls), server-rendered confirm-reservation button for invite holders, theme-aware presentation (dark baseline, light inversion via device preference), and a guidance line for anonymous visitors. All ticker motion degrades to static text under `prefers-reduced-motion`; the section can never break the homepage when the count query fails.
+The RSVP section UI on the homepage: corrected venue copy ("Graha 58 Gedung Serbaguna UMS / Surakarta, Central Java"), a live confirmed-reservation counter with the beui.dev NumberTicker rolling-digit effect implemented as a progressive-enhancement custom element (truthful server-rendered count, `motion`'s `animate()` for the rolls), server-rendered confirm-reservation button for invite holders, theme-aware presentation (dark baseline, light inversion via device preference), and a guidance line for anonymous visitors. All ticker motion degrades to static text under `prefers-reduced-motion`; the section can never break the homepage when the count query fails.
 
 ## Requirements
 
@@ -22,7 +22,7 @@ The Event Details / RSVP section SHALL render the venue name "Graha 58 Gedung Se
 
 ### Requirement: Truthful server-rendered count
 
-The section SHALL server-render the current confirmed-guest count as plain text digits, so the number is correct at first paint, before any script runs, and with JavaScript disabled. The client-side counter SHALL NOT fetch the count on initial connect (the server-rendered value is fresh). When the count query fails server-side, the section SHALL degrade — rendering 0 and skipping live updates — without failing the homepage response.
+The section SHALL server-render the current confirmed-reservation count as plain text digits, so the number is correct at first paint, before any script runs, and with JavaScript disabled. The client-side counter SHALL NOT fetch the count on initial connect (the server-rendered value is fresh). When the count query fails server-side, the section SHALL degrade — rendering 0 and skipping live updates — without failing the homepage response.
 
 #### Scenario: Count correct at first paint
 
@@ -65,7 +65,7 @@ When JavaScript is available, the counter SHALL enhance into rolling digit colum
 
 #### Scenario: Zero responses renders zero
 
-- **WHEN** no guests have confirmed yet
+- **WHEN** no reservations have been confirmed yet
 - **THEN** the counter displays 0 and the section remains fully laid out — no collapsed or hidden state
 
 ### Requirement: Reduced motion renders static digits
@@ -79,7 +79,7 @@ When the user prefers reduced motion, the counter SHALL remain plain text digits
 
 ### Requirement: Server-rendered invitee controls
 
-When the request carries a valid `ww_invite_id` cookie, the section SHALL render — in the server HTML — controls comprising the invite's display name and a single confirm-reservation submit button (the `star-button` presentation). The button SHALL always submit `attending: true` with `partySize: 1` to `POST /api/rsvp`; no attending/decline choice and no party-size stepper SHALL be rendered, and the invite's `maxPartySize`/party-size props SHALL no longer reach the component. An invite holder whose stored response is `attending: true` SHALL see the button disabled in its confirmed presentation (confirmed label, `aria-disabled`); any other stored state (none, or declined) SHALL render the fresh enabled confirm button. A successful submit SHALL flip the just-pressed button into the confirmed presentation without a page reload, move focus to it, announce the outcome through a polite live region ("Your reservation is confirmed."), and re-read the count. When no valid cookie is present, the controls SHALL be entirely absent from the markup — no empty shell, no placeholder, and no identity-lookup request of any kind. (Change-of-mind resubmission is intentionally one-directional: a declined or unresponded invitee can confirm; a confirmed invitee sees no UI path back — the API remains the support path.)
+When the request carries a valid `ww_invite_id` cookie, the section SHALL render — in the server HTML — a single confirm-reservation submit button. The button SHALL submit `attending: true` to `POST /api/rsvp`; no attending/decline choice or headcount control SHALL be rendered. An invite holder whose stored response is `attending: true` SHALL see the button disabled in its confirmed presentation (confirmed label, `aria-disabled`); any other stored state (none, or declined) SHALL render the fresh enabled confirm button. A successful submit SHALL flip the just-pressed button into the confirmed presentation without a page reload, move focus to it, announce the outcome through a polite live region ("Your reservation is confirmed."), and re-read the count. When no valid cookie is present, the controls SHALL be entirely absent from the markup — no empty shell, no placeholder, and no identity-lookup request of any kind. (Change-of-mind resubmission is intentionally one-directional: a declined or unresponded invitee can confirm; a confirmed invitee sees no UI path back — the API remains the support path.)
 
 #### Scenario: Unresponded invitee sees fresh confirm button
 
@@ -109,7 +109,7 @@ When the request carries a valid `ww_invite_id` cookie, the section SHALL render
 #### Scenario: Failed submit keeps the button available
 
 - **WHEN** a submit fails (400 or 503 or network error)
-- **THEN** the button remains enabled and pressable and a brief inline error note appears — the section layout does not shift, and no error copy references the removed party-size control
+- **THEN** the button remains enabled and pressable and a brief inline error note appears — the section layout does not shift, and no error copy refers to a headcount control
 
 ### Requirement: Anonymous visitors get a guidance line
 
@@ -122,16 +122,16 @@ In place of the removed "RSVP Coming Soon" button, anonymous visitors SHALL see 
 
 ### Requirement: Counter label and accessibility
 
-The counter SHALL be associated with an explicit label so assistive technology announces the meaning, not a bare integer — e.g. a visually rendered "guests confirmed" label grouped with the number via an `aria-label` or equivalent. Rolling digit columns SHALL be `aria-hidden` and the readable value SHALL be exposed as a single text node (the component's `sr-only` pattern or the plain-text fallback).
+The counter SHALL be associated with an explicit label so assistive technology announces the meaning, not a bare integer — e.g. a visually rendered "reservations confirmed" label grouped with the number via an `aria-label` or equivalent. Rolling digit columns SHALL be `aria-hidden` and the readable value SHALL be exposed as a single text node (the component's `sr-only` pattern or the plain-text fallback).
 
 #### Scenario: Screen reader hears the total with meaning
 
 - **WHEN** a screen-reader user reaches the RSVP section
-- **THEN** the counter is announced as a single phrase conveying the total (e.g. "37 guests confirmed"), never as bare digits or per-digit columns
+- **THEN** the counter is announced as a single phrase conveying the total (e.g. "37 reservations confirmed"), never as bare digits or per-digit columns
 
 ### Requirement: FAQ copy stays truthful
 
-FAQ entries that describe RSVP behavior SHALL match the shipped behavior: the late-RSVP wording SHALL ask (not mandate) a response by the deadline while no cutoff is enforced, and the plus-one wording SHALL describe a simple attendance confirmation consistent with the single confirm button (no party-size confirmation step exists in the UI).
+FAQ entries that describe RSVP behavior SHALL match the shipped behavior: the late-RSVP wording SHALL ask (not mandate) a response by the deadline while no cutoff is enforced, and the plus-one wording SHALL describe a simple attendance confirmation consistent with the single confirm button.
 
 #### Scenario: Deadline wording is a request
 
@@ -141,11 +141,11 @@ FAQ entries that describe RSVP behavior SHALL match the shipped behavior: the la
 #### Scenario: Plus-one wording matches the UI
 
 - **WHEN** the FAQ plus-one entry is read
-- **THEN** it describes confirming attendance (a single confirmation action), with no promise of a per-person name list and no reference to confirming for one's party via a party-size control
+- **THEN** it describes confirming attendance as a single confirmation action, with no promise of a per-person name list or a headcount selection
 
 ### Requirement: Theme-aware section presentation
 
-The RSVP section (background, confirmed-guest counter, section copy, and its buttons) SHALL follow the device's color-scheme preference: the dark presentation (neutral-950 background, near-white foreground) SHALL be the baseline, and `prefers-color-scheme: light` SHALL invert the section to white background with near-black foreground, with equivalent contrast. Theming SHALL use CSS custom properties with dark fallbacks overridden in a light media-query block (repo pattern), device preference only — no toggle and no stored preference. Only this section is themed by this change; adjacent sections may remain dark (accepted seam).
+The RSVP section (background, confirmed-reservation counter, section copy, and its buttons) SHALL follow the device's color-scheme preference: the dark presentation (neutral-950 background, near-white foreground) SHALL be the baseline, and `prefers-color-scheme: light` SHALL invert the section to white background with near-black foreground, with equivalent contrast. Theming SHALL use CSS custom properties with dark fallbacks overridden in a light media-query block (repo pattern), device preference only — no toggle and no stored preference. Only this section is themed by this change; adjacent sections may remain dark (accepted seam).
 
 #### Scenario: Dark presentation unchanged
 

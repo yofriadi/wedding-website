@@ -4,9 +4,7 @@ import { invites } from "@wedding-website/db/schema";
 import { env } from "@wedding-website/env/server";
 import { eq, sql } from "drizzle-orm";
 
-const INVITE_ID_LENGTH = 12;
-const INVITE_COOKIE_NAME = "ww_invite_id";
-const ID_RE = /^[A-Za-z0-9_-]{12}$/;
+import { INVITE_COOKIE_NAME, INVITE_ID_RE } from "../lib/invite-session";
 
 function toCookieMaxAgeSeconds(days: number) {
   return Math.max(1, Math.floor(days * 24 * 60 * 60));
@@ -26,7 +24,7 @@ function noStoreRedirect() {
 export const GET: APIRoute = async ({ params, cookies }) => {
   const id = params.id;
 
-  if (typeof id !== "string" || id.length !== INVITE_ID_LENGTH || !ID_RE.test(id)) {
+  if (typeof id !== "string" || !INVITE_ID_RE.test(id)) {
     return noStoreRedirect();
   }
 
@@ -44,7 +42,7 @@ export const GET: APIRoute = async ({ params, cookies }) => {
       .where(eq(invites.id, id))
       .returning({ id: invites.id });
   } catch (err) {
-    console.error("[invite/i] metric update failed:", err);
+    console.error("[invite-link] metric update failed:", err);
   }
 
   let inviteExists = updated.length > 0;
@@ -61,7 +59,7 @@ export const GET: APIRoute = async ({ params, cookies }) => {
         .limit(1);
       inviteExists = rows.length > 0;
     } catch (err) {
-      console.error("[invite/i] existence lookup failed:", err);
+      console.error("[invite-link] existence lookup failed:", err);
       inviteExists = false;
     }
   }

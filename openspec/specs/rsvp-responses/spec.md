@@ -2,52 +2,33 @@
 
 ## Purpose
 
-RSVP write/read API. Extends the `invite-session` cookie-as-identity contract with one mutation: an invite holder records an attending/declined response plus party size, stored as exactly one row per invite (upsert — changing one's mind is allowed). A separate public aggregate endpoint exposes only the confirmed-guest count (sum of party sizes of attending responses) for the live counter. Identity semantics — cookie-only, uniform 404, `no-store`, id out of URLs, authenticate-before-parse — match `invite-session` and the `guest-submissions` endpoint-invisibility rule exactly.
+RSVP write/read API. Extends the `invite-session` cookie-as-identity contract with one mutation: an invite holder records an attending or declined response, stored as exactly one row per invite (upsert — changing one's mind is allowed). A separate public aggregate endpoint exposes only the number of confirmed reservations (the count of attending responses) for the live counter. Identity semantics — cookie-only, uniform 404, `no-store`, id out of URLs, authenticate-before-parse — match `invite-session` and the `guest-submissions` endpoint-invisibility rule exactly.
 
 ## Requirements
 
 ### Requirement: Store one RSVP per invite
 
-The system SHALL persist RSVP responses in an `rsvps` table keyed by `invite_id` (primary key, FK to `invites.id`) with fields `attending` (boolean), `party_size` (integer), `responded_at` (epoch), `updated_at` (epoch). Re-submitting for the same invite SHALL overwrite the previous row (upsert), never create a second row; `responded_at` SHALL retain the first-response timestamp across updates.
+The system SHALL persist RSVP responses in an `rsvps` table keyed by `invite_id` (primary key, FK to `invites.id`) with fields `attending` (boolean), `responded_at` (epoch), and `updated_at` (epoch). Re-submitting for the same invite SHALL overwrite the previous row (upsert), never create a second row; `responded_at` SHALL retain the first-response timestamp across updates.
 
 #### Scenario: First response inserts
 
-- **WHEN** an invite with no prior RSVP submits `attending: true, partySize: 2`
-- **THEN** exactly one `rsvps` row exists for that invite id with those values and `responded_at`/`updated_at` set
+- **WHEN** an invite with no prior RSVP submits `attending: true`
+- **THEN** exactly one `rsvps` row exists for that invite id with `attending = true` and `responded_at`/`updated_at` set
 
 #### Scenario: Changed mind updates in place
 
-- **WHEN** an invite with an existing RSVP submits a different response
-- **THEN** the same row is updated (`attending`/`party_size`/`updated_at` change), `responded_at` is unchanged, and the table still holds exactly one row for that invite id
+- **WHEN** an invite with an existing RSVP submits a different `attending` value
+- **THEN** the same row is updated (`attending`/`updated_at` change), `responded_at` is unchanged, and the table still holds exactly one row for that invite id
 
 #### Scenario: Concurrent submissions converge
 
 - **WHEN** two RSVP submissions for the same invite race
 - **THEN** the table ends with at most one row for that invite id (last write wins), and any busy/retryable storage failure surfaces as `503` rather than a partial or duplicate write
 
-### Requirement: Per-invite party-size cap
-
-The `invites` table SHALL carry `max_party_size` (integer, NOT NULL, default 1). A submission's `party_size` SHALL be accepted only when `1 ≤ party_size ≤ max_party_size` for attending responses. Declined responses ignore and clear party size (stored as `party_size = 0`). A stored response that exceeds a later-lowered cap remains valid and counted until the guest re-submits.
-
-#### Scenario: Within cap accepted
-
-- **WHEN** an invite with `max_party_size = 3` submits `attending: true, partySize: 3`
-- **THEN** the response is stored and the API returns `200`
-
-#### Scenario: Over cap rejected
-
-- **WHEN** an invite with `max_party_size = 1` submits `attending: true, partySize: 2`
-- **THEN** the response is `400` with body `{ "error": "party_size_out_of_range" }` and no row is written
-
 #### Scenario: Malformed body rejected
 
-- **WHEN** the POST body is not valid JSON, or `attending` is not a boolean, or `partySize` is not an integer
+- **WHEN** the POST body is not valid JSON or `attending` is not a boolean
 - **THEN** the response is `400` with body `{ "error": "invalid_body" }` and no row is written
-
-#### Scenario: Decline stores zero party size
-
-- **WHEN** an invite submits `attending: false`
-- **THEN** the row is stored with `attending = false` and `party_size = 0` regardless of any `partySize` value sent
 
 ### Requirement: Submit RSVP via cookie identity
 
@@ -56,7 +37,7 @@ The system SHALL expose `POST /api/rsvp` that resolves identity from the `ww_inv
 #### Scenario: Valid invite submits
 
 - **WHEN** `POST /api/rsvp` is sent with a valid `ww_invite_id` cookie and a valid body
-- **THEN** the response is `200` with JSON `{ "attending": boolean, "partySize": number }` echoing the stored values
+- **THEN** the response is `200` with JSON `{ "attending": boolean }` echoing the stored value
 
 #### Scenario: No cookie
 
@@ -80,31 +61,31 @@ The system SHALL expose `POST /api/rsvp` that resolves identity from the `ww_inv
 
 ### Requirement: Read own RSVP status
 
-The system SHALL expose `GET /api/rsvp` (same route) that resolves the cookie identity and responds `200` with `{ "attending": boolean, "partySize": number, "maxPartySize": number }` when a response exists, `{ "attending": null, "partySize": null, "maxPartySize": number }` when the invite is valid but has not responded, and uniform `404` for missing/malformed/unknown cookies.
+The system SHALL expose `GET /api/rsvp` (same route) that resolves the cookie identity and responds `200` with `{ "attending": boolean }` when a response exists, `{ "attending": null }` when the invite is valid but has not responded, and uniform `404` for missing/malformed/unknown cookies.
 
 #### Scenario: Responded invite reads status
 
 - **WHEN** `GET /api/rsvp` is sent with a cookie for an invite that has responded
-- **THEN** the response is `200` with that invite's stored `attending`/`partySize` and its `maxPartySize`
+- **THEN** the response is `200` with that invite's stored `attending` value
 
 #### Scenario: Unresponded invite reads status
 
 - **WHEN** `GET /api/rsvp` is sent with a cookie for a valid invite with no RSVP row
-- **THEN** the response is `200` with `attending: null, partySize: null` and the invite's `maxPartySize`
+- **THEN** the response is `200` with `attending: null`
 
 #### Scenario: Anonymous read is not-found
 
 - **WHEN** `GET /api/rsvp` is sent without a valid cookie
 - **THEN** the response is `404` with the uniform not-found shape
 
-### Requirement: Public confirmed-guest count
+### Requirement: Public confirmed-reservation count
 
-The system SHALL expose `GET /api/rsvp/count` that responds `200` with `{ "count": number }` where count is the sum of `party_size` over all rows with `attending = true`. The endpoint SHALL require no cookie and SHALL return only the aggregate integer — never per-invite data, names, or row enumerations.
+The system SHALL expose `GET /api/rsvp/count` that responds `200` with `{ "count": number }` where count is the number of rows with `attending = true`. The endpoint SHALL require no cookie and SHALL return only the aggregate integer — never per-invite data, names, or row enumerations.
 
-#### Scenario: Count sums attending party sizes
+#### Scenario: Count confirmed reservations
 
-- **WHEN** three invites have responded attending with party sizes 2, 1, and 4, and one has declined
-- **THEN** `GET /api/rsvp/count` returns `{ "count": 7 }`
+- **WHEN** three invites have responded attending and one has declined
+- **THEN** `GET /api/rsvp/count` returns `{ "count": 3 }`
 
 #### Scenario: No responses yet
 
@@ -143,21 +124,11 @@ RSVP submission and status reads SHALL NOT modify `seen_at`/`seen_count`/`opened
 - **WHEN** an invite submits an RSVP and then reads its status repeatedly
 - **THEN** all four metrics columns on the invite row are unchanged
 
-### Requirement: Admin surface for party-size caps and RSVP visibility
+### Requirement: Admin RSVP visibility
 
-The admin invites endpoint (`/api/admin/:token/invites`) SHALL accept an optional `maxPartySize` on invite creation (default 1) and SHALL include `maxPartySize` plus each invite's RSVP state (`attending`, `partySize` when a row exists) in its list response.
-
-#### Scenario: Create invite with cap
-
-- **WHEN** an admin creates an invite with `maxPartySize: 4`
-- **THEN** the invite row is stored with `max_party_size = 4`
-
-#### Scenario: Cap defaults to one
-
-- **WHEN** an admin creates an invite without `maxPartySize`
-- **THEN** the invite row is stored with `max_party_size = 1`
+The admin invites endpoint (`/api/admin/:token/invites`) SHALL include each invite's RSVP state (`attending` when a row exists) in its list response.
 
 #### Scenario: List includes RSVP state
 
 - **WHEN** an admin lists invites after responses exist
-- **THEN** each invite entry includes its `maxPartySize` and, where a response exists, its `attending` and `partySize`
+- **THEN** each invite entry includes `attending` when an RSVP row exists

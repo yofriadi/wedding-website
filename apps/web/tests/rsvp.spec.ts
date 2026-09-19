@@ -2,9 +2,9 @@ import { test, expect } from "@playwright/test";
 import { dismissWelcomeGate } from "./helpers";
 
 // No-seed convention (see welcome-gate.spec.ts): these tests assert anonymous
-// client-side behavior only. The invite-cookie contract (submit, caps,
-// change-of-mind, count aggregation) is verified via curl against a
-// controlled build — no test-DB seeding infrastructure.
+// client-side behavior only. The invite-cookie contract (submit,
+// change-of-mind, count aggregation) is verified via curl against a controlled
+// build — no test-DB seeding infrastructure.
 
 const SECTION = "#rsvp-section";
 
@@ -53,7 +53,7 @@ test.describe("rsvp section", () => {
     await page.goto("/");
     await scrollToRsvp(page);
     const status = page.locator(`${SECTION} [role="status"]`);
-    await expect(status).toHaveAttribute("aria-label", /guests confirmed/);
+    await expect(status).toHaveAttribute("aria-label", /reservations confirmed/);
   });
 
   test("poll rolls the ticker when the count changes", async ({ page }) => {
@@ -92,6 +92,10 @@ test.describe("rsvp section", () => {
     });
 
     await expect(ticker).toHaveAttribute("value", "12", { timeout: 10_000 });
+    await expect(page.locator(`${SECTION} [role="status"]`)).toHaveAttribute(
+      "aria-label",
+      "12 reservations confirmed",
+    );
   });
 
   test("reduced motion: value swaps instantly with no rolling columns", async ({ page }) => {
@@ -144,18 +148,11 @@ test.describe("rsvp section", () => {
     await expect(page.locator(SECTION)).toHaveCSS("background-color", "rgb(255, 255, 255)");
   });
 
-  test("invitee controls are absent for anonymous visitors, including the stepper", async ({
-    page,
-  }) => {
+  test("invitee controls are absent for anonymous visitors", async ({ page }) => {
     await page.goto("/");
     await scrollToRsvp(page);
 
-    // The removed Attending/Decline pair and party-size stepper must not linger
-    // anywhere in the anonymous markup (the first test covers the same for
-    // [data-rsvp-form]).
-    await expect(
-      page.locator("[data-rsvp-choice], [data-rsvp-step], [data-rsvp-party]"),
-    ).toHaveCount(0);
+    await expect(page.locator("[data-rsvp-form]")).toHaveCount(0);
     await expect(page.getByRole("button", { name: /^Attending$|^Decline$/i })).toHaveCount(0);
   });
 });

@@ -1,5 +1,5 @@
 ---
-import { getConfirmedGuestCount } from "../lib/rsvp";
+import { getConfirmedReservationCount } from "../lib/rsvp";
 import SlideToConfirm from "./SlideToConfirm.astro";
 
 interface Props {
@@ -16,8 +16,8 @@ const isInvitee = typeof inviteDisplayName === "string" && inviteDisplayName.len
 const isConfirmed = rsvpAttending === true;
 
 // The invitee control is one button that always submits
-// { attending: true, partySize: 1 } (design D4): there is no decline path and
-// no party-size stepper in this UI, so the label carries the whole state.
+// { attending: true }: there is no decline path, so the label carries the
+// whole state.
 const LABEL_FRESH = "Confirm Reservation";
 const LABEL_CONFIRMED = "Reservation Confirmed";
 
@@ -26,7 +26,7 @@ const LABEL_CONFIRMED = "Reservation Confirmed";
 let confirmedCount = 0;
 let countAvailable = true;
 try {
-  confirmedCount = await getConfirmedGuestCount();
+  confirmedCount = await getConfirmedReservationCount();
 } catch (err) {
   console.error("[rsvp-section] count query failed:", err);
   countAvailable = false;
@@ -38,7 +38,8 @@ const countDigits = String(confirmedCount);
 <div
   class="pt-8 space-y-4"
   role="status"
-  aria-label={`${confirmedCount} guests confirmed`}
+  aria-label={`${confirmedCount} reservations confirmed`}
+  data-rsvp-count-status
   data-scroll-fade
 >
   <number-ticker
@@ -48,7 +49,7 @@ const countDigits = String(confirmedCount);
     >{countDigits}</number-ticker
   >
   <p class="text-xs tracking-widest uppercase text-[color:var(--rsvp-muted)]">
-    confirmed
+    reservations confirmed
   </p>
 </div>
 
@@ -62,7 +63,7 @@ const countDigits = String(confirmedCount);
       {/* tabindex="-1": the confirmed button is `disabled`, and a disabled
           control is barred from focus, so this wrapper is what keeps the
           section's action focused after a submit (see the form script). */}
-      <div class="flex justify-center" data-rsvp-action tabindex="-1" data-scroll-fade>
+      <div class="flex justify-center" data-rsvp-action tabindex="-1">
         <SlideToConfirm
           type="submit"
           disabled={isConfirmed}
@@ -97,12 +98,26 @@ const countDigits = String(confirmedCount);
   Atas kehadirannya, kami ucapkan terima kasih.
 </p>
 
+<div
+  data-scroll-fade
+  class="pt-6 sm:pt-8 space-y-3 text-center max-w-md mx-auto text-pretty"
+>
+  <p class="font-serif italic text-base sm:text-lg text-[color:var(--rsvp-muted)]">
+    Kami yang berbahagia
+  </p>
+  <div class="space-y-1 text-sm sm:text-base font-medium text-[color:var(--rsvp-fg)]">
+    <p>Keluarga Bapak Ch. Fuad Ery Pribadi - Ibu Siti Mufrodah</p>
+    <p>Ibu Hj. Alfiah Salamun (Eyang)</p>
+  </div>
+</div>
+
 <script>
   import "./number-ticker";
 
   // Poll the public count and roll the ticker on change. No fetch on connect —
   // the server-rendered digits are fresh. Polls only while the tab is visible.
   const ticker = document.querySelector("number-ticker");
+  const countStatus = document.querySelector<HTMLElement>("[data-rsvp-count-status]");
   const pollEnabled = ticker instanceof HTMLElement && ticker.hasAttribute("data-poll");
   const poll = async () => {
     if (!pollEnabled || !ticker) return;
@@ -115,6 +130,7 @@ const countDigits = String(confirmedCount);
         const current = ticker.getAttribute("value") ?? ticker.textContent?.trim();
         if (next !== current) {
           ticker.setAttribute("value", next);
+          countStatus?.setAttribute("aria-label", `${next} reservations confirmed`);
         }
       }
     } catch {
@@ -173,11 +189,15 @@ const countDigits = String(confirmedCount);
           method: "POST",
           headers: { "Content-Type": "application/json" },
           cache: "no-store",
-          body: JSON.stringify({ attending: true, partySize: 1 }),
+          body: JSON.stringify({ attending: true }),
         });
         if (!res.ok) {
           // The body is fixed and always valid, so this is a server-side or
-          // session problem; nothing the guest can adjust.
+          // session problem; nothing the guest can adjust. The pill has
+          // already celebrated (the morph arms on the gesture, before this
+          // fetch) — roll it back so the control tells the truth and stays
+          // retryable instead of sitting confirmed-looking and inert.
+          confirmBtn.dispatchEvent(new CustomEvent("slide-to-confirm:reset"));
           showError("Couldn't save your RSVP. Please try again.");
           return;
         }
@@ -202,6 +222,9 @@ const countDigits = String(confirmedCount);
         if (noteEl) noteEl.textContent = "Your reservation is confirmed.";
         void poll();
       } catch {
+        // Network failure mid-flight: same rollback — the gesture's
+        // celebration may already be running.
+        confirmBtn.dispatchEvent(new CustomEvent("slide-to-confirm:reset"));
         showError("Couldn't save your RSVP. Please try again.");
       }
     });

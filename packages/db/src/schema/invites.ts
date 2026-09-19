@@ -8,5 +8,4 @@ export const invites = sqliteTable("invites", {
   seenCount: integer("seen_count").notNull().default(0),
   openedAt: integer("opened_at"),
   openedCount: integer("opened_count").notNull().default(0),
-  maxPartySize: integer("max_party_size").notNull().default(1),
 });

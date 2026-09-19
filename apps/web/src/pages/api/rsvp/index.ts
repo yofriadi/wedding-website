@@ -20,12 +20,7 @@ function json(status: number, body: unknown) {
   });
 }
 
-const rsvpBodySchema = z
-  .object({
-    attending: z.boolean(),
-    partySize: z.number().int().optional(),
-  })
-  .strict();
+const rsvpBodySchema = z.object({ attending: z.boolean() }).strict();
 
 // Read the caller's own RSVP state. Read-only: invite metrics are untouched.
 export const GET: APIRoute = async ({ cookies }) => {
@@ -38,10 +33,10 @@ export const GET: APIRoute = async ({ cookies }) => {
   }
   const { invite } = resolution;
 
-  let row: { attending: boolean; partySize: number } | undefined;
+  let row: { attending: boolean } | undefined;
   try {
     const rows = await db
-      .select({ attending: rsvps.attending, partySize: rsvps.partySize })
+      .select({ attending: rsvps.attending })
       .from(rsvps)
       .where(eq(rsvps.inviteId, invite.id))
       .limit(1);
@@ -53,8 +48,6 @@ export const GET: APIRoute = async ({ cookies }) => {
 
   return json(200, {
     attending: row?.attending ?? null,
-    partySize: row?.partySize ?? null,
-    maxPartySize: invite.maxPartySize,
   });
 };
 
@@ -84,14 +77,9 @@ export const POST: APIRoute = async ({ cookies, request }) => {
   }
 
   const { attending } = parsed.data;
-  const partySize = attending ? (parsed.data.partySize ?? 1) : 0;
-
-  if (attending && (partySize < 1 || partySize > invite.maxPartySize)) {
-    return json(400, { error: "party_size_out_of_range" });
-  }
 
   try {
-    await upsertRsvp(invite, attending, partySize);
+    await upsertRsvp(invite, attending);
   } catch (err) {
     // SQLITE_BUSY and other retryable storage failures surface as 503, never
     // as a partial or duplicate write.
@@ -99,17 +87,16 @@ export const POST: APIRoute = async ({ cookies, request }) => {
     return serviceUnavailable();
   }
 
-  return json(200, { attending, partySize });
+  return json(200, { attending });
 };
 
-async function upsertRsvp(invite: ResolvedInvite, attending: boolean, partySize: number) {
+async function upsertRsvp(invite: ResolvedInvite, attending: boolean) {
   const now = Date.now();
   await db
     .insert(rsvps)
     .values({
       inviteId: invite.id,
       attending,
-      partySize,
       respondedAt: now,
       updatedAt: now,
     })
@@ -117,6 +104,6 @@ async function upsertRsvp(invite: ResolvedInvite, attending: boolean, partySize:
       target: rsvps.inviteId,
       // responded_at deliberately excluded: the first-response timestamp
       // survives a change of mind.
-      set: { attending, partySize, updatedAt: now },
+      set: { attending, updatedAt: now },
     });
 }
