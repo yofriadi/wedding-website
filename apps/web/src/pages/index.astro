@@ -173,6 +173,10 @@ Astro.response.headers.set("Cache-Control", "no-store");
   // first paint) so the buffering beat — phrases cycling, then fade into the
   // welcome gate — stays legible on any device.
   const LOADER_MIN_DWELL_MS = 2600;
+  // Hard ceiling: the loader is a progress beat, not a gate. Whatever happens
+  // to the media below (missing soundtrack, decode failure, stalled network),
+  // the page must still open.
+  const LOADER_MAX_WAIT_MS = 8000;
   const loaderShownAt = performance.now();
 
   const hideLoadingScreen = () => {
@@ -214,6 +218,11 @@ Astro.response.headers.set("Cache-Control", "no-store");
       return;
     }
 
+    // complete with zero natural size = the source already failed (broken or
+    // missing file). No further 'error' event will ever fire — bail out
+    // instead of waiting forever.
+    if (heroMedia.complete) return;
+
     await new Promise((resolve) => {
       const onDone = () => resolve();
       heroMedia.addEventListener('load', onDone, { once: true });
@@ -229,20 +238,35 @@ Astro.response.headers.set("Cache-Control", "no-store");
       return;
     }
 
+    // A dead soundtrack must not wedge the loader. With <source> children the
+    // 'error' event fires on the <source> element, never on the media element
+    // itself — so a missing file leaves this element at NETWORK_NO_SOURCE
+    // without any event to wait for. Check that state up front, and also
+    // listen on the <source> for failures that happen while we wait.
+    if (heroMusic.error || heroMusic.networkState === HTMLMediaElement.NETWORK_NO_SOURCE) {
+      return;
+    }
+
     // Wait for audio to be loaded
     await new Promise((resolve) => {
       const onDone = () => {
         heroMusic.removeEventListener('canplay', onDone);
         heroMusic.removeEventListener('error', onDone);
+        const src = heroMusic.querySelector('source');
+        if (src) src.removeEventListener('error', onDone);
         resolve();
       };
-      heroMusic.addEventListener('canplay', onDone, { once: true });
-      heroMusic.addEventListener('error', onDone, { once: true });
+      heroMusic.addEventListener('canplay', onDone);
+      heroMusic.addEventListener('error', onDone);
+      const src = heroMusic.querySelector('source');
+      if (src) src.addEventListener('error', onDone);
     });
   };
 
   const initLoadingScreen = async () => {
-    await Promise.all([waitForHeroZoomLoaded(), waitForAudioLoaded()]);
+    const media = Promise.all([waitForHeroZoomLoaded(), waitForAudioLoaded()]);
+    const deadline = new Promise((resolve) => setTimeout(resolve, LOADER_MAX_WAIT_MS));
+    await Promise.race([media, deadline]);
     hideLoadingScreen();
   };
 
