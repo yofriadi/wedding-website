@@ -274,6 +274,8 @@ const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
 
     var touchStartClientY = 0;
     var dragDistance = 0;
+    // Identifier of the finger that owns the current drag (see onTouchStart).
+    var activeTouchId = null;
     var lastPointerEndTime = 0;
     var bounceAnim = null;
 
@@ -601,7 +603,12 @@ const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
       if (committed || tracking || e.touches.length !== 1) return;
       stopMotion();
       tracking = true;
-      var clientY = e.touches[0].clientY;
+      var touch = e.touches[0];
+      // Latch THIS finger. `touches[0]` is not stable: a second finger landing
+      // (or the first lifting while another is down) re-points index 0 at a
+      // different contact, which would teleport the gate mid-gesture.
+      activeTouchId = touch.identifier;
+      var clientY = touch.clientY;
       touchStartClientY = clientY;
       startY = clientY - currentY;
       dragDistance = 0;
@@ -610,11 +617,22 @@ const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
       velocity = 0;
     }
 
+    /** The latched finger, or null once it has left the screen. */
+    function trackedTouch(list) {
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].identifier === activeTouchId) return list[i];
+      }
+      return null;
+    }
+
     function onTouchMove(e) {
       if (!tracking || committed) return;
+      var touch = trackedTouch(e.touches);
+      // Extra fingers are ignored outright rather than allowed to steer.
+      if (!touch) return;
       // Non-passive listener: stop scroll chaining / rubber-band leak.
       e.preventDefault();
-      var clientY = e.touches[0].clientY;
+      var clientY = touch.clientY;
       dragDistance = Math.max(dragDistance, Math.abs(clientY - touchStartClientY));
       // 1:1 upward tracking, clamped — the gate never travels downward.
       var y = Math.min(0, clientY - startY);
@@ -630,7 +648,22 @@ const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
 
     function onTouchEnd(e) {
       if (!tracking || committed) return;
+      // Only the finger that started the drag can end it: lifting a second,
+      // incidental finger must not commit or abort someone's swipe.
+      //
+      // Deliberately NOT guarded by `activeTouchId !== null`. This check must
+      // fail CLOSED: if the latch were ever missing while tracking, an
+      // `activeTouchId !== null &&` prefix would let any stray finger-lift
+      // commit the gate — precisely the bug this guard exists to prevent.
+      // With no latch, trackedTouch() returns null and the handler no-ops.
+      //
+      // The `touches.length === 0` escape below keeps that from stranding the
+      // gesture: when the screen is empty there is nothing left to track, so
+      // the drag is released even if the owning finger's id never appeared in
+      // changedTouches (a dropped contact with no touchcancel).
+      if (!trackedTouch(e.changedTouches) && e.touches.length > 0) return;
       tracking = false;
+      activeTouchId = null;
       lastPointerEndTime = Date.now();
 
       // A finger that rested before release carries no flick.
@@ -656,6 +689,7 @@ const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
     function onTouchCancel() {
       if (!tracking) return;
       tracking = false;
+      activeTouchId = null;
       window.removeEventListener('mousemove', onMouseMove);
       window.removeEventListener('mouseup', onMouseUp);
       if (-currentY >= TAP_THRESHOLD) {
