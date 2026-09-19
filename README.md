@@ -1,111 +1,94 @@
 # wedding-website
 
-This project was created with [Better-T-Stack](https://github.com/AmanVarshney01/create-better-t-stack), a modern TypeScript stack that combines Astro, Self, and more.
+Astro + TypeScript + Tailwind, deployed with the standalone Node adapter. SQLite is accessed through Drizzle and libSQL. The application stores invitations, RSVP responses, and one optional guest photo per invitation.
 
-## Features
+## Development
 
-- **TypeScript** - For type safety and improved developer experience
-- **Astro** - The web framework for content-driven websites
-- **TailwindCSS** - Utility-first CSS for rapid UI development
-- **shadcn/ui** - Reusable UI components
-- **Drizzle** - TypeScript-first ORM
-- **SQLite** - Local file database
-- **prek** - Git hooks for code quality
-- **Oxlint** - Oxlint + Oxfmt (linting & formatting)
-- **Turborepo** - Optimized monorepo build system
-
-## Getting Started
-
-First, install the dependencies:
-
-```bash
+```sh
 pnpm install
+# Copy only if .env does not already exist; never overwrite your local secrets.
+cp -n apps/web/.env.example apps/web/.env
 ```
 
-## Database Setup
+### Database baseline
 
-The application uses a SQLite file through Drizzle ORM. Copy the example env
-file and adjust it — relative paths are resolved from `apps/web` at runtime:
+The committed migration creates only `invites`, `rsvps`, and `guest_photos`, plus Drizzle's migration ledger. It is a **fresh-install baseline**, not an upgrade from the former submissions/party-size schema. `db:migrate` checks existing migration history and refuses incompatible targets without changing their data.
 
-```bash
-cp apps/web/.env.example apps/web/.env
-```
+On a genuinely new checkout with no existing database:
 
-which sets:
-
-```dotenv
-DATABASE_URL=file:../../packages/db/local.db
-```
-
-The database file is NOT tracked by git (it holds guest data). `pnpm run
-db:migrate` creates it from the committed migrations on first run:
-
-```bash
+```sh
 pnpm run db:migrate
-```
-
-Use `pnpm run db:push` only for disposable development databases when you
-intentionally want Drizzle to synchronize the current schema without migrations.
-
-Then, run the development server:
-
-```bash
 pnpm run dev
 ```
 
-Open [http://localhost:4321](http://localhost:4321) in your browser to see the fullstack application.
+The example URL is `file:../../packages/db/local.db`. Relative file paths resolve from `apps/web` in the application and migration tooling. Prefer absolute paths for all operational commands.
 
-## Deployment (standalone Node + reverse proxy)
+**Already have a database?** Do not delete it, its `-wal`/`-shm` files, or its uploads to make migration succeed. Select a new empty database and separate storage directory, or follow the separately authorized replacement procedure in [ops/README.md](ops/README.md). If records must survive, stop and use a data-preserving migration plan. The old `0005` attendance-only migration is superseded by the new baseline; it has not been applied to your existing local database by this cleanup.
 
-The site runs as a standalone Node server behind a reverse proxy (Caddy with
-auto-TLS terminates TLS and proxies to the node process) on a self-hosted VM.
+A safe isolated development session, leaving existing data alone:
 
-Run it exactly as production does — note `pnpm dev` starts the Vite dev server,
-which is NOT the same runtime:
-
-```bash
-cd apps/web
-pnpm build
-node dist/server/entry.mjs   # HOST/PORT/DATABASE_URL/NODE_ENV from the environment
+```sh
+sandbox="$(mktemp -d /tmp/wedding-dev.XXXXXX)"
+export DATABASE_URL="file:$sandbox/app.sqlite"
+export PHOTO_STORAGE_DIR="$sandbox/photos"
+mkdir "$PHOTO_STORAGE_DIR"
+pnpm run db:migrate
+pnpm --filter web run dev --port 4322
+# Keep the sandbox while needed. Stop its server before disposing of it.
 ```
 
-### Production release checklist
+Use `db:generate` after schema edits and commit SQL, snapshot, and journal together. `db:push` is only for explicitly disposable development databases; it bypasses migration history and is not a deployment command.
 
-On a fresh VM (or a new release), apply migrations BEFORE starting/restarting
-the server — libSQL will happily auto-create an empty database file and the
-site will look healthy while every invite query fails with `no such table`:
+### Current contracts
 
-```bash
-# from the repo root, with the PRODUCTION DATABASE_URL exported
-DATABASE_URL=file:/srv/wedding/wedding.db pnpm run db:migrate   # must exit 0
-systemctl restart wedding   # only after migrations succeeded
+- `GET /<12-character-invite-id>` records a visit, binds/rebinds `ww_invite_id`, and redirects to `/`.
+- `GET /api/invite/me` resolves identity without changing metrics.
+- `POST /api/invite/opened` records opening the invitation.
+- `GET` / `POST /api/rsvp` read/upsert boolean attendance. Response timestamps are retained; the public count is attending invitations, not party headcount.
+- `GET /api/guest-photos` returns `{ inviteValid, mineId, photos: [{ id, photoUrl, createdAt }] }` for everyone. Names and invitation IDs are not public photo metadata.
+- `POST /api/guest-photos` accepts exactly one multipart `photo` file for a resolved invitation, once only.
+- Canonical files are private-storage `guest-photos/<photo-id>/photo.webp`, with an optional `photo.avif`. `/api/photos/<key>` serves public immutable content, with AVIF negotiated through `Vary: Accept`.
+
+[NOTE.md](NOTE.md) provides an isolated manual walkthrough. [SPEC.md](SPEC.md) summarizes the current invitation contract; detailed capability specs live in `openspec/specs/`.
+
+## Tests
+
+```sh
+pnpm run check-types
+pnpm --filter web exec playwright test
+pnpm run build
 ```
 
-See `openspec/changes/invite-only-personalization/` for the deployment design.
+Playwright always starts its own migrated temporary database, photo storage, and server on a free port. It never reuses a running developer server or an inherited database URL. API suites use the same isolated setup helper. The baseline suite uses the real migrator, checks constraints/integrity, verifies repeat migration is a no-op, and guards against legacy database resets.
 
-## Git Hooks and Formatting
+## Deployment
 
-- Initialize hooks: `pnpm run prepare`
-- Format and lint fix: `pnpm run check`
+The application and both operations scripts must receive the **same explicit targets**. For a fresh installation, after selecting those targets:
 
-## Project Structure
-
-```
-wedding-website/
-├── apps/
-│   └── web/         # Fullstack application (Astro)
-├── packages/
-│   ├── config/      # Shared tooling config (tsconfig)
-│   ├── db/          # Drizzle schema + migrations (SQLite)
-│   └── env/         # Type-safe environment variables
+```sh
+export DATABASE_URL=file:/srv/wedding/local.db
+export PHOTO_STORAGE_DIR=/srv/wedding/photos
+export BACKUP_DEST=/mnt/backup/wedding
+# These paths are examples, not permission to replace existing data.
+pnpm run db:migrate
+pnpm --filter web run build
+# From apps/web, start the matching build using your service manager:
+# NODE_ENV=production HOST=127.0.0.1 PORT=4321 node dist/server/entry.mjs
 ```
 
-## Available Scripts
+Apply migrations before starting the matching application build. No startup code resets the database or upload directory. See [ops/README.md](ops/README.md) for backups, strict restore checks, replacement/rollback boundaries, AVIF configuration, and caching restrictions.
 
-- `pnpm run dev`: Start all applications in development mode
-- `pnpm run build`: Build all applications
-- `pnpm run check-types`: Check TypeScript types across all apps
-- `pnpm run db:push`: Push schema changes to database
-- `pnpm run db:studio`: Open database studio UI
-- `pnpm run db:migrate`: Apply committed migrations (creates the DB on first run)
-- `pnpm run check`: Run Oxlint and Oxfmt
+## Project structure
+
+- `apps/web/`: pages, API routes, components, photo processing, browser tests
+- `packages/db/`: current schema, generated migration, guarded migration runner
+- `packages/env/`: validated server environment
+- `ops/`: backup, restore verification, moderation
+- `openspec/`: capability specifications and coordinated change plans
+
+## Commands
+
+- `pnpm run dev`, `pnpm run build`, `pnpm run check-types`
+- `pnpm run db:migrate`, `pnpm run db:generate`, `pnpm run db:studio`
+- `pnpm run check`: lint and format **with edits**; use `pnpm exec oxlint` and `pnpm exec oxfmt --check <paths>` for read-only verification
+- `pnpm run prepare`: install Git hooks

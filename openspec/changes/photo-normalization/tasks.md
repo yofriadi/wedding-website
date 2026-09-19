@@ -1,5 +1,7 @@
 # Tasks: photo-normalization
 
+**Superseded contracts:** `guest-photo-clean-baseline` retains normalization/AVIF safety but replaces the collection, schema, file paths, and thumbnail requirements. Do not synchronize this older change's spec delta onto the new baseline. Preserve this implementation history; close it with spec synchronization skipped once the pending deployment checks are accounted for. See `../guest-photo-clean-baseline/handoff.md`.
+
 ## 1. Encode pipeline
 
 - [x] 1.1 `lib/image-encode.ts`: `MAX_PHOTO_EDGE` (2048), WebP q80/e4 canonical (`.rotate()` → `resize inside` → `webp`), AVIF q55/e4 variant, 224×400 thumbnail, `probeImage`, `canonicalizePhoto` with the pass-through rule (already-modern, in-cap, oriented, metadata-free, not larger)
@@ -42,7 +44,7 @@
 ## 6. Close-out
 
 - [x] 6.1 `ops/README.md`: storage layout mentions the `.avif` siblings and the edge-cache/`Vary` constraint
-- [ ] 6.2 Before the wedding: confirm `PHOTO_AVIF_ENABLED` is left on in production, and check one real submission's directory has its variants (`ls /srv/wedding/photos/submissions/<id>/`)
+- [ ] 6.2 Transferred to the `guest-photo-clean-baseline` release handoff: after an authorized production deployment, verify `PHOTO_AVIF_ENABLED` and a real `PHOTO_STORAGE_DIR/guest-photos/<photo-id>/photo.webp` / `photo.avif` pair. Still pending; isolated fixture tests do not verify production.
 - [ ] 6.3 If a Cloudflare cache rule is ever added for `/api/photos/*`, re-read D6 first (free plan ignores `Vary: Accept` for images)
 
 ## 7. Review-driven fixes (plan-reviewer + code-reviewer)

@@ -1,224 +1,39 @@
-# Shareable Invite Links (Guest Tracking)
+# Invitation and database contract
 
-## Goal
+Current implementation summary. Detailed requirements are in `openspec/specs/`; coordinated cleanup decisions are in `openspec/changes/guest-photo-clean-baseline/`.
 
-Create a shareable invitation URL with a generated opaque ID that:
+## Invitations
 
-- Identifies a guest (for future RSVP and other features).
-- Sets a client-readable cookie on first visit, then removes the ID from the address bar by redirecting to `/`.
-- Stores minimal tracking (last seen timestamp + seen count) without collecting IP, user-agent, or referrer.
+- Share URL: `GET /<id>`, where the ID is a cryptographically random 12-character URL-safe string (`A-Z`, `a-z`, `0-9`, `-`, `_`). The route is `apps/web/src/pages/[id].ts`, not `/i/:id`.
+- A known invite increments `seen_count`, sets `seen_at`, binds **or rebinds** `ww_invite_id` to that invite, and redirects to `/`. Existing/stale cookies must not mask a newly opened invitation.
+- Invalid/unknown links redirect without creating a record or setting an unverified cookie. Tracking is best-effort; database failures must not break the homepage.
+- Cookie: client-readable, `Path=/`, `SameSite=Lax`, `Secure` in production, default lifetime 30 days (`INVITE_COOKIE_DAYS`). Possession of a valid invitation identifies the upload/RSVP owner; it is not proof of real-world identity.
+- `POST /api/invite/opened` updates `opened_at`/`opened_count`. Homepage rendering and `GET /api/invite/me` are read-only.
+- Missing, malformed, and unknown cookies receive the same empty `404` from private APIs. Infrastructure errors are `503`, not identity misses. Public photo collection reads instead serve anonymous posting state.
+- Personalized HTML, identity APIs, redirects, RSVP responses, and photo collection/upload responses use `Cache-Control: no-store`.
 
-This spec defines the initial data model and endpoints to support:
+## Admin
 
-- Generating invite links via a manual (curl/Postman) admin endpoint.
-- Resolving an invite ID from a shared URL into a persistent cookie.
-- Recording basic open/seen metrics for the invite.
+`GET` and `POST /api/admin/:token/invites` require `INVITE_ADMIN_TOKEN` (at least 32 characters). Wrong/unconfigured tokens return `404`. POST accepts a trimmed nonempty `displayName`, at most 120 characters, and returns `201 { id, sharePath: "/<id>" }`. GET reports invitation tracking and RSVP attendance. Do not expose the path token in logs or public links; call it only over HTTPS in production.
 
-## Non-Goals (for this phase)
+## Current tables
 
-- RSVP UI and submission flows (only ensure the invite ID is available for later).
-- Bot/link-preview detection (any hit to the share URL counts as a "seen").
-- Revocation, rotation, expiration.
-- UTM/referrer analytics.
-- Per-visit event timelines.
-- Authentication for admin endpoints via headers/sessions (admin access is via a non-obvious URL).
+- `invites`: `id`, `display_name`, `created_at`, nullable `seen_at`/`opened_at`, zero-default `seen_count`/`opened_count`.
+- `rsvps`: primary-key/FK `invite_id`, boolean `attending`, first `responded_at`, latest `updated_at`; index on attendance. Upserts preserve the first response timestamp. Public count means attending invitations, not party headcount.
+- `guest_photos`: `id`, unique FK `invite_id`, unique canonical `key`, `created_at`; index `(created_at, id)`. One accepted photo per invitation. No parent submission, ordering position, wish, party-size, thumbnail, or copied author fields.
 
-## Glossary
+The application enables SQLite foreign keys. Dependencies use no-action deletion: operators must not delete invitation rows underneath RSVP/photo records.
 
-- Invite: A record representing one guest. (Group/household RSVP is deferred.)
-- Invite ID: The opaque public identifier embedded in the share URL.
+## Guest photos
 
-## Product Decisions (Locked)
+`GET /api/guest-photos` returns `{ inviteValid, mineId, photos: [{ id, photoUrl, createdAt }] }`. It includes all photos once in descending timestamp/ID order, with no public invitation IDs or names.
 
-- URL format: `GET /i/<id>`
-- Behavior: set cookie (only if absent), increment seen metrics, then redirect to `/` with no banner.
-- Cookie persistence: 30 days by default; configurable.
-- Cookie is client-readable (NOT `HttpOnly`).
-- Cookie overwrite: NO. If cookie already exists, do not replace it.
-- ID type: short opaque random string, length 12.
-- Guests will not manually type IDs.
-- Admin creation: a non-obvious URL (token in path), no Authorization header.
-- Invite destination: always `/`.
+`POST /api/guest-photos` resolves the cookie before body parsing and accepts exactly one multipart file named `photo`, at most 10 MiB. JPEG/PNG/WebP/AVIF are validated by content and decoder. Every canonical is safe WebP, orientation-corrected, dimension-capped and metadata-free; optional AVIF is generated afterwards. Files are complete before the row is published. Duplicate invitation ownership returns `409`; other failures cannot delete another upload's files.
 
-## UX / UI
+Stored paths are `guest-photos/<photo-id>/photo.webp` and optional `photo.avif`, served publicly by `/api/photos/<key>` with immutable caching and `Vary: Accept`. The magnetic trail uses family starter images only as presentation fallbacks; they are not database records.
 
-### `/i/<id>`
+## Migration and operations
 
-- Never renders UI.
-- Always responds with a redirect to `/`.
+Generate changes with `pnpm run db:generate`; apply committed history with `pnpm run db:migrate`. `db:push` is not a release command.
 
-### `/`
-
-- In this phase, page remains as-is.
-- Future: can greet the guest using the cookie-derived invite ID (server-side lookup) and display `displayName`.
-
-## Security & Privacy
-
-### Privacy
-
-- Do not store: IP address, user-agent, referrer, UTM parameters.
-- Store only:
-  - `displayName` (for future personalization)
-  - `seenAt` and `seenCount`
-
-### Admin Endpoint Exposure
-
-The admin endpoint is protected only by an unguessable path token. Tradeoffs:
-
-- Pros: simplest workflow (curl/Postman).
-- Cons: token appears in request URL (can be logged by intermediaries).
-
-Mitigations:
-
-- Token MUST be long random (>= 32 chars, URL-safe).
-- Only call the endpoint over HTTPS.
-- Do not share the token.
-
-## Data Model (Drizzle / SQLite)
-
-Create a single table for now.
-
-### Table: `invites`
-
-- `id` (TEXT, primary key)
-  - Public invite ID
-  - Generated as a 12-character URL-safe random string (nanoid-style)
-- `display_name` (TEXT, required)
-  - Guest-facing name; will be shown on page later
-  - Stored as provided; server should trim whitespace
-- `created_at` (INTEGER, required)
-  - Unix timestamp in milliseconds
-- `seen_at` (INTEGER, nullable)
-  - Unix timestamp in milliseconds
-- `seen_count` (INTEGER, required)
-  - Default 0
-
-Constraints / indexes:
-
-- Primary key on `id`.
-- Optional future index on `seen_at` if needed for sorting.
-
-Notes:
-
-- "Group/household" is deferred; schema should be easy to extend later via a nullable `group_id` or a separate `invite_groups` table.
-
-## Cookie Contract
-
-- Name: `ww_invite_id`
-- Value: the invite `id` (12 chars)
-- Lifetime:
-  - Default: 30 days
-  - Configurable via env var `INVITE_COOKIE_DAYS`
-- Scope:
-  - `Path=/`
-  - `SameSite=Lax`
-  - `Secure` in production; allow non-secure in local dev (`http://localhost`)
-- Accessibility:
-  - Client-readable (NOT `HttpOnly`)
-
-Overwrite behavior:
-
-- If `ww_invite_id` is already set, do not overwrite it.
-
-## Endpoints (Astro SSR)
-
-Astro is configured with `output: "server"` and runs on the `@astrojs/node`
-standalone adapter (behind a Caddy reverse proxy with auto-TLS in prod; the same
-adapter serves local dev).
-
-### 1) Resolve Invite Link
-
-Route:
-
-- `GET /i/:id`
-
-Responsibilities:
-
-- Validate `id` format (length 12; URL-safe charset).
-  - If invalid format: still redirect to `/`.
-- Increment invite metrics:
-  - `seen_count = seen_count + 1`
-  - `seen_at = now()`
-  - If `id` not found: do nothing (no insert) and still redirect.
-- Cookie:
-  - If `ww_invite_id` cookie is absent AND the invite exists, set it to `:id` with configured TTL.
-  - If already present, do not overwrite.
-- Response: `302` redirect to `/`.
-
-### 2) Create Invite (Admin)
-
-Route:
-
-- `POST /api/admin/:token/invites`
-  - `:token` must match env `INVITE_ADMIN_TOKEN`.
-
-Request:
-
-- JSON body:
-  - `displayName`: string (required)
-
-Behavior:
-
-- If token mismatch: respond `404` (do not reveal the endpoint exists).
-- Validate `displayName`:
-  - trim
-  - non-empty
-  - recommended max length: 120 chars (server-side)
-- Create invite:
-  - Generate `id` (12 chars)
-  - Insert row with `created_at = now()`, `seen_count = 0`, `seen_at = null`
-  - Handle collisions by retrying generation on primary-key conflict.
-
-Response:
-
-- `201` JSON:
-  - `id`
-  - `sharePath`: `/i/<id>`
-
-Example (curl):
-
-```bash
-curl -X POST \
-  -H 'content-type: application/json' \
-  'https://yourdomain.com/api/admin/<INVITE_ADMIN_TOKEN>/invites' \
-  -d '{"displayName":"Sarah"}'
-```
-
-## Environment Variables
-
-Add to server env schema (`packages/env/src/server.ts`) and deployment bindings:
-
-- `INVITE_ADMIN_TOKEN` (string, recommended)
-  - If unset, the admin create endpoint is effectively disabled (always returns 404).
-- `INVITE_COOKIE_DAYS` (string/number, optional)
-  - Default 30
-
-## Implementation Notes (Repo-Specific)
-
-### Code locations
-
-- DB schema:
-  - `packages/db/src/schema/invites.ts`
-  - `packages/db/src/schema/index.ts` should export the table(s)
-- Web routes:
-  - `apps/web/src/pages/i/[id].ts`
-  - `apps/web/src/pages/api/admin/[token]/invites.ts`
-
-### Database access
-
-- Import `db` from `@wedding-website/db`.
-- Ensure Drizzle schema exports are wired so `drizzle({ client, schema })` has `invites`.
-
-### Migrations
-
-- Generate/apply via:
-  - `pnpm db:generate`
-  - `pnpm db:push`
-
-## Future Extension (RSVP)
-
-This feature is intentionally structured to support RSVP later:
-
-- RSVP pages/endpoints can read `ww_invite_id` (client-readable cookie).
-- Server-side RSVP submission should trust the cookie only as an identifier, not as proof of real-world identity.
-- A later schema can add group/household support and RSVP responses linked by `invite_id`.
+The current initial migration is fresh-install-only. Existing legacy environments require an explicitly authorized replacement or a data-preserving migration plan, never an automatic reset. See `README.md` and `ops/README.md` for explicit targets, matched rollback, and backup verification. No IP addresses, user agents, or referrers are stored for invitation tracking.

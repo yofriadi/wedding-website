@@ -2,195 +2,304 @@
 
 ## Purpose
 
-TBD - created by archiving change guest-submissions. Update Purpose after archive.
+Public, identity-minimal guest photos: one safe, immutable photo per invitation, with flat collection reads, invite-only uploads, and ownership-safe persistence.
 
 ## Requirements
 
 ### Requirement: Photo limits
 
-Each submission SHALL include at most 3 photos, each at most 10MB, of allowed types (jpeg, png, webp, avif verified by magic bytes, not Content-Type alone); violations SHALL be rejected with `400`.
+Each upload SHALL include exactly one photo no larger than 10 * 1024 * 1024 bytes as uploaded. Allowed input types SHALL be JPEG, PNG, WebP, and AVIF verified by magic bytes and decoder validation, not Content-Type or extension alone. More than one `photo` entry SHALL return `400 too_many_photos`; oversized input SHALL return `400 photo_too_large`; unsupported or undecodable content SHALL return `400 invalid_photo_type`. Validation/normalization SHALL finish before any persistent row or file write.
 
 #### Scenario: Too many photos rejected
 
-- **WHEN** a submission includes 4 photos
-- **THEN** the response is `400` and nothing is stored
+- **WHEN** an authorized upload contains two or more `photo` entries
+- **THEN** the response is `400 too_many_photos` and nothing is persisted
 
 #### Scenario: Oversized photo rejected
 
-- **WHEN** any photo exceeds 10MB
-- **THEN** the response is `400` and nothing is stored
+- **WHEN** the uploaded photo exceeds 10 MiB
+- **THEN** the response is `400 photo_too_large` and nothing is persisted
 
 #### Scenario: Disallowed type rejected
 
-- **WHEN** a file's magic bytes do not match an allowed image type (regardless of Content-Type or extension)
-- **THEN** the response is `400` and nothing is stored
+- **WHEN** magic bytes do not match an allowed type regardless of declared MIME type or extension
+- **THEN** the response is `400 invalid_photo_type` and nothing is persisted
 
-### Requirement: Photos stored on disk under submission-scoped paths
+#### Scenario: Undecodable content rejected
 
-Photos SHALL be written to a local content directory outside the web root (e.g. `/srv/wedding/photos/`), keyed `submissions/<submission-id>/<position>.<ext>`; keys SHALL NOT embed invite ids or names; storage SHALL reject path traversal.
-
-#### Scenario: Upload writes to disk
-
-- **WHEN** a valid photo is accepted
-- **THEN** the file exists at the submission-scoped path and the submission row references the key
-
-#### Scenario: Path traversal rejected
-
-- **WHEN** a stored key or client-supplied filename attempts to escape the content directory (`..`, absolute path)
-- **THEN** the write is refused (the key is server-generated; client filenames are never trusted)
-
-### Requirement: Photos served via the wall
-
-Photo URLs SHALL be returned by `GET /api/submissions` to all callers — anonymous visitors and stale-cookie holders receive `{ mine: null, inviteValid: false, wall: { stories } }` with the same wall content resolved invitees see (minus `mine`); resolved invitees receive `inviteValid: true` and `mine`. Photos render in the story rail as story tiles with first-name attribution per the "First-name attribution on story tiles" requirement; the rail's story tiles are exactly the real wall tiles (no demo tiles exist). Files are served through the app (or a cacheable app route) with proper content-type — never via a public static directory that bypasses validation.
-
-#### Scenario: Invitee sees guest photos in the rail
-
-- **WHEN** a cookie holder views the story rail and photos exist
-- **THEN** guest photo tiles render as the rail's only story tiles, each labeled with the poster's first name
-
-#### Scenario: Anonymous visitor sees guest photos in the rail
-
-- **WHEN** a visitor without a cookie views the story rail and photos exist
-- **THEN** `GET /api/submissions` responds 200 with `mine: null` and the wall, and guest photo tiles render in the rail with the same first-name attribution invitees see
-
-#### Scenario: Anonymous direct file access succeeds
-
-- **WHEN** a valid photo path is requested without a cookie
-- **THEN** the photo file is served (photos are public by decision; keys are unguessable submission-scoped paths)
-
-#### Scenario: Anonymous rail when the wall is empty
-
-- **WHEN** a visitor without a cookie views the story rail and no photos exist
-- **THEN** the rail shows the three unnamed mock previews per the story-rail-mocks capability (the API returns an empty wall)
+- **WHEN** allowed magic bytes accompany content that cannot be decoded within the input limits
+- **THEN** the response is `400 invalid_photo_type`, no directory is reserved, and no row is inserted
 
 ### Requirement: Upload failure is atomic-ish
 
-If any photo fails validation or storage, the submission SHALL NOT be created (all-or-nothing per attempt). Because the submission row is claimed FIRST (to win the post-once race), cleanup on any non-201 path MUST delete BOTH the claimed row AND the entire generated submission directory — a surviving row would permanently lock the guest out (UNIQUE(invite_id) + no edit/delete path). "Not created" means no surviving row AND no surviving files.
+For ordinary handled validation, normalization, storage, or definitive insertion failures, an upload SHALL leave no published row and SHALL remove its owned files. The row SHALL be published only after the canonical file is complete. Accepted rows/canonicals SHALL NOT be removed because a later response, refresh, or optional variant operation fails. A persistence result that is genuinely uncertain SHALL be reconciled by the attempt's generated ID/key before destructive cleanup: confirmed publication counts as accepted, confirmed absence permits cleanup, and an unresolved result SHALL preserve possibly referenced files, log the condition, and return unavailable. Cleanup failures SHALL be logged for offline reconciliation rather than silently treated as a successful clean rollback.
 
-#### Scenario: One bad file fails the batch
+#### Scenario: Invalid input leaves nothing to clean up
 
-- **WHEN** a submission includes one valid and one invalid photo
-- **THEN** the response is `400`, and cleanup removes the claimed submission row AND the whole generated submission directory (the guest may retry — they are not locked out)
+- **WHEN** validation or normalization fails
+- **THEN** no guest-photo row or photo directory has been created and the invite remains eligible
 
-### Requirement: Submissions API never cached; photo files cacheable
+#### Scenario: Storage failure permits retry
 
-`GET /api/submissions` SHALL send `Cache-Control: no-store` on every response. The photo route `GET /api/photos/<key>` SHALL send cacheable headers suitable for immutable content (keys are write-once) and MAY be shared-cached.
+- **WHEN** writing the canonical fails before publication
+- **THEN** no photo row is inserted, the attempt's files are cleaned up when storage permits, and the guest is not locked out by a claimed row
 
-#### Scenario: Submissions API never cached
+#### Scenario: Collection does not expose incomplete upload
 
-- **WHEN** `GET /api/submissions` responds
-- **THEN** the response carries `Cache-Control: no-store`
+- **WHEN** a collection read runs while a canonical upload is still being written
+- **THEN** the unfinished photo is absent from the collection
+
+#### Scenario: Definitive insert failure cleans only the attempt
+
+- **WHEN** insertion is definitively rejected after the canonical was written
+- **THEN** the failed attempt's directory is removed, no accepted row is deleted, and the response reflects the specific failure
+
+#### Scenario: Exception after persistence is reconciled
+
+- **WHEN** insertion reports an error but reconciliation finds this attempt's row and key persisted
+- **THEN** the upload is treated as accepted and its canonical is not deleted
+
+#### Scenario: Insert outcome cannot be established
+
+- **WHEN** both the insert outcome and a reconciliation read remain unavailable
+- **THEN** the server returns `503`, preserves possibly referenced files, and logs the unresolved attempt for recovery
+
+#### Scenario: Variant failure does not undo publication
+
+- **WHEN** AVIF work fails after a photo was accepted
+- **THEN** its row and WebP remain unchanged and publicly usable
+
+### Requirement: Guest photo API never cached; photo files cacheable
+
+The replacement collection endpoint `GET /api/guest-photos` and all upload responses SHALL send `Cache-Control: no-store`, including errors and caller-specific posting state. The public photo file route SHALL send `Cache-Control: public, max-age=31536000, immutable` and `Vary: Accept` on successful file responses. Missing/malformed file responses SHALL be uncached. A shared image cache that does not honor `Vary: Accept` SHALL NOT be configured for negotiated photo responses.
+
+#### Scenario: Collection responses never cached
+
+- **WHEN** `/api/guest-photos` returns a collection, accepted upload, or error response
+- **THEN** it carries `Cache-Control: no-store`
 
 #### Scenario: Photo route is publicly cacheable
 
-- **WHEN** `GET /api/photos/<key>` responds successfully
-- **THEN** the response carries `Cache-Control: public, max-age=31536000, immutable` (keys are write-once and unguessable; a shared cache may serve them)
+- **WHEN** `GET /api/photos/<key>` serves a valid file without an invite cookie
+- **THEN** it succeeds with the correct served content type, immutable public caching, and `Vary: Accept`
 
 #### Scenario: Missing-file responses are never cached
 
-- **WHEN** `GET /api/photos/<key>` responds 404 (missing or malformed key)
-- **THEN** the response carries `Cache-Control: no-store`
+- **WHEN** the file route returns `404` for a missing or malformed key
+- **THEN** it carries `Cache-Control: no-store`
 
-### Requirement: Guest tiles render inside the rail container
+### Requirement: One photo per invite
 
-Dynamically rendered guest tiles (initial wall render and post-submit) SHALL be appended inside the rail's horizontal-scroll container — located via the container's explicit `data-story-rail` hook — never as children of the surrounding section. After a successful post, the rail's guest tile set SHALL reflect the fresh payload: all wall tiles plus the caller's own tile, not the caller's alone.
-
-#### Scenario: Upload appears in the rail
-
-- **WHEN** a guest posts photos and the rail re-renders
-- **THEN** the new tile appears within the rail's scrollable row, after the demo/teaser tiles
-
-#### Scenario: Post-submit keeps other guests' tiles
-
-- **WHEN** a guest posts while other guests' tiles are in the rail
-- **THEN** those tiles remain rendered after the re-sync
-
-### Requirement: Invitee's own tile renders on initial load
-
-For a cookie holder whose prior submission includes photos, the rail's initial client render SHALL include the caller's own tile (from `mine`) in addition to the wall — the tile SHALL NOT require a new post or appear only until reload.
-
-#### Scenario: Posted invitee reloads
-
-- **WHEN** a guest who has posted photos reloads the page
-- **THEN** their own story tile renders in the rail on initial load
-
-#### Scenario: Sole real story is the caller's own
-
-- **WHEN** the only submission with photos belongs to the viewing invitee
-- **THEN** the rail renders their tile (and, per story-rail-mocks, no mock tiles)
-
-### Requirement: Wall payload carries poster first name and timestamp
-
-`GET /api/submissions` SHALL include on every `wall.stories` entry and on `mine` (when non-null) a `firstName` field and a `createdAt` field (integer epoch milliseconds of the submission). `firstName` SHALL be the first whitespace-separated token of the submitting invite's `display_name`, resolved by joining `submissions.invite_id` to `invites` at read time; when the derived token is empty, `firstName` SHALL be `null` on that entry. The payload SHALL NOT include any wish field (`wall.wishes` and `mine.wishText` do not exist). No other payload field changes.
-
-#### Scenario: First token of a couple-style display name
-
-- **WHEN** a submission belongs to an invite whose `display_name` is `Yofriadi Yahya & Partner`
-- **THEN** that submission's wall story entry carries `firstName: "Yofriadi"` and its submission `createdAt`
-
-#### Scenario: Empty derivation yields null
-
-- **WHEN** the first whitespace-separated token of an invite's `display_name` is empty
-- **THEN** that story entry's `firstName` is `null`
-
-#### Scenario: Own tile parity
-
-- **WHEN** a resolved invitee fetches the payload and their submission has photos
-- **THEN** `mine.firstName` equals the first token of their invite's `display_name` and `mine.createdAt` equals their submission time
-
-#### Scenario: No wish fields in the payload
-
-- **WHEN** any `GET /api/submissions` responds successfully
-- **THEN** the response contains no `wall.wishes` array and no `mine.wishText` field
-
-### Requirement: First-name attribution on story tiles
-
-Real story tiles (wall entries and the caller's own tile) SHALL render the poster's first name in the tile label position and in the story modal's author header together with a relative timestamp derived from `createdAt`. The author header SHALL NOT require an avatar: a named tile without an avatar renders name plus timestamp only. Attribution SHALL be identical for every viewer class (public, stale-cookie, resolved invitee). Entries whose `firstName` is `null` SHALL render the attribution-free layout instead: a transparent filler label on the tile, and an empty attribution slot in the modal header (no placeholder text) with the close button right-aligned.
-
-#### Scenario: Named tile label and accessible name
-
-- **WHEN** a wall story with `firstName: "Lita"` renders in the rail
-- **THEN** the tile's label span shows `Lita` and the tile's accessible label is `View Lita's stories`
-
-#### Scenario: Modal author header shows name and timestamp
-
-- **WHEN** a visitor opens a named story tile's modal
-- **THEN** the author header shows the first name and a relative timestamp (e.g. `2h ago`), with no avatar circle
-
-#### Scenario: Anonymous viewer parity
-
-- **WHEN** a visitor without a cookie views a rail containing named story tiles
-- **THEN** the tiles and modals render the same first-name attribution a resolved invitee sees
-
-#### Scenario: Null first name falls back to attribution-free
-
-- **WHEN** a story entry's `firstName` is `null`
-- **THEN** the tile renders the transparent filler label and the modal header renders an empty attribution slot (no "Guest story" text), close button right-aligned
-
-### Requirement: One submission per invite
-
-The system SHALL enforce at most one submission per invite, via a database-level `UNIQUE(invite_id)` constraint, and SHALL reject further attempts with `409`.
+The system SHALL enforce at most one accepted guest photo per invite through database-level `UNIQUE(guest_photos.invite_id)`. `POST /api/guest-photos` SHALL resolve the invitation from the existing cookie before reading or validating the body. Missing, malformed, and unknown cookies SHALL receive the same empty `404` as invite-session not-found; database-resolution errors SHALL receive unavailable responses. Further uploads for an invite with a photo SHALL return `409 { "error": "already_posted" }`. Primary-key, key, foreign-key, busy, or unrelated database errors SHALL NOT be classified as already posted. Existing same-origin mutation protections SHALL remain enforced.
 
 #### Scenario: First post succeeds
 
-- **WHEN** an invite holder posts via `POST /api/submissions` with a valid cookie and no prior submission
-- **THEN** a submission row is created attributed to that invite and the response is `201`
+- **WHEN** an invite holder with no prior photo sends a valid single-photo upload
+- **THEN** one photo row is published for that invite and the response is `201`
 
 #### Scenario: Second post is rejected
 
-- **WHEN** the same invite posts again (including concurrent attempts racing the constraint)
-- **THEN** the response is `409 { "error": "already_posted" }` and no new row exists
+- **WHEN** the same invite attempts another valid upload, including a concurrent constraint loser
+- **THEN** the response is `409 already_posted` and no second photo row survives
 
 #### Scenario: Anonymous post is rejected invisibly
 
-- **WHEN** `POST /api/submissions` is sent without a valid invite cookie
-- **THEN** the response is `404` (same body shape as invite-session not-found; endpoint behaves as nonexistent)
+- **WHEN** an upload is sent without a valid invite cookie, including with an invalid request body
+- **THEN** the response is the uniform empty `404` before body validation or storage work
 
-### Requirement: Submission requires photos
+#### Scenario: Database failure is not an identity miss
 
-A submission SHALL contain at least one photo; a submission with no photos SHALL be rejected with `400 { "error": "empty_submission" }`. (Wishes are retired, so photos are the only submission content.)
+- **WHEN** resolving the invite fails because the database is unavailable
+- **THEN** the response is `503`, not an identity `404` or duplicate `409`
 
-#### Scenario: Empty submission rejected
+#### Scenario: Other constraints are not duplicate invitations
 
-- **WHEN** `POST /api/submissions` carries no photo
-- **THEN** the response is `400` and no row is created
+- **WHEN** a primary-key, storage-key, foreign-key, or unrelated persistence failure occurs
+- **THEN** it follows the collision/retryable failure handling and is not reported as `already_posted` solely because it is a constraint error
+
+### Requirement: Upload requires one photo
+
+An authorized upload SHALL contain one `photo` file. A multipart request with no photo and no unknown fields SHALL return `400 { "error": "empty_photo" }` and SHALL create neither a row nor files. Photo-less records SHALL NOT exist in the new model.
+
+#### Scenario: Empty upload rejected
+
+- **WHEN** an authorized request contains no photo
+- **THEN** the response is `400 empty_photo` and nothing is persisted
+
+### Requirement: One photo row represents one invite's upload
+
+The system SHALL store accepted guest photos in `guest_photos` with non-null `id` (text primary key), `invite_id` (unique text FK to `invites.id`), `key` (unique canonical storage key), and `created_at` (integer epoch milliseconds). A `(created_at, id)` index SHALL support deterministic collection ordering. Photo IDs SHALL be server-generated 12-character URL-safe random identifiers independent of invitation identifiers. There SHALL be no submission parent row, position field, wish field, or stored author name.
+
+#### Scenario: Accepted photo persisted
+
+- **WHEN** an invite successfully uploads its photo
+- **THEN** exactly one `guest_photos` row references that invite and its canonical key, with no submission or child-photo row
+
+#### Scenario: Duplicate ownership rejected by the database
+
+- **WHEN** two photo rows would reference the same invite
+- **THEN** the unique invite constraint prevents both from persisting
+
+#### Scenario: Storage keys cannot alias
+
+- **WHEN** a second row attempts to reuse another photo's canonical key
+- **THEN** the unique key constraint rejects it rather than allowing two rows to own the same files
+
+### Requirement: Photos use a photo-scoped immutable storage namespace
+
+Canonical files SHALL be stored outside the web root under `guest-photos/<photo-id>/photo.webp`, with an optional `guest-photos/<photo-id>/photo.avif` derived variant. Keys SHALL contain neither invite IDs nor guest names. The server SHALL reject unsupported key shapes, traversal, absolute paths, old `submissions/` keys, position filenames, thumbnails, and temporary files. The route SHALL retain resolved-root containment checks. Successful stored keys SHALL be write-once; no upload shall overwrite another attempt's namespace.
+
+#### Scenario: Canonical upload path
+
+- **WHEN** a photo is accepted
+- **THEN** its row key is `guest-photos/<photo-id>/photo.webp` and the canonical file exists under the configured private storage root
+
+#### Scenario: Unsafe or obsolete key rejected
+
+- **WHEN** a requested key contains traversal, an absolute path, a legacy submission path, a thumbnail, or a `.part` filename
+- **THEN** the photo route responds with the uniform uncached `404` and does not serve file bytes
+
+#### Scenario: Client filename is not a storage key
+
+- **WHEN** an uploaded file has a malicious filename or misleading extension
+- **THEN** the filename cannot choose the storage path or override content detection
+
+### Requirement: Public collection is flat and identity-minimal
+
+`GET /api/guest-photos` SHALL return `200` with `{ inviteValid: boolean, mineId: string | null, photos: Array<{ id: string, photoUrl: string, createdAt: number }> }` on successful reads. `photos` SHALL include every persisted photo exactly once, including the caller's, ordered by `created_at DESC, id DESC`. `mineId` SHALL be the photo ID associated with the server-resolved cookie or null. Missing, malformed, and unknown cookies SHALL receive the same public collection with `inviteValid: false` and `mineId: null`; valid invites SHALL receive `inviteValid: true`. The response SHALL NOT expose invite IDs, names, first names, separate storage-key fields, wishes, nested stories, or thumbnail URLs.
+
+#### Scenario: Anonymous public read
+
+- **WHEN** a visitor without a cookie requests the collection
+- **THEN** it returns `200`, the complete public photos array, `inviteValid: false`, and `mineId: null`
+
+#### Scenario: Stale or malformed cookie reads public state
+
+- **WHEN** the request cookie is malformed or no longer maps to an invite
+- **THEN** the collection still returns `200` with public photo content and ineligible posting state
+
+#### Scenario: Own photo is identified without duplication
+
+- **WHEN** an invite with a prior photo requests the collection
+- **THEN** `mineId` equals its photo ID and that photo occurs once in `photos`, not in a separate duplicated object
+
+#### Scenario: Equal timestamps have stable order
+
+- **WHEN** multiple photos have the same creation timestamp
+- **THEN** their collection order is determined by descending photo ID
+
+#### Scenario: Identity data does not leak
+
+- **WHEN** any successful collection response is serialized
+- **THEN** it contains no invite identifiers, guest display names, first-name attribution, wish fields, or story/thumbnail payload fields
+
+#### Scenario: Database error is not an empty gallery
+
+- **WHEN** invite resolution or the collection query encounters an actual database failure
+- **THEN** the response is unavailable (`503`) rather than `200` with an empty or falsely ineligible result
+
+### Requirement: Upload request and response are photo-specific
+
+`POST /api/guest-photos` SHALL accept multipart form data with exactly one file named `photo` and respond on success with `201 { id, photoUrl, createdAt }` matching the published collection entry. Malformed or non-multipart bodies, non-file values for `photo`, and unknown fields SHALL return `400 { "error": "invalid_body" }` for authorized callers. The old `/api/submissions` endpoint and plural `photos` form contract SHALL NOT remain compatibility aliases.
+
+#### Scenario: New request contract succeeds
+
+- **WHEN** an eligible invite sends one valid multipart `photo` file
+- **THEN** the route returns `201` with one flat photo object whose ID, URL, and timestamp match a subsequent collection read
+
+#### Scenario: Legacy or unrelated fields rejected
+
+- **WHEN** an authorized request uses `photos`, wish text, another unknown field, or a string in place of the photo file
+- **THEN** it returns `400 invalid_body` and persists nothing
+
+#### Scenario: Retired collection endpoint
+
+- **WHEN** a client calls `/api/submissions` after the coordinated replacement
+- **THEN** no legacy guest-submission handler serves the request
+
+### Requirement: Canonical photos retain normalization and privacy guarantees
+
+Before persistence, every accepted image SHALL have orientation applied, its longest edge capped at 2048 pixels without enlargement, EXIF/XMP/IPTC metadata stripped, and a WebP canonical produced at quality 80. Decoder input SHALL retain the existing 64-million-pixel limit. Only an uploaded WebP that is within the cap, orientation 1 or absent, metadata-free, and no larger than the server's re-encode SHALL pass through unchanged. JPEG, PNG, and AVIF inputs SHALL always be re-encoded to WebP. No thumbnail or archival original SHALL be generated or required for acceptance.
+
+#### Scenario: Large phone image is normalized
+
+- **WHEN** an allowed photo exceeds the output dimension cap
+- **THEN** its canonical preserves aspect ratio within 2048 pixels on the long edge, with applied orientation and no EXIF/XMP/IPTC
+
+#### Scenario: Small image is not enlarged
+
+- **WHEN** an allowed input is smaller than the output cap
+- **THEN** normalization does not increase its pixel dimensions
+
+#### Scenario: Already optimal WebP is preserved
+
+- **WHEN** a WebP meets every pass-through condition
+- **THEN** its bytes are stored unchanged under the canonical WebP key
+
+#### Scenario: Metadata prevents pass-through
+
+- **WHEN** an otherwise optimal WebP contains camera metadata
+- **THEN** it is re-encoded and the published canonical exposes no EXIF/XMP/IPTC
+
+#### Scenario: AVIF input remains safe for non-AVIF browsers
+
+- **WHEN** a guest uploads an accepted AVIF
+- **THEN** the canonical is WebP and any AVIF output is a derived optional variant, not the unconditional fallback
+
+#### Scenario: Acceptance does not create story artifacts
+
+- **WHEN** the upload completes
+- **THEN** no `thumb.webp`, `thumb.avif`, position-named file, or original-upload copy is created
+
+### Requirement: Optional AVIF delivery remains non-blocking and safe
+
+After confirmed publication, the server SHALL enqueue the canonical photo for optional AVIF generation without awaiting the encode before responding. The queue SHALL retain bounded concurrency/depth, deduplication, non-fatal error/drop logging, and `PHOTO_AVIF_ENABLED` behavior. The canonical URL SHALL serve an available AVIF variant only when the request explicitly allows `image/avif` with a nonzero quality value; wildcard acceptance alone SHALL NOT imply support. Missing variants SHALL fall back to canonical WebP and be eligible for the existing GET-triggered requeue behavior. Disabling generation SHALL not disable serving an already available negotiated variant.
+
+#### Scenario: Variant is not ready yet
+
+- **WHEN** the canonical URL is requested immediately after acceptance before AVIF output exists
+- **THEN** the request succeeds with canonical WebP rather than a broken sidecar request
+
+#### Scenario: Supported variant is served
+
+- **WHEN** an available variant is requested through the canonical URL with explicit nonzero AVIF support
+- **THEN** the response uses `Content-Type: image/avif` and the variant bytes
+
+#### Scenario: Wildcard or zero-quality AVIF uses WebP
+
+- **WHEN** the request advertises only wildcard image support or explicitly sets AVIF quality to zero
+- **THEN** it receives canonical WebP even if a variant exists
+
+#### Scenario: Background generation fails
+
+- **WHEN** an encode fails or work is dropped at the queue cap
+- **THEN** the condition is logged, the accepted row/canonical remain intact, and normal photo serving continues
+
+#### Scenario: Missing variant is retried
+
+- **WHEN** an AVIF-capable request finds no variant after a restart or dropped job and generation is enabled
+- **THEN** the route serves canonical WebP now and enqueues a deduplicated variant attempt
+
+### Requirement: File writes and cleanup are owned by one attempt
+
+Every upload SHALL reserve a fresh server-generated photo directory exclusively before writing. An existing directory SHALL trigger ID regeneration or a retryable failure, never an overwrite. Canonical and variant writes SHALL use same-directory temporary files followed by atomic rename. Cleanup SHALL remove only files/directories positively owned by the failed attempt, never delete by invite ID, and never remove another accepted upload. Crashes or unresolved cleanup SHALL be logged/recoverable through an offline, writers-stopped reconciliation procedure rather than automatic live directory deletion.
+
+#### Scenario: Concurrent duplicate uploads
+
+- **WHEN** two valid uploads for the same invite race
+- **THEN** at most one row is published, a losing attempt cleans up only its own reserved directory, and the winner's files remain readable
+
+#### Scenario: Generated ID collides
+
+- **WHEN** a generated photo ID names a directory already owned by another attempt or accepted photo
+- **THEN** no file in that directory is overwritten or removed and the new attempt retries with a fresh ID or returns unavailable
+
+#### Scenario: Reader overlaps a file write
+
+- **WHEN** a canonical or AVIF file is being written
+- **THEN** a reader can observe only the completed renamed file or an absent file, never a partially written immutable response
+
+#### Scenario: Orphan is found after a crash
+
+- **WHEN** an offline reconciliation is performed with all writers and variant jobs stopped
+- **THEN** an unreferenced generated directory can be identified without treating a live in-progress upload as garbage or changing an accepted row
