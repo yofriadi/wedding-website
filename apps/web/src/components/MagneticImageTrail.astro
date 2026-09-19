@@ -1,0 +1,594 @@
+---
+// MagneticImageTrail — vanilla-Astro port of ObsidianUI's magnetic-image-trail
+// block (https://www.obsidianui.dev/r/magnetic-image-trail.json), React
+// removed, pointer interaction removed: up to 18 cards drift continuously
+// along the original orbit/scale paths around a FIXED center. The trail shows
+// exactly the photo sources it is given — each photo appears once, a list
+// shorter than the frame count leaves the outer positions empty, and an
+// empty list animates nothing. No background, no headline — only the photos
+// trailing. The box is full-bleed with an aspect-ratio so the composition
+// keeps its ratio instead of reflowing: cards never layout-shift the page,
+// only animate inside the fixed box.
+
+export interface MagneticImageTrailProps {
+  /** Photo sources to animate; each is shown once. Empty shows nothing. */
+  images?: string[];
+  /** Square box: the trail cluster is circular, so 1:1 fits it full-bleed. */
+  ratio?: string;
+  className?: string;
+}
+
+const {
+  images = [],
+  ratio = "1 / 1",
+  className = "",
+} = Astro.props as MagneticImageTrailProps;
+---
+
+<magnetic-image-trail
+  class={`magnetic-trail isolate block w-full ${className}`}
+  style={`--trail-ratio: ${ratio};`}
+  data-trail
+  role="img"
+  aria-label="Photos and memories shared by our guests"
+>
+  <script is:inline type="application/json" data-trail-images set:html={JSON.stringify(images).replace(/</g, "\\u003c")}></script>
+
+  <div class="magnetic-trail__box">
+    <canvas class="magnetic-trail__canvas" data-trail-canvas aria-hidden="true"></canvas>
+  </div>
+</magnetic-image-trail>
+
+<style>
+  /* No background — the page shows through between the trailing photos. */
+
+  /* Fixed-ratio box: full width, height derived from the ratio — the
+     composition never reflows, images only animate inside. */
+  .magnetic-trail__box {
+    position: relative;
+    width: 100%;
+    aspect-ratio: var(--trail-ratio, 1 / 1);
+    overflow: hidden;
+    margin-inline: auto;
+  }
+
+  .magnetic-trail__canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+</style>
+
+<script>
+  import { cubicBezier } from "motion";
+  import { shuffleTrail, TrailSequence } from "../lib/trail-sequence";
+
+  // Keep the original fixed-center paths, but give each frame its own timing
+  // and a new photo from the shuffled pool at the hidden end of its orbit.
+  interface TrailSlot { y: number; size: number; w: number; h: number }
+  interface TrailFrame {
+    phase: number;
+    introDelay: number;
+    revealAt: number;
+    gap: number;
+    request: number;
+    prefetched: boolean;
+    source?: string;
+    image?: HTMLImageElement;
+    pendingSource?: string;
+    pendingImage?: HTMLImageElement;
+  }
+
+  const SLOTS: TrailSlot[] = [
+    { y: 0, size: 1.19, w: 206, h: 167 }, // mid - just a bit bigger
+    { y: -30, size: 1.10, w: 214, h: 167 }, // 2nd closest - little bigger, spread more
+    { y: 30, size: 1.20, w: 214, h: 167 },
+    { y: -60, size: 1.06, w: 186, h: 144 }, // spread more
+    { y: 60, size: 1.06, w: 186, h: 144 },
+
+    { y: -94, size: 0.91, w: 157, h: 122 }, // spread more
+    { y: 94, size: 0.91, w: 157, h: 122 },
+    { y: -122, size: 0.80, w: 139, h: 109 },
+    { y: 122, size: 0.80, w: 139, h: 109 },
+
+    { y: -18, size: 1.04, w: 166, h: 129 }, // very little more than before
+    { y: 18, size: 1.02, w: 161, h: 126 },
+    { y: -52, size: 0.97, w: 153, h: 118 },
+    { y: 52, size: 0.97, w: 153, h: 118 },
+
+    { y: -78, size: 0.87, w: 137, h: 108 },
+    { y: 78, size: 0.87, w: 137, h: 108 },
+    { y: -134, size: 0.70, w: 111, h: 83 }, // spread a bit more at edges
+    { y: 134, size: 0.70, w: 111, h: 83 },
+    { y: 10, size: 0.91, w: 140, h: 108 }, // very little
+  ];
+
+  // Faster + tighter motion. SPEED is the original's base rate — with no
+  // pointer there is no speed boost, so the trail flows at a constant pace.
+  const SPEED = 0.0003;
+  const FADE_MS = 200;
+  const EDGE_FADE = FADE_MS * SPEED;
+  const revealEase = cubicBezier(0.23, 1, 0.32, 1);
+  const spawnGap = () => 30 + Math.random() * 50;
+
+  function clamp(v: number, min: number, max: number) {
+    return Math.max(min, Math.min(max, v));
+  }
+
+  function lerp(a: number, b: number, t: number) {
+    return a + (b - a) * t;
+  }
+
+  // ---- shadow stamp ----------------------------------------------------
+  // The drop shadow used to be a live `ctx.shadowBlur` on every card, every
+  // frame: canvas shadow is a full blur pass per draw, so 18 cards cost 18
+  // blurs at 60fps — the most expensive work on the page, on the section most
+  // likely to be viewed on a phone.
+  //
+  // A blurred rectangle is a static image, so it is rasterized ONCE into an
+  // offscreen canvas and then stamped with a plain (cheap, GPU-friendly)
+  // drawImage. Card size animates continuously, so a size-keyed sprite cache
+  // would miss on nearly every frame; a single stamp scaled per card hits
+  // always. The blur then scales with the card instead of staying a constant
+  // 12px — physically more correct (nearer/larger things cast softer shadows),
+  // and invisible in practice at alpha 0.14.
+  //
+  // The stamp is generated by drawing the source rect far off-canvas with a
+  // matching shadowOffsetX, so only its shadow lands inside the bitmap.
+  const STAMP_BODY = 200; // reference body width, in stamp units
+  // Room for the blur spread plus the vertical offset, in the same units as
+  // STAMP_BODY (blur 9.6 + offset 4 needs comfortably more than 14).
+  const STAMP_PAD = 34;
+  const STAMP_SS = 2; // supersample so the stamp survives being scaled up
+  let shadowStamp: HTMLCanvasElement | null = null;
+
+  function getShadowStamp(): HTMLCanvasElement | null {
+    if (shadowStamp) return shadowStamp;
+    const bodyH = Math.round(STAMP_BODY / 1.28); // mid aspect of the slot table
+    const w = STAMP_BODY + STAMP_PAD * 2;
+    const h = bodyH + STAMP_PAD * 2;
+    const canvas = document.createElement("canvas");
+    canvas.width = w * STAMP_SS;
+    canvas.height = h * STAMP_SS;
+    const sctx = canvas.getContext("2d");
+    if (!sctx) return null;
+    sctx.scale(STAMP_SS, STAMP_SS);
+    // The source rect is drawn off-canvas and only its shadow is offset back
+    // into view, so the bitmap holds the blur alone with no hard body.
+    //
+    // Units: `shadowBlur` and `shadowOffset*` are BOTH applied in device space
+    // — neither is transformed by the CTM. (Measured: the same shadowBlur
+    // produces an identical 14px device spread under scale(1) and scale(2).)
+    // So with scale(STAMP_SS) active, every shadow value written here must be
+    // multiplied by STAMP_SS to mean the same thing in stamp units as the
+    // fillRect beside it. Scaling only the offsets — an earlier revision of
+    // this function — left the blur at half its intended radius.
+    //
+    // The reference card is the dominant centre photo (~250 units wide), where
+    // the original live shadow was blur 12 / offsetY 5 — i.e. 4.8% and 2.0% of
+    // the body. Expressing them as fractions of STAMP_BODY reproduces that
+    // proportion at every size the stamp is drawn at.
+    const off = w * 4;
+    const blurUser = STAMP_BODY * 0.048;
+    const offsetYUser = STAMP_BODY * 0.02;
+    sctx.shadowColor = "rgba(0,0,0,0.14)";
+    sctx.shadowBlur = blurUser * STAMP_SS;
+    sctx.shadowOffsetX = off * STAMP_SS;
+    sctx.shadowOffsetY = offsetYUser * STAMP_SS;
+    sctx.fillStyle = "#000";
+    sctx.fillRect(STAMP_PAD - off, STAMP_PAD, STAMP_BODY, bodyH);
+    shadowStamp = canvas;
+    return shadowStamp;
+  }
+
+  /** Stamps the cached blur behind a card. `w`/`h` are the card's drawn size. */
+  function drawCardShadow(
+    ctx: CanvasRenderingContext2D,
+    w: number,
+    h: number,
+  ) {
+    const stamp = getShadowStamp();
+    if (!stamp) return;
+    // Pad scales with the card so the blur stays proportional to it.
+    const padX = (w / STAMP_BODY) * STAMP_PAD;
+    const padY = (h / (STAMP_BODY / 1.28)) * STAMP_PAD;
+    ctx.drawImage(stamp, -w / 2 - padX, -h / 2 - padY, w + padX * 2, h + padY * 2);
+  }
+
+  /** The letterboxed box a photo actually occupies inside its slot. */
+  function fittedBox(
+    img: HTMLImageElement | undefined,
+    w: number,
+    h: number,
+  ): { width: number; height: number } | null {
+    if (!img?.complete || img.naturalWidth <= 0 || img.naturalHeight <= 0) return null;
+    // A slot limits the footprint, not the photo's aspect ratio. Draw the
+    // entire image, centered, so portraits and landscapes are never cropped.
+    const scale = Math.min(w / img.naturalWidth, h / img.naturalHeight);
+    return { width: img.naturalWidth * scale, height: img.naturalHeight * scale };
+  }
+
+  /**
+   * Draws `img` centered inside the w×h slot from an ALREADY-COMPUTED fitted
+   * box. The caller needs that box anyway (the shadow traces it), so passing it
+   * in keeps the fit math to one evaluation per card per frame.
+   */
+  function drawFittedImage(
+    ctx: CanvasRenderingContext2D,
+    img: HTMLImageElement,
+    box: { width: number; height: number },
+    x: number, y: number, w: number, h: number,
+  ) {
+    ctx.drawImage(img, x + (w - box.width) / 2, y + (h - box.height) / 2, box.width, box.height);
+  }
+
+  class MagneticImageTrailElement extends HTMLElement {
+    private cleanup?: () => void;
+    private updateImages?: (sources: string[], priority: string[]) => Promise<string[]>;
+
+    setImages(sources: string[], priority: string[] = []): Promise<string[]> {
+      return this.updateImages?.(sources, priority) ?? Promise.resolve([]);
+    }
+
+    connectedCallback() {
+      this.cleanup?.();
+      const box = this.querySelector<HTMLElement>(".magnetic-trail__box");
+      const canvas = this.querySelector<HTMLCanvasElement>("[data-trail-canvas]");
+      const ctx = canvas?.getContext("2d");
+      if (!box || !canvas || !ctx) return;
+
+      let sources: string[] = [];
+      try {
+        const parsed: unknown = JSON.parse(
+          this.querySelector<HTMLScriptElement>("script[data-trail-images]")?.textContent ?? "[]",
+        );
+        if (Array.isArray(parsed)) sources = parsed.filter((source): source is string => typeof source === "string" && source.length > 0);
+      } catch { /* keep empty */ }
+
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+      const sequence = new TrailSequence();
+      const imageCache = new Map<string, Promise<HTMLImageElement | null>>();
+      const loading = new Set<string>();
+      const failed = new Set<string>();
+      let pool: string[] = [];
+      let priority = new Set<string>();
+      let imageVersion = 0;
+      let disposed = false;
+      let elapsed = 0;
+      let lastTime = 0;
+      let raf = 0;
+      let running = false;
+
+      // Stratification keeps the section filled across its width; shuffling
+      // removes the fixed relationship between a photo, a frame and its phase.
+      const phases = shuffleTrail(SLOTS.map((_, index) =>
+        (index + Math.random() * 0.5) / SLOTS.length,
+      ));
+      let delay = 0;
+      const delays = shuffleTrail(SLOTS.map(() => (delay += spawnGap())));
+      const frames: TrailFrame[] = SLOTS.map((_, index) => ({
+        phase: reducedMotion.matches ? index / SLOTS.length : phases[index]!,
+        introDelay: delays[index]!,
+        revealAt: 0,
+        gap: 0,
+        request: 0,
+        prefetched: false,
+      }));
+
+      // Only retain the current/next frame images, not every full-size upload.
+      const trimCache = () => {
+        const retained = new Set([...priority, ...loading]);
+        for (const state of frames) {
+          if (state.source) retained.add(state.source);
+          if (state.pendingSource) retained.add(state.pendingSource);
+        }
+        for (const source of imageCache.keys()) {
+          if (!retained.has(source)) imageCache.delete(source);
+        }
+      };
+
+      const loadImage = (source: string): Promise<HTMLImageElement | null> => {
+        if (failed.has(source)) return Promise.resolve(null);
+        const cached = imageCache.get(source);
+        if (cached) return cached;
+        const image = new Image();
+        image.crossOrigin = "anonymous";
+        image.decoding = "async";
+        image.src = source;
+        loading.add(source);
+        const request = image.decode().then(() => {
+          return !disposed && image.naturalWidth > 0 ? image : null;
+        }).catch(() => {
+          if (disposed) return null;
+          // Retry failures on the next gallery refresh, never on every frame.
+          failed.add(source);
+          sequence.update(pool.filter((candidate) => !failed.has(candidate)));
+          if (imageCache.get(source) === request) imageCache.delete(source);
+          return null;
+        }).finally(() => {
+          loading.delete(source);
+          trimCache();
+        });
+        imageCache.set(source, request);
+        return request;
+      };
+
+      const commitImage = (state: TrailFrame) => {
+        if (!state.pendingImage) return;
+        if (!state.image) state.revealAt = elapsed + state.introDelay;
+        state.image = state.pendingImage;
+        state.source = state.pendingSource;
+        state.pendingImage = undefined;
+        state.pendingSource = undefined;
+        trimCache();
+      };
+
+      const prepareImage = async (state: TrailFrame, source: string): Promise<string | null> => {
+        const request = ++state.request;
+        state.pendingSource = source;
+        state.pendingImage = undefined;
+        const image = await loadImage(source);
+        if (disposed || request !== state.request) return null;
+        if (!image) {
+          state.pendingSource = undefined;
+          // An initial broken image must not leave an empty frame forever.
+          // Failed URLs have left the queue, so this stops if none can load.
+          return state.image ? null : prepareNext(state);
+        }
+        state.pendingImage = image;
+        if (!state.image || reducedMotion.matches) commitImage(state);
+        if (reducedMotion.matches) frame(0);
+        return source;
+      };
+
+      const prepareNext = (state: TrailFrame): Promise<string | null> => {
+        state.prefetched = true;
+        const occupied = new Set(frames.flatMap((other) =>
+          [other.source, other.pendingSource].filter((source): source is string => Boolean(source)),
+        ));
+        const source = sequence.next(occupied, state.source);
+        return source ? prepareImage(state, source) : Promise.resolve(null);
+      };
+
+      const resize = () => {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.round(box.clientWidth * dpr);
+        canvas.height = Math.round(box.clientHeight * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        if (reducedMotion.matches) frame(0);
+      };
+
+      const frame = (now: number) => {
+        const W = box.clientWidth;
+        const H = box.clientHeight;
+        // The fixed-center paths span roughly 390 units, not the original
+        // 520-unit interactive area. Fit those bounds to the square so the
+        // photos reach its sides without changing their paths or proportions.
+        const fitScale = Math.min(W, H) / 390;
+        ctx.clearRect(0, 0, W, H);
+
+        const dt = reducedMotion.matches ? 0 : Math.min(32, Math.max(0, now - (lastTime || now)));
+        lastTime = now;
+        elapsed += dt;
+
+        // Static center — no pointer, the composition never moves.
+        const cx = W / 2;
+        const cy = H / 2;
+
+        const cards = SLOTS.map((slot, i) => {
+          const state = frames[i]!;
+          if (!reducedMotion.matches && state.image && elapsed >= state.revealAt) {
+            if (state.gap > 0) {
+              state.gap = Math.max(0, state.gap - dt);
+            } else {
+              state.phase += dt * SPEED;
+              if (state.phase >= 1) {
+                state.phase = 0;
+                // Never replace a large photo halfway through its path.
+                commitImage(state);
+                state.gap = spawnGap();
+                state.prefetched = false;
+                // Keep a slow request reserved until it decodes. Clearing only
+                // its source here would separate the photo from its identity.
+              }
+            }
+            // At most one prefetch attempt per orbit, even if every URL fails.
+            if (state.phase > 0.75 && !state.pendingSource && !state.prefetched) void prepareNext(state);
+          }
+          const t = state.phase;
+          const entrance = revealEase(clamp((elapsed - state.revealAt) / FADE_MS, 0, 1));
+          const edge = revealEase(clamp(Math.min(t, 1 - t) / EDGE_FADE, 0, 1));
+          const opacity = reducedMotion.matches ? 1 : state.gap > 0 ? 0 : entrance * edge;
+
+          // -1 → 0 → 1 — movement along the diagonal path.
+          const pathNorm = t * 2 - 1;
+
+          // Bottom-left → top-right, but less steep.
+          const moveX = pathNorm;
+          const moveY = -pathNorm;
+
+          // Keep the circular cluster shape (original SPREAD_X = 250).
+          const spreadX = 250;
+          const yOffset = clamp(slot.y, -spreadX * 0.82, spreadX * 0.82);
+
+          const circleWidthAtY =
+            Math.sqrt(Math.max(0, spreadX * spreadX - yOffset * yOffset)) * 0.74;
+
+          // Lower number = flatter/slanting movement.
+          const diagonalPush = spreadX * 0.15;
+
+          // Move the whole diagonal slightly upward.
+          const verticalLift = -spreadX * 0.06;
+
+          const x = cx + moveX * circleWidthAtY;
+          const y = cy + yOffset + moveY * diagonalPush + verticalLift;
+
+          // Scale: small → big at center → small.
+          const rawCenterScale = Math.max(0, 1 - Math.abs(pathNorm));
+          const easedCenterScale =
+            rawCenterScale * rawCenterScale * (3 - 2 * rawCenterScale);
+          // Without the pointer's directional scaling the spread collapses to
+          // the constant mid value — scale now comes from the path alone.
+          const scale = lerp(0.06, 0.9, easedCenterScale) * 1.14;
+
+          return {
+            i,
+            img: state.image,
+            opacity,
+            x,
+            y,
+            w: slot.w * slot.size * scale,
+            h: slot.h * slot.size * scale,
+          };
+        });
+
+        // SLOTS order is stable; never sort by the changing animation depth.
+
+        for (const card of cards) {
+          if (!card.img || card.opacity <= 0 || card.w < 2 || card.h < 2) continue;
+
+          ctx.save();
+          ctx.translate(cx + (card.x - cx) * fitScale, cy + (card.y - cy) * fitScale);
+          ctx.globalAlpha = card.opacity;
+
+          const width = card.w * fitScale;
+          const height = card.h * fitScale;
+          // Pre-rasterized blur, stamped behind the photo — no per-draw shadow
+          // pass. Traces the photo's OWN letterboxed box (not the slot), so a
+          // portrait never casts a shadow out into its empty side margins.
+          // One fit evaluation, used by both the shadow and the photo.
+          const box = fittedBox(card.img, width, height);
+          if (box && card.img) {
+            drawCardShadow(ctx, box.width, box.height);
+            drawFittedImage(ctx, card.img, box, -width / 2, -height / 2, width, height);
+          }
+
+          ctx.restore();
+        }
+
+        if (!reducedMotion.matches && running) raf = requestAnimationFrame(frame);
+      };
+
+      const syncMotion = () => {
+        cancelAnimationFrame(raf);
+        lastTime = 0;
+        if (reducedMotion.matches) {
+          for (const state of frames) commitImage(state);
+          frame(0);
+        } else if (running) raf = requestAnimationFrame(frame);
+      };
+
+      // Pause the rAF while the section is off-screen.
+      const visibility = new IntersectionObserver(
+        ([entry]) => {
+          running = entry.isIntersecting;
+          if (running) syncMotion();
+          else cancelAnimationFrame(raf);
+        },
+        { threshold: 0 },
+      );
+      visibility.observe(box);
+
+      const observer = new ResizeObserver(resize);
+      observer.observe(box);
+      // Update the pool without restarting any orbit. Upload feedback can
+      // await its own decoded photo without downloading the entire gallery.
+      // The trail shows exactly the given sources: no padding to the frame
+      // count and no repeats — fewer photos than frames leave the outer
+      // positions empty, and an empty list clears everything.
+      this.updateImages = async (nextSources, preferred) => {
+        const version = ++imageVersion;
+        const wanted = [...new Set(
+          nextSources.filter((source) => typeof source === "string" && source.length > 0),
+        )];
+        const changed = wanted.length !== pool.length || wanted.some((source, index) => source !== pool[index]);
+        pool = wanted;
+        const retained = new Set(pool);
+        priority = new Set(preferred.filter((source) => retained.has(source)));
+        const retryFailed = failed.size > 0;
+        failed.clear();
+        sequence.update(pool);
+        sequence.prioritize([...priority]);
+        const active = Math.min(pool.length, SLOTS.length);
+
+        // A frame beyond the active count, or holding a photo that left the
+        // pool, stops drawing now. With no spare photo to swap in, it would
+        // otherwise orbit a removed image forever.
+        let cleared = false;
+        frames.forEach((state, index) => {
+          state.prefetched = false;
+          if (index >= active || (state.source !== undefined && !retained.has(state.source))) {
+            cleared = true;
+            ++state.request;
+            state.image = undefined;
+            state.source = undefined;
+            state.pendingImage = undefined;
+            state.pendingSource = undefined;
+          } else if (state.pendingSource && !retained.has(state.pendingSource)) {
+            ++state.request;
+            state.pendingSource = undefined;
+            state.pendingImage = undefined;
+          }
+        });
+        // Reduced motion has no rAF loop to repaint the cleared canvas.
+        if (reducedMotion.matches && cleared) frame(0);
+
+        const pending: Promise<string | null>[] = [];
+        const priorityMissing = [...priority].some((source) => !frames.some((state) => state.source === source));
+        if (reducedMotion.matches && (changed || retryFailed || priorityMissing)) {
+          // Static composition: sample the pool once, keep the caller's photo
+          // visible, and never cycle automatically for reduced-motion
+          // visitors. Only the sampled frames draw — one photo each.
+          const staticSources = shuffleTrail([
+            ...priority, ...shuffleTrail(wanted.filter((source) => !priority.has(source))),
+          ].slice(0, SLOTS.length));
+          staticSources.forEach((source, index) => {
+            pending.push(prepareImage(frames[index]!, source));
+          });
+        } else {
+          // Innermost orbits first, so a small gallery clusters around the
+          // center instead of scattering across the outer lanes.
+          for (const state of frames.slice(0, active)) {
+            if (!state.image && !state.pendingSource) pending.push(prepareNext(state));
+          }
+        }
+        for (const source of priority) {
+          pending.push(loadImage(source).then((image) => image ? source : null));
+        }
+        const loaded = await Promise.all(pending);
+        if (disposed || version !== imageVersion) return [];
+        const json = this.querySelector<HTMLScriptElement>("script[data-trail-images]");
+        if (json) json.textContent = JSON.stringify(wanted);
+        trimCache();
+        return [...new Set([
+          ...loaded,
+          ...frames.flatMap((state) => [state.source, state.pendingImage ? state.pendingSource : null]),
+        ])].filter((source): source is string => Boolean(source) && retained.has(source!));
+      };
+      void this.updateImages(sources, []);
+      resize();
+      syncMotion();
+      reducedMotion.addEventListener("change", syncMotion);
+
+      this.cleanup = () => {
+        disposed = true;
+        this.updateImages = undefined;
+        cancelAnimationFrame(raf);
+        observer.disconnect();
+        visibility.disconnect();
+        reducedMotion.removeEventListener("change", syncMotion);
+        imageCache.clear();
+      };
+    }
+
+    disconnectedCallback() {
+      this.cleanup?.();
+    }
+  }
+
+  if (!customElements.get("magnetic-image-trail")) {
+    customElements.define("magnetic-image-trail", MagneticImageTrailElement);
+  }
+</script>

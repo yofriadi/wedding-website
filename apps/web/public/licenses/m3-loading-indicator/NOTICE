@@ -1,0 +1,16 @@
+m3-loading-indicator
+Copyright 2026 Alerix
+
+This product contains code ported from material-components-android:
+  Copyright (C) 2024 The Android Open Source Project
+  https://github.com/material-components/material-components-android
+
+  Ported files:
+    LoadingIndicatorAnimatorDelegate.java → src/core/animator.ts
+    LoadingIndicatorDrawingDelegate.java  → src/core/shapes.ts, src/core/renderer.ts
+    LoadingIndicatorSpec.java             → constants in src/core/animator.ts
+    LoadingIndicator.java                 → framework wrappers
+
+This product contains SVG shape path data from Material Design assets:
+  Copyright (C) 2024 Google LLC
+  https://m3.material.io/components/loading-indicator
