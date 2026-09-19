@@ -1,46 +1,14 @@
 import sharp from "sharp";
 import type { PhotoType } from "./photo-storage";
 
-// Photo normalization (photo-normalization change): every guest upload is
-// re-encoded ON THE SERVER into one canonical file before it is written, so
-// what the story viewer serves is bounded in both dimensions and bytes.
-// Before this, uploads were stored verbatim — the committed fixtures were
-// 3824×2484 PNGs of 2.4–3.0MB each, ~8MB per submission, all of it loaded
-// into a full-screen <img> on a phone at the venue.
-//
-// WHY WEBP IS CANONICAL AND AVIF IS A SIBLING
-// AVIF is ~35% smaller than WebP at equal quality, but it costs ~4× the CPU to
-// encode, and that work would land INSIDE the guest's POST — three photos
-// would turn "Sharing…" into a 6–12s wait on a 1–2 vCPU VM. So the request
-// path does the cheap, universally-supported encode (WebP: every browser since
-// 2020, iOS 14+), and lib/avif-queue.ts adds an AVIF sibling AFTER the 201 has
-// been sent. The photo route then serves AVIF or WebP from the SAME URL based
-// on the request's Accept header — no client change, no payload change, and a
-// browser that can't decode AVIF (iOS ≤ 15) never sees one.
-//
-// Measured on an M1 Pro with a photo-realistic 3000×2000 fixture (1.14MB JPEG
-// in — the same generator tests/photo-pipeline.spec.ts uses):
-//   canonical WebP q80 e4 @≤2048px   362KB    ~0.39s   (in-request; ×3 ≈ 1.2s)
-//   AVIF q55 e4 from the canonical   246KB    ~1.22s   (background, −32% vs WebP)
-//   thumbnail WebP 224×400 q80        25KB    ~0.04s   (in-request)
-//   thumbnail AVIF q55 e4             20KB    ~0.16s   (background)
-//   a 2.02MB 1000×700 PNG upload  →   62KB WebP (33× smaller, ~0.07s)
-// The same fixture with NO resolution cap encodes to 523KB — the cap is worth
-// more than the codec choice, which is why it comes first in the pipeline.
-
-// 2× DPR for a full-screen story on the tallest phones: the viewer panel is
-// `max-w-lg` but `w-full h-full` on mobile (~440×956 CSS px → ~880×1912 at
-// DPR 2). Capping the long edge is the bigger lever — see the numbers above.
+// Normalize before persistence: cap dimensions, apply orientation, and strip
+// camera metadata. WebP is canonical for older browsers; AVIF is optional
+// background work negotiated from the same immutable URL.
 export const MAX_PHOTO_EDGE = 2048;
 
 export const WEBP_QUALITY = 80;
 export const AVIF_QUALITY = 55;
 export const AVIF_EFFORT = 4;
-
-// 2× the 112px rail tile (unchanged from the pre-normalization thumb).
-export const THUMBNAIL_WIDTH = 224;
-export const THUMBNAIL_HEIGHT = 400;
-export const THUMBNAIL_QUALITY = 80;
 
 // Decompression-bomb guard. sharp's default (268MP) would let a ≤10MB PNG
 // expand to ~1GB of decoded pixels; 64MP still admits a real 48MP phone
@@ -81,11 +49,7 @@ export async function probeImage(bytes: Uint8Array): Promise<ImageProbe> {
   return { width: meta.width, height: meta.height, orientation: meta.orientation, hasMetadata };
 }
 
-// Metadata-free is a PRIVACY property, not just a size one. The wall is public
-// (public-wall D3), so a stored original would publish whatever the guest's
-// camera embedded — GPS coordinates above all. sharp strips EXIF/XMP/IPTC on
-// output unless withMetadata() is asked for, and .rotate() consumes the EXIF
-// orientation instead of leaving it in the file.
+// Public images must not expose camera metadata such as GPS coordinates.
 /** The canonical, universally-servable file: rotated, capped, metadata-free WebP. */
 export async function encodeCanonicalWebp(bytes: Uint8Array): Promise<Buffer> {
   return input(bytes)
@@ -113,17 +77,8 @@ export async function encodeAvifVariant(canonical: Uint8Array): Promise<Buffer> 
   return input(canonical).avif({ quality: AVIF_QUALITY, effort: AVIF_EFFORT }).toBuffer();
 }
 
-/** Rail-sized cover thumbnail (L6: tiles serve this, never a full photo). */
-export async function encodeThumbnail(canonical: Uint8Array): Promise<Buffer> {
-  return input(canonical)
-    .resize(THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, { fit: "cover" })
-    .webp({ quality: THUMBNAIL_QUALITY })
-    .toBuffer();
-}
-
 export interface CanonicalPhoto {
-  /** What to store: normally "webp"; the upload's own type on the pass-through. */
-  type: PhotoType;
+  type: "webp";
   bytes: Buffer;
   /** False when the upload was already the best file we could produce. */
   reEncoded: boolean;

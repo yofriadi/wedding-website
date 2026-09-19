@@ -5,7 +5,7 @@ import { avifVariantKey, photoExists, readPhoto, writePhotoAtKey } from "./photo
 // AVIF variant queue (photo-normalization): AVIF is ~35% smaller than the
 // canonical WebP but ~4× slower to encode, so it is deliberately NOT part of
 // the upload request — the guest gets their 201 after the cheap WebP encode,
-// and this queue writes `submissions/<id>/<position>.avif` afterwards. The
+// and this queue writes `guest-photos/<id>/photo.avif` afterwards. The
 // photo route serves the variant when it exists and the browser asked for it,
 // so the same URL quietly upgrades a few seconds after posting.
 //
@@ -60,7 +60,6 @@ async function drain(): Promise<void> {
   try {
     let key = queue.shift();
     while (key !== undefined) {
-      pending.delete(key);
       try {
         await encodeOne(key);
       } catch (err) {
@@ -68,6 +67,8 @@ async function drain(): Promise<void> {
         // Not fatal: the canonical WebP still serves. A variant that cannot be
         // built (corrupt canonical, encoder failure) just never exists.
         console.error("[avif-queue] variant failed:", key, err);
+      } finally {
+        pending.delete(key);
       }
       key = queue.shift();
     }
@@ -81,7 +82,7 @@ async function encodeOne(key: string): Promise<void> {
   if (variant === null) return;
   if (await photoExists(variant)) return; // raced, or a repeat enqueue
   const canonical = await readPhoto(key);
-  if (canonical === null) return; // submission removed (moderation) mid-queue
+  if (canonical === null) return; // Photo removed before this job started.
   const avif = await encodeAvifVariant(canonical.bytes);
   await writePhotoAtKey(variant, avif);
 }
