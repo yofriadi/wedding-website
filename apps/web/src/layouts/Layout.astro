@@ -23,6 +23,272 @@ const { title = "wedding-website" } = Astro.props;
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+
+    <!-- Media tiering: decide BEFORE the body parses whether this connection
+         gets the full experience or the lite variant.
+
+         data-tier="full"    — fast connection (Network Information API says so):
+                               deferred media sources are promoted at parse time.
+         data-tier="lite"    — slow connection / Save-Data: expensive media stays
+                               deferred, pins collapse to static layouts.
+        data-tier="pending" — no Network Information API (Safari, Firefox): the
+                              initial asset burst doubles as a throughput probe,
+                              and the tier resolves once — by measurement, or on
+                              locality evidence at `load` when the burst carried
+                              no payload — normally before the gate can commit.
+
+        One-way only: a RESOLVED tier never upgrades. It may downgrade
+        (full→lite) when the measurement contradicts the API, and only an
+        unresolved `pending` may become `full` — upgrading a resolved tier
+        mid-session would flip layouts and start megabyte fetches under a
+        guest who is already
+         scrolling. Every resolution or downgrade dispatches `net-tier:change`
+         so the collage promoter, the parallax binding, the timeline video and
+         the soundtrack can re-read the verdict. Consumers must also read the
+         attribute themselves: an API-derived `full` never fires an event. -->
+    <script is:inline>
+      (function () {
+        var root = document.documentElement;
+        var conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+        var tier = 'pending';
+        if (conn) {
+          tier = 'full';
+          if (conn.saveData) {
+            tier = 'lite';
+          } else {
+            var t = conn.effectiveType;
+            if (t === 'slow-2g' || t === '2g' || t === '3g') tier = 'lite';
+            else if (typeof conn.downlink === 'number' && conn.downlink < 1.2) tier = 'lite';
+          }
+        }
+        root.setAttribute('data-tier', tier);
+
+        // One-way ratchet, enforced in the single place that writes the
+        // attribute: `lite` is terminal for the pageview, and only an
+        // unresolved `pending` may become `full`. Everything else the
+        // measurement can legitimately produce is a downgrade.
+        function setTier(next) {
+          var current = root.getAttribute('data-tier');
+          if (current === next) return;
+          if (current === 'lite') return;
+          if (next === 'full' && current !== 'pending') return;
+          root.setAttribute('data-tier', next);
+          window.dispatchEvent(new CustomEvent('net-tier:change', { detail: { tier: next, previous: current } }));
+        }
+
+        // Measured refinement. The initial burst (hero candidate + webfonts) is
+        // downloaded on every tier, so timing it costs nothing extra. A single
+        // small asset is a noisy probe — one RTT dominates it — so measure the
+        // AGGREGATE burst: cumulative bytes over the span from the first
+        // request start to the last response end. That is the parallel link
+        // throughput the page actually experiences, which is exactly the
+        // question (can this link sustain ~2 MB of eager media?). Below
+        // ~220 KB/s (Good-3G territory) the answer is no. Covers engines
+        // without the API (pending) and APIs that lie (effectiveType '4g' over
+        // a congested hotspot).
+        var PROBE_FLOOR_BYTES = 48 * 1024; // enough bytes to average out RTT noise
+        var LOAD_FALLBACK_BYTES = 8 * 1024; // a thinner burst is still worth judging at load
+        // 220 KB/s expressed in bytes per millisecond (decimal KB, exactly the
+        // spec's figure — no KiB/KB drift). The spec pins the behavior class
+        // (Good-3G territory), not the constant.
+        var MIN_FAST_BYTES_PER_MS = 220;
+        // Assets that START after this are not part of the parse burst.
+        var BURST_WINDOW_MS = 2500;
+        // Minimum locally-served assets before a payload-free burst counts as a
+        // warm cache rather than as "no evidence". The unit is BUFFER ENTRIES,
+        // not distinct assets: one URL revalidated and then re-hit from memory
+        // counts twice, as would a <picture> that fetched both candidates.
+        // Immaterial while 5 sits far below the 15-40 entries a real return
+        // visit produces (the count varies with cache state); it only has to be
+        // high enough that one stray favicon revalidation cannot stand in for a
+        // warm cache. Two theoretical vectors could manufacture hits on a cold
+        // cache, and neither exists on this origin: an empty-body 200
+        // (`Content-Length: 0` reports a headers-only transferSize with
+        // encodedBodySize 0), and offline-with-warm-cache, where erroring cold
+        // entries leave a warm count so the branch resolves `full` and every
+        // promotion then fails. That second shape is the only one where `full`
+        // is worse than the failsafe's `lite`; both are recorded, not guarded.
+        var MIN_LOCAL_HITS = 5;
+        var FAILSAFE_MS = 7000;
+        var judged = false;
+        var burstOpen = true;
+        var observer = null;
+
+        // Closing the burst also releases the observer: after this point every
+        // resource batch would schedule a callback that immediately returns, and
+        // this page has a long tail of them (lazily initialized map tiles, a
+        // live photo trail).
+        function closeBurst() {
+          burstOpen = false;
+          if (observer) {
+            observer.disconnect();
+            observer = null;
+          }
+        }
+
+        // Recomputed from the whole resource buffer on every pass instead of
+        // accumulated per callback: the buffer is authoritative, so a re-scan
+        // can never double count, and the `load` sweep sees entries the
+        // observer has not delivered yet.
+        function readBurst() {
+          var entries = performance.getEntriesByType('resource');
+          var bytes = 0;
+          var localHits = 0;
+          var start = Infinity;
+          var end = 0;
+          for (var i = 0; i < entries.length; i++) {
+            var e = entries[i];
+            // D2: the probe is the ASSET burst the page downloads anyway.
+            // Programmatic requests are excluded because they measure the wrong
+            // thing — this page issues same-origin API calls from a module
+            // script, and a round trip spent waiting on a server is not
+            // evidence about link throughput. On a warm cache those calls can be
+            // the only non-zero entries left, which is how an API-`full` guest
+            // gets downgraded mid-session after the collage and soundtrack were
+            // already promoted — saving nothing.
+            var kind = e.initiatorType;
+            if (kind === 'fetch' || kind === 'xmlhttprequest' || kind === 'beacon' || kind === 'ping') continue;
+
+            var size = e.transferSize;
+            var body = e.encodedBodySize;
+            // An asset whose body arrived WITHOUT a payload transfer is locality
+            // evidence, not throughput evidence. Two shapes:
+            //   304 revalidation — headers only, `transferSize` ~300 with
+            //     `encodedBodySize` 0. Measured on Chromium in this repo. The
+            //     same shape on WebKit comes from an external verification run
+            //     that was NOT reproduced here, so treat it as reported rather
+            //     than established until tasks 7.5/7.10 add a WebKit project.
+            //     If WebKit instead reports 0/0/0 for a same-origin 304 this
+            //     branch never fires and a warm-cache Safari guest stays on the
+            //     failsafe's `lite` — the pre-Option-A behavior, so it fails
+            //     closed rather than wrong.
+            //   memory-cache hit — `transferSize` 0 with a real `decodedBodySize`.
+            // LOAD-BEARING: this depends on everything under public/ being
+            // served `max-age=0` + ETag, so a returning guest revalidates ~23
+            // assets. If public/ is ever switched to `immutable`, those entries
+            // become 0/0 and are indistinguishable from blocked resource
+            // timing — the warm-cache verdict below would silently stop firing
+            // with no test failing and every repeat iOS guest back on `lite`.
+            // The 304s are the signal, not an inefficiency to optimize away.
+            // On engines without Resource Timing sizes (Safari < 16.4) all three
+            // fields are absent, so `undefined > 0` is false, nothing is
+            // counted, and the verdict falls through to the failsafe — exactly
+            // the pre-existing behavior. This rule cannot do worse than that.
+            // Counted before the burst window because locality is
+            // time-independent while throughput is not: a slow document TTFB
+            // pushes every startTime past the window, and must not erase the
+            // evidence along with the measurement.
+            if (!body) {
+              if (size > 0 || e.decodedBodySize > 0) localHits++;
+              continue;
+            }
+            if (!size || size < 0) continue;
+            // And the burst IS bounded in time for throughput: an asset a module
+            // script creates seconds later (a guest-photo <img>) says nothing
+            // about the connection the page parsed on, and would only stretch
+            // the denominator.
+            if (e.startTime > BURST_WINDOW_MS) continue;
+            bytes += size;
+            if (e.startTime < start) start = e.startTime;
+            if (e.responseEnd > end) end = e.responseEnd;
+          }
+          return { bytes: bytes, localHits: localHits, start: start, end: end };
+        }
+
+        // Returns the burst it scanned — INCLUDING when it reached no verdict
+        // (payload below `minBytes`, or nothing counted at all). Returns null
+        // only when already judged, when the burst is closed, or when resource
+        // timing threw. The load handler's locality branch depends on the
+        // no-verdict burst being non-null: changing the sub-floor return below
+        // to null would silently disable warm-cache resolution and put every
+        // repeat iOS guest back on `lite`, with no test failing.
+        function judge(minBytes) {
+          if (judged || !burstOpen) return null;
+          var burst;
+          try {
+            burst = readBurst();
+          } catch (err) {
+            return null; // resource timing blocked: keep the synchronous verdict
+          }
+          if (burst.bytes < minBytes || burst.end <= burst.start) return burst;
+          judged = true;
+          // setTier is the ratchet: a measurement that agrees with an
+          // API-derived `full` changes nothing and fires no event.
+          if (burst.bytes / (burst.end - burst.start) < MIN_FAST_BYTES_PER_MS) setTier('lite');
+          else setTier('full');
+          return burst;
+        }
+
+        try {
+          // The default 250-entry cap can truncate a busy page (19 script
+          // chunks, two variable font families, five hero candidates, ten
+          // collage AVIFs, timeline and guest photos), and a truncated buffer
+          // silently undercounts the burst on the load-fallback path.
+          if (performance.setResourceTimingBufferSize) performance.setResourceTimingBufferSize(500);
+          observer = new PerformanceObserver(function () { judge(PROBE_FLOOR_BYTES); });
+          observer.observe({ type: 'resource', buffered: true });
+        } catch (err) {
+          observer = null;
+          // No PerformanceObserver (unsupported or blocked): the synchronous
+          // verdict stands, and a `pending` tier still resolves below.
+        }
+
+        // Burst thinner than the floor at load (warm cache, tiny hero
+        // candidate): judge what transferred instead of waiting for the
+        // failsafe. Nothing fetched after `load` says anything about the
+        // connection the page parsed on, so the burst closes here.
+        window.addEventListener('load', function () {
+          var burst = judge(LOAD_FALLBACK_BYTES);
+
+          // A payload-free burst is not the same as NO EVIDENCE (design D2,
+          // task 9.13 Option A). If real asset bodies reached this page without
+          // transferring, then the media the tier defers is already on the
+          // device: promoting it costs a few hundred bytes of conditional-GET
+          // headers, not megabytes. Resolving that to `lite` spends the guest's
+          // entire experience on an inference of slowness the evidence
+          // contradicts — and it lands on every returning guest of an engine
+          // without the Network Information API, i.e. Safari and Firefox: the
+          // whole iOS population, on the second and every later open of a link
+          // people reopen constantly.
+          //
+          // Scoped to an unresolved `pending`: an API verdict already has better
+          // evidence than this, and `lite` is terminal so a downgrade is never
+          // revisited. Triggered by "no verdict was reached" rather than by a
+          // strictly-zero burst, so a partially evicted cache that transferred a
+          // few KB — under the 8 KB floor, so unjudgeable — is eligible too.
+          //
+          // ACCEPTED RISK: the revalidations prove the PROBE SET is local —
+          // hero, fonts, timeline photos, chunks. They say nothing about the
+          // collage or the soundtrack, which are never requested before
+          // promotion. So a guest whose first visit resolved to `lite` (and who
+          // therefore never fetched the 3.1 MB soundtrack) reopening the link on
+          // a still-slow connection will eagerly pull it here. Bounded: it is a
+          // background fetch, the loader gates on the hero alone, nothing
+          // breaks, and the next visit revalidates everything so it does not
+          // repeat. iOS Low Data Mode is the same case — user intent Safari
+          // never exposes to the Network Information API, on the first visit
+          // either.
+          if (!judged && burst && burst.localHits >= MIN_LOCAL_HITS && root.getAttribute('data-tier') === 'pending') {
+            judged = true;
+            setTier('full');
+          }
+
+          closeBurst();
+        });
+
+        // Offline, blocked, or a burst too thin to judge at all: a `pending`
+        // tier must still resolve so the promoter, the parallax binding, the
+        // video and the soundtrack settle on the lite path instead of waiting
+        // forever. Never touches an API-derived `full`.
+        setTimeout(function () {
+          closeBurst();
+          if (root.getAttribute('data-tier') === 'pending') {
+            judged = true;
+            setTier('lite');
+          }
+        }, Math.max(0, FAILSAFE_MS - performance.now()));
+      })();
+    </script>
   </head>
   <body class="min-h-screen bg-neutral-950 text-white">
     <slot />

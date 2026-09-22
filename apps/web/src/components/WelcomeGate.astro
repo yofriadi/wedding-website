@@ -118,7 +118,10 @@ const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
     will-change: transform;
     /* Failsafe (D6): if the inline gesture script never arms, the gate must
        not trap the page — fade it out after a bounded delay. The script
-       cancels this animation the moment it arms. */
+       cancels this animation the moment it arms. 15s is margin over the
+       loader's 8s ceiling plus its 300ms fade and the commit choreography —
+       the 25s value existed only to outlast the retired below-fold media
+       gate. */
     animation: gate-failsafe 600ms ease-out 15s forwards;
   }
 
@@ -174,6 +177,28 @@ const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
 
   .gate-audio-hint {
     color: var(--gate-hint);
+  }
+
+  /* No music promise until the verdict is `full`. On `lite` the soundtrack is
+     not preloaded, not played at commit, and not armed on a later gesture, so
+     this note would advertise something the page will not deliver. `pending`
+     hides it too, because there the verdict is simply unknown: the gate arms at
+     2.6s while a `pending` tier may still be unresolved, and a note shown
+     before the page knows whether it can deliver music is a promise it may not
+     keep. Media-tiering D4 already treats `pending` as collapsed for the
+     collage; the note follows the same reading.
+     What the warm-cache rule changed here: the once-common unresolved case — a
+     returning Safari guest whose burst transfers no payload — now resolves to
+     `full` at window `load` on locality evidence, rather than falling to `lite`
+     at the 7s failsafe. So the note usually appears while the loader is still
+     up. That is not guaranteed (`load` can be pushed past the dwell by a
+     stalled subresource), which is why this keys on the attribute and never
+     assumes when resolution happened.
+     Keyed on the explicit values, never on `:not([data-tier="full"])`, so a
+     rolled-back build without the head script keeps today's behavior. */
+  :global(html[data-tier="lite"]) .gate-audio-hint,
+  :global(html[data-tier="pending"]) .gate-audio-hint {
+    display: none;
   }
 
   /* The pattern SVG lives in DotPattern's scope, so only the #welcome-gate

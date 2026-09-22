@@ -95,10 +95,9 @@ const pictures = [
 ];
 
 const COL_W = 33.333; // 33.333vw
-const ROW_H = 20;     // 20lvh per row (5 rows = the stage); vertical geometry lives in the per-slot CSS
 ---
 
-<div id="zoom-parallax-container" class="zoom-container relative w-full" data-progressive-section>
+<div id="zoom-parallax-container" class="zoom-container relative w-full">
   <div class="zoom-stage sticky top-0 w-full overflow-hidden bg-neutral-950">
     
     <!-- Items Wrapper -->
@@ -118,6 +117,14 @@ const ROW_H = 20;     // 20lvh per row (5 rows = the stage); vertical geometry l
             width: ${picture.grid.w * COL_W}vw; 
           `}
         >
+          <!-- Deferred by design (media-tiering): no live src/srcset ships in
+               the markup, so no collage byte moves until the tier says so.
+               `full` promotes during the parse (inline promoter in
+               index.astro, immediately after this markup); `pending` promotes
+               on resolution to `full`; `lite` promotes per image as the
+               collage approaches (IntersectionObserver below). Intrinsic
+               width/height stay in the markup so the slots never reflow when
+               a source lands. -->
           <picture>
             <source data-srcset={`${picture.src.replace(/\.webp$/, ".avif")}`} type="image/avif" />
             <img
@@ -136,8 +143,28 @@ const ROW_H = 20;     // 20lvh per row (5 rows = the stage); vertical geometry l
   </div>
 </div>
 
+<!--
+  No scripting: nothing promotes the deferred collage sources, so the pinned
+  runway would be four screens of empty frames. Collapse it to the same
+  one-viewport grid the lite tier shows. This is absence-keyed, not
+  value-keyed, so it cannot conflict with the `lite`/`pending` rules below and
+  it disappears on a real rollback (which reverts the deferred markup too).
+  Media-tiering D4 accepted a degraded no-JS tail; this keeps it to one screen.
+-->
+<noscript>
+  <style>
+    #zoom-parallax-container {
+      height: 100vh !important;
+      height: 100lvh !important;
+    }
+    #zoom-parallax-container .zoom-stage {
+      position: relative !important;
+    }
+  </style>
+</noscript>
+
 <script>
-  import { animate, scroll } from "motion";
+  import { scroll } from "motion";
 
   // Cleanup storage
   let cleanupFns: Array<() => void> = [];
@@ -150,15 +177,155 @@ const ROW_H = 20;     // 20lvh per row (5 rows = the stage); vertical geometry l
   // TimelineScroll uses.
   let measuredWidth = 0;
 
-  function initZoomParallax() {
+  // --- Media tier ------------------------------------------------------------
+  // Layout.astro's head script owns `html[data-tier]`; this component only
+  // reads it. `full` gets the pinned scroll-zoom plus every collage byte at
+  // parse time. `lite` and `pending` get the collapsed static bento grid, no
+  // scroll binding, and per-image promotion as the collage approaches.
+  const COLLAGE_IMAGES = "#zoom-parallax-container img[data-src]:not([src])";
+  // Generous on purpose: a lite guest pays for a photo well before it could be
+  // seen, so the frames are never empty on arrival. Two viewport heights also
+  // absorb a `pending → full` resolution that lands after the guest already
+  // scrolled — promotion is idempotent, so the worst case is a late load,
+  // never a missing one.
+  //
+  // Computed in pixels rather than written as "200% 0px": a percentage root
+  // margin resolves per-axis against the root box, and engines have not agreed
+  // on the vertical axis, so the same string can mean two viewport HEIGHTS or
+  // two viewport WIDTHS. On a portrait phone those differ by more than 2x, and
+  // a sub-viewport margin is exactly the empty-frames-on-arrival failure this
+  // margin exists to prevent.
+  function promoteMargin(): string {
+    return `${Math.round(window.innerHeight * 2)}px 0px`;
+  }
+
+  let deferredObserver: IntersectionObserver | null = null;
+  // The margin the live observer was built with, so a viewport change can tell
+  // a rebuild is needed instead of silently keeping a stale rootMargin.
+  let deferredMargin = "";
+  let bound = false;
+
+  function mediaTier(): string | null {
+    return document.documentElement.getAttribute("data-tier");
+  }
+
+  // Only an explicit `lite`/`pending` collapses. A MISSING attribute means the
+  // head script never ran (rollback, an inline-script blocker, an exception),
+  // and media-tiering D4 requires that case to behave like `full` — the same
+  // way the CSS does, since its collapse rules key on those two values. Ask
+  // "is it collapsed?" rather than "is it full?": getting this backwards leaves
+  // the JS and the CSS disagreeing, with a 400lvh pinned runway that nothing
+  // scrubs and a collage nothing promotes.
+  function isCollapsedTier(): boolean {
+    const tier = mediaTier();
+    return tier === "lite" || tier === "pending";
+  }
+
+  function promoteImage(img: HTMLImageElement) {
+    // <source> first: the moment the <img> grows a src the <picture>
+    // re-resolves, and promoting in the other order would fetch the WebP
+    // fallback and then the AVIF over it.
+    const picture = img.closest("picture");
+    picture?.querySelectorAll("source[data-srcset]:not([srcset])").forEach((source) => {
+      const srcset = source.getAttribute("data-srcset");
+      if (srcset) source.setAttribute("srcset", srcset);
+    });
+    const src = img.getAttribute("data-src");
+    if (src && !img.getAttribute("src")) img.setAttribute("src", src);
+  }
+
+  function promoteAll() {
+    document.querySelectorAll<HTMLImageElement>(COLLAGE_IMAGES).forEach(promoteImage);
+  }
+
+  function watchDeferredImages() {
+    if (typeof IntersectionObserver === "undefined") return;
+    // A rotation or a width-changing resize alters the viewport this margin was
+    // computed from, and both re-enter here — so rebuild rather than keep a
+    // rootMargin measured against a viewport that no longer exists.
+    const margin = promoteMargin();
+    if (deferredObserver && margin === deferredMargin) return;
+    stopWatchingDeferredImages();
+    const images = document.querySelectorAll<HTMLImageElement>(COLLAGE_IMAGES);
+    if (images.length === 0) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          promoteImage(entry.target as HTMLImageElement);
+          observer.unobserve(entry.target);
+        }
+      },
+      { rootMargin: margin }
+    );
+    images.forEach((img) => observer.observe(img));
+    deferredObserver = observer;
+    deferredMargin = margin;
+  }
+
+  function stopWatchingDeferredImages() {
+    deferredObserver?.disconnect();
+    deferredObserver = null;
+  }
+
+  // Re-read the verdict whenever the head script resolves or downgrades it.
+  //
+  // `rebuild` separates the two callers. Resize and (re)initialization must
+  // re-measure the center scale against the current stage rect, so they
+  // rebuild. A tier change must not: `net-tier:change` can fire between module
+  // evaluation and DOMContentLoaded (the observer callback is a task and the
+  // parser yields between chunks), and rebuilding from both would bind twice in
+  // one page load — two layout flushes, contradicting the archived
+  // scroll-motion requirement that ZoomParallax binds exactly once.
+  function applyTier(rebuild: boolean) {
+    if (!isCollapsedTier()) {
+      stopWatchingDeferredImages();
+      promoteAll();
+      if (rebuild || !bound) bindScrollZoomIfEligible();
+    } else {
+      teardownScrollZoom();
+      watchDeferredImages();
+    }
+  }
+
+  function onTierChange() {
+    applyTier(false);
+  }
+
+  function bindScrollZoomIfEligible() {
+    // Reduced motion: the static bento grid is the content; bind no
+    // scroll-driven transforms and let the CSS media query collapse the pin.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    // Tier gate: while collapsed the stage stays static (see the CSS below) and
+    // no scroll-driven zoom runs. A `pending` tier that resolves to `full`
+    // re-enters here through the net-tier:change listener; a `full → lite`
+    // downgrade tears the binding down again.
+    if (isCollapsedTier()) return;
+
+    // Re-binding is the resize path too: bindScrollZoom drops the previous
+    // cleanup and re-measures the center scale against the current stage rect.
+    bindScrollZoom();
+  }
+
+  // `rebuild` is true only when the geometry the bindings were measured
+  // against has changed — a width-changing resize, or a client navigation to a
+  // fresh document. First initialization passes false: a `pending → full`
+  // resolution can arrive between module evaluation and DOMContentLoaded, and
+  // rebuilding there would bind twice in one page load and flush layout twice,
+  // contradicting the archived scroll-motion requirement.
+  function initZoomParallax(rebuild = false) {
     // Record the width the measurements below are taken against, so
     // handleResize can ignore the height-only resizes browser chrome emits.
     measuredWidth = window.innerWidth;
 
-    // Reduced motion: the static bento grid is the content; bind no scroll-driven
-    // transforms and let the CSS media query collapse the pin.
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // Deferred promotion and the scroll binding are both tier-driven, and
+    // promotion runs on every tier and every motion preference: the static
+    // grid is content, and an unpromoted <img> is an empty frame.
+    applyTier(rebuild);
+  }
 
+  function bindScrollZoom() {
     const container = document.getElementById("zoom-parallax-container");
     const wrappers = document.querySelectorAll(".zoom-wrapper");
 
@@ -166,6 +333,7 @@ const ROW_H = 20;     // 20lvh per row (5 rows = the stage); vertical geometry l
 
     const stage = container.querySelector(".zoom-stage") as HTMLElement | null;
     if (!stage) return;
+
     // Cleanup previous scroll bindings
     cleanupFns.forEach(fn => fn());
     cleanupFns = [];
@@ -181,7 +349,7 @@ const ROW_H = 20;     // 20lvh per row (5 rows = the stage); vertical geometry l
     // Center Logic
     const centerWrapper = document.querySelector('[data-is-center="true"]') as HTMLElement;
     let centerScaleFactor = 4;
-    
+
     if (centerWrapper) {
       const inner = centerWrapper.querySelector('.zoom-inner') as HTMLElement;
       if (inner) {
@@ -201,45 +369,63 @@ const ROW_H = 20;     // 20lvh per row (5 rows = the stage); vertical geometry l
       }
     }
 
-    wrappers.forEach((wrapper) => {
-      const el = wrapper as HTMLElement;
-      const isCenter = el.dataset.isCenter === "true";
-      const scaleTarget = parseFloat(el.dataset.scaleTarget || "1");
+    const cleanup = scroll(
+      (progress: number) => {
+        wrappers.forEach((wrapper) => {
+          const el = wrapper as HTMLElement;
+          const isCenter = el.dataset.isCenter === "true";
+          const scaleTarget = parseFloat(el.dataset.scaleTarget || "1");
 
-      if (isCenter) {
-        // CENTER: Hold at entry, then scale to fill, then hold at end
-        const animation = animate(
-          el,
-          { transform: [`scale(1)`, `scale(1)`, `scale(${centerScaleFactor})`, `scale(${centerScaleFactor})`] },
-          { ease: "linear" }
-        );
-
-        const cleanup = scroll(animation, {
-          target: container,
-          // 0-10%: Hold (appreciate the grid)
-          // 10-80%: Scale up
-          // 80-100%: Hold (full image)
-          offset: ["start start", "10% start", "80% end", "end end"] 
+          let currentScale = 1;
+          if (isCenter) {
+            // 0-10%: Hold at 1
+            // 10-80%: Scale up to centerScaleFactor
+            // 80-100%: Hold at centerScaleFactor
+            if (progress <= 0.1) {
+              currentScale = 1;
+            } else if (progress >= 0.8) {
+              currentScale = centerScaleFactor;
+            } else {
+              const p = (progress - 0.1) / 0.7;
+              currentScale = 1 + (centerScaleFactor - 1) * p;
+            }
+          } else {
+            // 0-10%: Hold at 1
+            // 10-100%: Scale up to scaleTarget
+            if (progress <= 0.1) {
+              currentScale = 1;
+            } else {
+              const p = (progress - 0.1) / 0.9;
+              currentScale = 1 + (scaleTarget - 1) * p;
+            }
+          }
+          el.style.transform = `scale(${currentScale})`;
         });
-        
-        cleanupFns.push(cleanup);
-      } else {
-        // OTHERS: Hold at entry, then race forward
-        const animation = animate(
-          el,
-          { transform: [`scale(1)`, `scale(1)`, `scale(${scaleTarget})`] },
-          { ease: "linear" }
-        );
-
-        const cleanup = scroll(animation, {
-          target: container,
-          // 0-10%: Hold (appreciate the grid)
-          // 10-100%: Scale up
-          offset: ["start start", "10% start", "end end"]
-        });
-        
-        cleanupFns.push(cleanup);
+      },
+      {
+        target: container,
+        offset: ["start start", "end end"],
       }
+    );
+    cleanupFns.push(cleanup);
+    bound = true;
+  }
+
+  // Downgrade (full → lite): stop the scrub and drop the transforms it wrote,
+  // or the collapsed grid would freeze at whatever scale the verdict caught it
+  // at. The container/stage collapse itself is CSS, keyed on data-tier.
+  function teardownScrollZoom() {
+    if (!bound) return;
+    cleanupFns.forEach(fn => fn());
+    cleanupFns = [];
+    bound = false;
+    document.querySelectorAll<HTMLElement>(".zoom-wrapper").forEach(w => {
+      // Clear rather than write scale(1): the collapsed grid should match the
+      // reduced-motion state exactly (no inline transform at all), and a
+      // non-`none` transform keeps each of the ten full-viewport wrappers a
+      // containing block and a layerization candidate even with will-change
+      // released.
+      w.style.transform = "";
     });
   }
 
@@ -247,18 +433,24 @@ const ROW_H = 20;     // 20lvh per row (5 rows = the stage); vertical geometry l
     // Height-only resizes are mobile browser chrome collapsing or expanding;
     // the vw/svh geometry bound here is unchanged by them, so ignore them
     // instead of tearing down and rebuilding every scroll binding mid-scroll.
-    if (window.innerWidth === measuredWidth) return;
+    // Cancel any queued rebuild before the guard, not after: a width change
+    // that reverts inside the 150 ms debounce would otherwise still fire the
+    // queued teardown + rebind + layout flush.
     clearTimeout(resizeTimeout);
-    resizeTimeout = setTimeout(initZoomParallax, 150) as unknown as number;
+    if (window.innerWidth === measuredWidth) return;
+    resizeTimeout = setTimeout(() => initZoomParallax(true), 150) as unknown as number;
   }
 
-  // astro:page-load covers client navigation; the readyState branch covers the
-  // initial load, which this site enters without ClientRouter (no astro:page-load
-  // event fires on first render).
-  document.addEventListener("astro:page-load", initZoomParallax);
+  window.addEventListener("net-tier:change", onTierChange);
+
+  // astro:page-load covers client navigation (a fresh document, so rebuild);
+  // the readyState branch covers the initial load, which this site enters
+  // without ClientRouter — no astro:page-load fires on first render. Wrapped
+  // rather than passed directly so the Event object is not read as `rebuild`.
+  document.addEventListener("astro:page-load", () => initZoomParallax(true));
   window.addEventListener('resize', handleResize);
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initZoomParallax);
+    document.addEventListener("DOMContentLoaded", () => initZoomParallax());
   } else {
     initZoomParallax();
   }
@@ -315,6 +507,45 @@ const ROW_H = 20;     // 20lvh per row (5 rows = the stage); vertical geometry l
     transform: translateZ(0);
   }
 
+  /* Deferred sources: until promotion gives the <img> a real src the browser
+     would paint its alt text into the slot. Hide the placeholder so an
+     unpromoted frame reads as an empty frame, not a broken image. Geometric
+     only — IntersectionObserver still sees the element. */
+  .zoom-image:not([src]) {
+    visibility: hidden;
+  }
+
+  /* Lite/pending collapse (media-tiering D4): the stage stops pinning and the
+     runway shrinks to one viewport, so the ten photos read as a static bento
+     grid in normal document flow with no scroll-driven zoom.
+     Keyed on the explicit tier values and NEVER on `:not([data-tier="full"])`:
+     a rolled-back build without the head script then degrades to today's full
+     behavior instead of a broken static page.
+     `position: relative` rather than `static` keeps the stage as the
+     containing block for the absolutely positioned bento slots — the same
+     collapse the reduced-motion rule below already ships. */
+  :global(html[data-tier="lite"]) .zoom-container,
+  :global(html[data-tier="pending"]) .zoom-container {
+    height: 100vh !important;
+    height: 100lvh !important;
+  }
+  :global(html[data-tier="lite"]) .zoom-stage,
+  :global(html[data-tier="pending"]) .zoom-stage {
+    position: relative !important;
+  }
+
+  /* Nothing transforms these wrappers while collapsed, so the compositor
+     promotion hint only reserves ten full-viewport layers for an animation
+     that will never run. Release them: the population paying for those layers
+     is the low-memory device population the lite tier exists to serve. A
+     `pending → full` resolution restores the hint by dropping out of this
+     selector. The reduced-motion block below does the same for the identical
+     static presentation, so neither collapse path is asymmetric. */
+  :global(html[data-tier="lite"]) .zoom-wrapper,
+  :global(html[data-tier="pending"]) .zoom-wrapper {
+    will-change: auto !important;
+  }
+
   /* Reduced motion: the bento grid is static, readable content in one viewport. */
   @media (prefers-reduced-motion: reduce) {
     .zoom-container {
@@ -323,6 +554,9 @@ const ROW_H = 20;     // 20lvh per row (5 rows = the stage); vertical geometry l
     }
     .zoom-stage {
       position: relative !important;
+    }
+    .zoom-wrapper {
+      will-change: auto !important;
     }
   }
 </style>

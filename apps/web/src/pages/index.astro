@@ -75,8 +75,10 @@ Astro.response.headers.set("Cache-Control", "no-store");
   <!-- Welcome gate: the loader fade reveals it; swipe up opens the site. -->
   <WelcomeGate displayName={inviteDisplayName} />
 
-  <!-- Background Music -->
-  <audio id="hero-music" loop preload="auto">
+  <!-- Background Music: ships at preload="none". The tier decides whether the
+       3.1 MB file is ever fetched — see the soundtrack block in the inline
+       script below (media-tiering: "Soundtrack is tier-conditional"). -->
+  <audio id="hero-music" loop preload="none">
     <source src="/Lee Soo Young - ONE - ENGLISH Version.mp3" type="audio/mpeg" />
   </audio>
 
@@ -84,6 +86,51 @@ Astro.response.headers.set("Cache-Control", "no-store");
     <HeroZoom />
     <FamiliesReveal />
     <ZoomParallax />
+    <!-- Collage promoter (media-tiering). Inline and here, not in a module:
+         it must run the instant the collage markup above has parsed, so a
+         `full` verdict starts every collage fetch as early as a shipped `src`
+         would. `pending` waits for the head script's measurement to resolve;
+         `lite` is left to ZoomParallax's per-image approach observer.
+         Promotion is idempotent — ZoomParallax re-runs the same copy when the
+         tier resolves, and a second pass over promoted markup is a no-op. -->
+    <script is:inline>
+      (function () {
+        var root = document.documentElement;
+        var PENDING = '#zoom-parallax-container img[data-src]:not([src])';
+
+        function promote() {
+          var images = document.querySelectorAll(PENDING);
+          for (var i = 0; i < images.length; i++) {
+            var img = images[i];
+            var picture = img.closest('picture');
+            if (picture) {
+              // <source> first: setting the <img> src makes the <picture>
+              // re-resolve, and the other order would fetch the WebP fallback
+              // and then the AVIF over it.
+              var sources = picture.querySelectorAll('source[data-srcset]:not([srcset])');
+              for (var j = 0; j < sources.length; j++) {
+                sources[j].setAttribute('srcset', sources[j].getAttribute('data-srcset'));
+              }
+            }
+            var deferred = img.getAttribute('data-src');
+            if (deferred) img.setAttribute('src', deferred);
+          }
+        }
+
+        // Polarity matches the CSS and the other consumers: only an explicit
+        // `lite` or `pending` defers. A missing attribute means the head script
+        // never ran, and D4 requires that case to degrade to today's full
+        // behavior — not to a collage that silently never loads.
+        var tier = root.getAttribute('data-tier');
+        if (tier === 'pending') {
+          window.addEventListener('net-tier:change', function () {
+            if (root.getAttribute('data-tier') !== 'lite') promote();
+          });
+        } else if (tier !== 'lite') {
+          promote();
+        }
+      })();
+    </script>
     <TimelineScroll />
 
     <!-- Public memories, with an invitation-only posting control. Keep the
@@ -121,15 +168,64 @@ Astro.response.headers.set("Cache-Control", "no-store");
   </main>
 
 <script is:inline>
-  // Background music
+  // Background music — tier-conditional (media-tiering).
+  //
+  // The element ships at preload="none", so the 3.1 MB soundtrack is not
+  // fetched until the verdict says the link can afford it. `full` restores
+  // eager preloading the moment the tier is known and starts playback at the
+  // welcome gate's commit gesture, exactly as before. `lite` never downloads
+  // it: no preload, no commit playback, and no gesture-armed fallback — the
+  // armed events include touchend, so "first gesture" would mean "first scroll
+  // swipe silently starts a 3.1 MB download".
   const heroMusic = document.getElementById('hero-music');
   let hasStarted = false;
   let gestureArmed = false;
+  // Set when the gate's reveal gesture runs, whatever the tier. A `pending`
+  // verdict can still be unresolved at commit time; when it later resolves to
+  // `full` the music is armed on the next gesture instead of never.
+  let gateCommitted = false;
   // A swipe-up ends in `touchend`, which browsers accept as a user gesture for
   // audio. Desktop wheel/trackpad scroll does NOT count, so click/key are armed too.
   const gestureEvents = ['touchend', 'pointerup', 'click', 'keydown'];
 
+  function tierIsFull() {
+    // Absent attribute counts as `full`, matching the CSS: the collapse rules
+    // key on the explicit `lite`/`pending` values, so a build without the head
+    // script — or one whose inline script a blocker stripped — must degrade to
+    // today's full experience rather than silently dropping the parallax, the
+    // soundtrack and play-in-view while the pinned runway stays in place
+    // (media-tiering D4 and Migration Plan).
+    const tier = document.documentElement.getAttribute('data-tier');
+    return tier !== 'lite' && tier !== 'pending';
+  }
+
+  function enableSoundtrack() {
+    if (!heroMusic || heroMusic.preload === 'auto') return;
+    heroMusic.preload = 'auto';
+    // Changing `preload` alone does not restart resource selection on an
+    // element that never started loading; load() does.
+    heroMusic.load();
+  }
+
+  // The other direction matters too. `full` starts this download at parse time,
+  // so a measurement that contradicts the API (the congested-hotspot case D2
+  // exists for) has to give the bytes back — the requirement is "no soundtrack
+  // bytes on lite", not "no new bytes". Dropping the <source> children and
+  // calling load() is the only reliable abort: an in-flight media fetch cannot
+  // be cancelled by setting preload back to "none".
+  function disableSoundtrack() {
+    if (!heroMusic) return;
+    heroMusic.pause();
+    heroMusic.querySelectorAll('source').forEach((source) => source.remove());
+    heroMusic.load(); // resource selection with no source -> NETWORK_NO_SOURCE
+    disarmMusicGesture();
+  }
+
   function startMusic() {
+    gateCommitted = true;
+    // Not `full`: no playback and no arming, so nothing can start a download
+    // later in the pageview either.
+    if (!tierIsFull()) return;
     if (!hasStarted && heroMusic) {
       heroMusic.volume = 0.3;
       heroMusic.play()
@@ -138,6 +234,13 @@ Astro.response.headers.set("Cache-Control", "no-store");
           disarmMusicGesture();
         })
         .catch(err => {
+          // A downgrade aborts playback on purpose: disableSoundtrack()'s
+          // pause() rejects the pending play() with AbortError, and that
+          // rejection is a microtask, so it lands AFTER the disarm already
+          // ran. Without this guard the abort would re-arm four gesture
+          // listeners on a tier the welcome-gate delta says must never arm
+          // one — and log a failure that was actually intentional.
+          if (!tierIsFull()) return;
           console.log('Audio playback failed:', err);
           armMusicGesture();
         });
@@ -164,6 +267,24 @@ Astro.response.headers.set("Cache-Control", "no-store");
     }
   }
 
+  function onTierChange() {
+    if (!tierIsFull()) {
+      disableSoundtrack();
+      return;
+    }
+    enableSoundtrack();
+    // The gate can commit before a `pending` verdict resolves (the loader's
+    // minimum dwell is short). Arm the fallback then, so the reveal is not
+    // silently un-scored for the rest of the pageview. Note what that means:
+    // on a `full` tier the first scroll swipe may start a 3.1 MB download. D5
+    // rejected that only for lite, where the spend was never chosen.
+    if (gateCommitted && !hasStarted) armMusicGesture();
+  }
+
+  window.addEventListener('net-tier:change', onTierChange);
+  // An API-derived `full` never fires an event — that verdict was synchronous.
+  if (tierIsFull()) enableSoundtrack();
+
 
   // Loading screen logic
   //
@@ -174,8 +295,10 @@ Astro.response.headers.set("Cache-Control", "no-store");
   // welcome gate — stays legible on any device.
   const LOADER_MIN_DWELL_MS = 2600;
   // Hard ceiling: the loader is a progress beat, not a gate. Whatever happens
-  // to the media below (missing soundtrack, decode failure, stalled network),
-  // the page must still open.
+  // to the hero (missing file, decode failure, a connection that stalls), the
+  // page must still open. Back to 8s — the 16s value existed only to give the
+  // below-fold collage gate runway, and that gate is gone: below-fold
+  // readiness is the media tier's job now (Layout.astro's head script).
   const LOADER_MAX_WAIT_MS = 8000;
   const loaderShownAt = performance.now();
 
@@ -207,129 +330,36 @@ Astro.response.headers.set("Cache-Control", "no-store");
       return;
     }
 
-    if (heroMedia.complete && heroMedia.naturalWidth > 0) {
-      if (typeof heroMedia.decode === 'function') {
-        try {
-          await heroMedia.decode();
-        } catch {
-          // Ignore decode failures and continue.
-        }
+    if (!heroMedia.complete) {
+      await new Promise((resolve) => {
+        const onDone = () => resolve();
+        heroMedia.addEventListener('load', onDone, { once: true });
+        heroMedia.addEventListener('error', onDone, { once: true });
+      });
+    }
+
+    if (heroMedia.naturalWidth > 0 && typeof heroMedia.decode === 'function') {
+      try {
+        await heroMedia.decode();
+      } catch {
+        // Ignore decode failures and continue.
       }
-      return;
     }
-
-    // complete with zero natural size = the source already failed (broken or
-    // missing file). No further 'error' event will ever fire — bail out
-    // instead of waiting forever.
-    if (heroMedia.complete) return;
-
-    await new Promise((resolve) => {
-      const onDone = () => resolve();
-      heroMedia.addEventListener('load', onDone, { once: true });
-      heroMedia.addEventListener('error', onDone, { once: true });
-    });
-  };
-
-  const waitForAudioLoaded = async () => {
-    if (!heroMusic) return;
-
-    // Check if already loaded
-    if (heroMusic.readyState >= 2) {
-      return;
-    }
-
-    // A dead soundtrack must not wedge the loader. With <source> children the
-    // 'error' event fires on the <source> element, never on the media element
-    // itself — so a missing file leaves this element at NETWORK_NO_SOURCE
-    // without any event to wait for. Check that state up front, and also
-    // listen on the <source> for failures that happen while we wait.
-    if (heroMusic.error || heroMusic.networkState === HTMLMediaElement.NETWORK_NO_SOURCE) {
-      return;
-    }
-
-    // Wait for audio to be loaded
-    await new Promise((resolve) => {
-      const onDone = () => {
-        heroMusic.removeEventListener('canplay', onDone);
-        heroMusic.removeEventListener('error', onDone);
-        const src = heroMusic.querySelector('source');
-        if (src) src.removeEventListener('error', onDone);
-        resolve();
-      };
-      heroMusic.addEventListener('canplay', onDone);
-      heroMusic.addEventListener('error', onDone);
-      const src = heroMusic.querySelector('source');
-      if (src) src.addEventListener('error', onDone);
-    });
   };
 
   const initLoadingScreen = async () => {
-    const media = Promise.all([waitForHeroZoomLoaded(), waitForAudioLoaded()]);
+    // First-view media only: the hero image, fetched and decoded. The collage,
+    // the timeline photos, the video and the soundtrack are all below-fold or
+    // tier-deferred, and none of them may hold the phrases up — so a collage
+    // request that fails outright cannot touch this timeline either
+    // (media-tiering: "Loader gates on first-view media only").
     const deadline = new Promise((resolve) => setTimeout(resolve, LOADER_MAX_WAIT_MS));
-    await Promise.race([media, deadline]);
+    await Promise.race([waitForHeroZoomLoaded(), deadline]);
     hideLoadingScreen();
   };
 
   initLoadingScreen();
 
-</script>
-
-<script>
-  // Section-scoped progressive image loading.
-  //
-  // Sections marked [data-progressive-section] render their <img>s without a
-  // src (data-src only). This observer swaps the real src in once the section
-  // is ~1.5 viewport-heights from entering — early enough that every photo is
-  // fetched AND decoded before its scroll-driven reveal plays, even on a fast
-  // flick through the pinned parallax/timeline sections.
-  const hydrate = (section: Element) => {
-    section.querySelectorAll<HTMLImageElement>("img[data-src]").forEach((img) => {
-      const sources = Array.from(img.parentElement?.querySelectorAll<HTMLSourceElement>("source[data-srcset], source[data-src]") ?? []);
-      for (const source of sources) {
-        if (source.dataset.srcset) source.srcset = source.dataset.srcset;
-        if (source.dataset.src) source.src = source.dataset.src;
-        if (source.dataset.sizes) source.sizes = source.dataset.sizes;
-        source.removeAttribute("data-srcset");
-        source.removeAttribute("data-src");
-        source.removeAttribute("data-sizes");
-      }
-      if (img.dataset.srcset) {
-        img.srcset = img.dataset.srcset;
-        if (img.dataset.sizes) img.sizes = img.dataset.sizes;
-      }
-      img.src = img.dataset.src!;
-      img.removeAttribute("data-src");
-      img.removeAttribute("data-srcset");
-      img.removeAttribute("data-sizes");
-      // Decode ahead of paint; failures fall back to normal <img> handling.
-      if (typeof img.decode === "function") img.decode().catch(() => {});
-    });
-    section.dispatchEvent(new CustomEvent("section:images-ready", { bubbles: true }));
-  };
-
-  const observer = new IntersectionObserver(
-    (entries, obs) => {
-      for (const entry of entries) {
-        if (!entry.isIntersecting) continue;
-        obs.unobserve(entry.target);
-        hydrate(entry.target);
-      }
-    },
-    // Grows the trigger zone well past the viewport so loading starts before entry.
-    { rootMargin: "150% 0px" }
-  );
-
-  const observeSections = () => {
-    document.querySelectorAll("[data-progressive-section]").forEach((section) => {
-      const el = section as HTMLElement;
-      if (el.dataset.progressObserved) return;
-      el.dataset.progressObserved = "true";
-      observer.observe(el);
-    });
-  };
-
-  observeSections();
-  document.addEventListener("astro:page-load", observeSections);
 </script>
 
 <script>

@@ -1,7 +1,13 @@
 ---
 ---
 
-<section id="timeline-section" class="timeline-section relative w-full bg-[color:var(--timeline-bg)]" data-progressive-section>
+<section id="timeline-section" class="timeline-section relative w-full bg-[color:var(--timeline-bg)]">
+  <!-- Ships real src/srcset, with no tier deferral: the timeline story is
+       content rather than decoration, its photos are tens of KB each, and its
+       scrub binding is in the bundle regardless — so lite keeps the whole
+       narrative (media-tiering design: flattening this story is a non-goal).
+       The loading screen no longer waits on them; it gates on the hero alone.
+       The video below is the one tier-gated element in this component. -->
   <div class="timeline-stage sticky top-0 w-full overflow-hidden">
     
     <!-- 1. Bottom Layer: Title (Black text on White bg) -->
@@ -81,7 +87,7 @@
           <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+24px)] flex flex-col items-center">
             <div data-node2-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
               <div class="h-[360px] sm:h-[400px] md:h-[480px] w-auto max-w-[calc(100vw-32px)] aspect-[591/1280] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
-                <picture><source data-srcset="/awal-perkenalan.avif" type="image/avif" /><img data-src="/awal-perkenalan.webp" alt="Awal perkenalan" width="591" height="1280" class="h-full w-full object-cover" decoding="async" /></picture>
+                <picture><source srcset="/awal-perkenalan.avif" type="image/avif" /><img src="/awal-perkenalan.webp" alt="Awal perkenalan" width="591" height="1280" class="h-full w-full object-cover" decoding="async" /></picture>
               </div>
             </div>
 
@@ -108,7 +114,7 @@
           <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)] flex flex-col items-center">
             <div data-node3-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
               <div class="w-[340px] sm:w-[400px] md:w-[560px] max-w-[calc(100vw-32px)] h-auto aspect-[1280/591] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl mb-4 ring-1 ring-[color:var(--timeline-photo-ring)]">
-                <picture><source data-srcset="/keluarga-yofri.avif" type="image/avif" /><img data-src="/keluarga-yofri.webp" alt="Aisha diperkenalkan ke keluarga Yofri" width="1280" height="591" class="h-full w-full object-cover" decoding="async" /></picture>
+                <picture><source srcset="/keluarga-yofri.avif" type="image/avif" /><img src="/keluarga-yofri.webp" alt="Aisha diperkenalkan ke keluarga Yofri" width="1280" height="591" class="h-full w-full object-cover" decoding="async" /></picture>
               </div>
             </div>
             <div data-node3-date style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
@@ -141,7 +147,7 @@
           <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)]">
             <div data-node4-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
               <div class="w-[340px] sm:w-[400px] md:w-[560px] max-w-[calc(100vw-32px)] h-auto aspect-[2048/945] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
-                <picture><source data-srcset="/keluarga-acik.avif" type="image/avif" /><img data-src="/keluarga-acik.webp" alt="Yofri bertemu keluarga Aisha" width="2048" height="945" class="h-full w-full object-cover" decoding="async" /></picture>
+                <picture><source srcset="/keluarga-acik.avif" type="image/avif" /><img src="/keluarga-acik.webp" alt="Yofri bertemu keluarga Aisha" width="2048" height="945" class="h-full w-full object-cover" decoding="async" /></picture>
               </div>
             </div>
           </div>
@@ -176,7 +182,11 @@
           <div class="absolute left-[50vw] -translate-x-1/2 -top-8 flex flex-col items-center w-[280px] md:w-[340px]">
             <div data-node5-photo style="opacity: 0; transform: scale(0.6); transform-origin: 0% 0%;">
               <div class="h-[320px] md:h-[420px] w-auto aspect-[2/3] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl mb-4 ring-1 ring-[color:var(--timeline-photo-ring)]">
-                <video autoplay loop muted playsinline preload="auto" aria-label="Lamaran" class="h-full w-full object-cover" width="478" height="850"><source src="/lamaran.mp4" type="video/mp4" /></video>
+                <!-- No `autoplay`: that attribute defeated preload="none" and
+                     pulled 714 KB at parse time on every network. Playback is
+                     tier-driven — see applyVideoTier() at the foot of this
+                     component's script. -->
+                <video id="timeline-video" loop muted playsinline preload="none" aria-label="Lamaran" class="h-full w-full object-cover" width="478" height="850"><source src="/lamaran.mp4" type="video/mp4" /></video>
               </div>
             </div>
             <div data-node5-desc class="text-center" style="opacity: 0; transform: scale(0.6); transform-origin: 0% 0%;">
@@ -1125,10 +1135,94 @@
     });
   }
 
-  document.addEventListener("astro:page-load", initTimeline);
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initTimeline);
-  } else {
+  // --- Timeline video: tier-conditional playback ---------------------------
+  // The element ships without `autoplay` and at preload="none", so no tier
+  // transfers its bytes at parse time. On `full` the video plays while its card
+  // is in the viewport and pauses when it leaves; on `lite`/`pending` it
+  // exposes native controls and never plays without an explicit guest action.
+  // The verdict can change mid-pageview — a `pending` measurement resolving, or
+  // a measurement contradicting an API `full` — so both directions re-apply.
+  const TIMELINE_VIDEO = "#timeline-video";
+  let videoObserver: IntersectionObserver | null = null;
+
+  function mediaTier(): string | null {
+    return document.documentElement.getAttribute("data-tier");
+  }
+
+  // Only an explicit `lite`/`pending` hands the video to the guest. A MISSING
+  // attribute means the head script never ran (rollback, inline-script
+  // blocker), and media-tiering D4 requires that case to behave like `full` —
+  // otherwise the timeline's one moving element is silently left paused with
+  // controls on it.
+  function isCollapsedTier(): boolean {
+    const tier = mediaTier();
+    return tier === "lite" || tier === "pending";
+  }
+
+  // Where "in view" begins. A constant because the threshold list and the ratio
+  // test below must agree.
+  const VISIBLE_RATIO = 0.5;
+
+  function applyVideoTier() {
+    const video = document.querySelector<HTMLVideoElement>(TIMELINE_VIDEO);
+    if (!video) return;
+
+    // Drop any previous observer first: a stale one would keep playing (or
+    // pausing) against the policy that has just been replaced.
+    if (videoObserver) {
+      videoObserver.disconnect();
+      videoObserver = null;
+    }
+
+    if (!isCollapsedTier()) {
+      video.removeAttribute("controls");
+      // Mute state is deliberately left to the markup's `muted` on both
+      // branches: unattended playback is muted-only under every engine's
+      // media policy, and this clip has no audio track at all, so a
+      // tier-conditional unmute would be inert today and would silently
+      // flip mid-playback if the asset ever grew a soundtrack.
+      const observer = new IntersectionObserver(
+        (entries) => {
+          // isIntersecting is NOT threshold-derived: it means "touches the root
+          // at all". Under a single 0.5 threshold the only exit record ever
+          // delivered still carries isIntersecting: true, and the crossing to
+          // ratio 0 is never queued at all (same threshold index as the
+          // sub-0.5 step) — so a test on isIntersecting plays once and never
+          // pauses. Read the ratio, and list 0 so the exit is delivered.
+          const visible = entries.some((entry) => entry.intersectionRatio >= VISIBLE_RATIO);
+          if (visible) {
+            // Muted + playsinline, so this needs no user activation; a
+            // rejection (engine policy, missing file) just leaves it paused.
+            video.play().catch(() => {
+              /* stay paused */
+            });
+          } else if (!video.paused) {
+            video.pause();
+          }
+        },
+        { threshold: [0, VISIBLE_RATIO] }
+      );
+      observer.observe(video);
+      videoObserver = observer;
+    } else {
+      if (!video.paused) video.pause();
+      video.setAttribute("controls", "");
+    }
+  }
+
+  function boot() {
     initTimeline();
+    // Not part of initTimeline: that one returns early on reduced motion, and
+    // the video's playback policy is not a scroll-scrub binding — a
+    // reduced-motion guest still gets play-in-view on full and controls on lite.
+    applyVideoTier();
+  }
+
+  window.addEventListener("net-tier:change", applyVideoTier);
+  document.addEventListener("astro:page-load", boot);
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", boot);
+  } else {
+    boot();
   }
 </script>
