@@ -1,7 +1,7 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "fe166b6a-2e9b-4a44-b585-2d2c01d6b265",
+  "id": "5da73859-be68-42c3-9ffa-75a4b1350e7b",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
     "guest_photos": {
@@ -121,13 +121,68 @@
           "notNull": true,
           "autoincrement": false,
           "default": 0
+        },
+        "parent_id": {
+          "name": "parent_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'individual'"
+        },
+        "max_members": {
+          "name": "max_members",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
-      "indexes": {},
-      "foreignKeys": {},
+      "indexes": {
+        "invites_parent_id_idx": {
+          "name": "invites_parent_id_idx",
+          "columns": ["parent_id"],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "invites_parent_id_invites_id_fk": {
+          "name": "invites_parent_id_invites_id_fk",
+          "tableFrom": "invites",
+          "tableTo": "invites",
+          "columnsFrom": ["parent_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "checkConstraints": {}
+      "checkConstraints": {
+        "invites_type_chk": {
+          "name": "invites_type_chk",
+          "value": "\"invites\".\"type\" IN ('individual','group')"
+        },
+        "invites_group_shape_chk": {
+          "name": "invites_group_shape_chk",
+          "value": "(\"invites\".\"type\" = 'group') = (\"invites\".\"max_members\" IS NOT NULL)"
+        },
+        "invites_member_shape_chk": {
+          "name": "invites_member_shape_chk",
+          "value": "\"invites\".\"parent_id\" IS NULL OR \"invites\".\"type\" = 'individual'"
+        },
+        "invites_max_members_range_chk": {
+          "name": "invites_max_members_range_chk",
+          "value": "\"invites\".\"max_members\" IS NULL OR \"invites\".\"max_members\" BETWEEN 2 AND 50"
+        }
+      }
     },
     "rsvps": {
       "name": "rsvps",

@@ -14,21 +14,30 @@ import VenueMap from "../components/VenueMap.astro";
 import EventTimes from "../components/EventTimes.astro";
 import { db } from "@wedding-website/db";
 import { invites, rsvps } from "@wedding-website/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
-import { inviteIdFromCookies } from "../lib/invite-session";
+import { inviteIdFromCookies, readGroupQuota } from "../lib/invite-session";
 
 // Personalized greeting + RSVP controls (server-rendered; read-only — metrics
 // stay exclusive to /{id}).
 let inviteDisplayName: string | null = null;
 let inviteRsvpAttending: boolean | null = null;
+let inviteKind: "individual" | "member" | "group" | null = null;
+let inviteGroupQuota: { maxMembers: number; claimedCount: number } | null = null;
+// The group link this visitor belongs to, when any: a group cookie's own id, or
+// a member cookie's parent. Drives the "Not you?" release control.
+let inviteGroupLinkId: string | null = null;
 const inviteCookieValue = inviteIdFromCookies(Astro.cookies);
 if (inviteCookieValue) {
   try {
     const inviteRow = await db
       .select({
+        id: invites.id,
         displayName: invites.displayName,
         attending: rsvps.attending,
+        type: invites.type,
+        parentId: invites.parentId,
+        maxMembers: invites.maxMembers,
       })
       .from(invites)
       .leftJoin(rsvps, eq(rsvps.inviteId, invites.id))
@@ -37,9 +46,80 @@ if (inviteCookieValue) {
     const row = inviteRow[0];
     inviteDisplayName = row?.displayName ?? null;
     inviteRsvpAttending = row?.attending ?? null;
+    const parentId = row?.parentId ?? null;
+    // Derived exactly as resolveInvite derives it — this page keeps its own
+    // inline query rather than sharing that helper.
+    inviteKind = !row
+      ? null
+      : parentId !== null
+        ? "member"
+        : row.type === "group"
+          ? "group"
+          : "individual";
+    if (row && inviteKind === "group") {
+      // Groups pay one extra COUNT; members pay one for the PARENT's quota. Both
+      // go through readGroupQuota, which derives claimedCount from the member rows
+      // so it can never drift. Errors propagate to the outer catch here ON
+      // PURPOSE: the quota decides whether to offer the claim form at all, so
+      // failing closed to anonymous is the safer degrade — offering a claim form on
+      // unknown quota would let a full group loop submit -> 409 -> reload.
+      const quota = await readGroupQuota(row.id);
+      if (quota) {
+        inviteGroupQuota = quota;
+        inviteGroupLinkId = row.id;
+      } else {
+        // Unreachable in practice: readGroupQuota's non-group branch is dead
+        // (nothing UPDATEs invites.type — only seen_*/opened_* metrics ever move)
+        // and a group WITH members cannot be deleted, because the self-FK refuses.
+        // The only residual trigger is a hand-run DELETE of a memberless group
+        // racing this render. Reset rather than throw: the same fail-closed outcome
+        // (no group UI, so no claim form on unknown quota) without manufacturing an
+        // exception that would read as a bug in the container log.
+        inviteKind = null;
+        inviteDisplayName = null;
+        inviteRsvpAttending = null;
+        inviteGroupQuota = null;
+        inviteGroupLinkId = null;
+      }
+    } else if (row && inviteKind === "member" && parentId !== null) {
+      // A member also needs the PARENT group's quota, because the release control is
+      // only safe while that group has an open slot. Releasing at capacity is
+      // permanent — the member id lives only in the cookie and no slot could be
+      // re-claimed — so it would be an identity dead-end (design Goals), and it
+      // would help nobody: the second household member the release exists to
+      // unblock cannot claim either.
+      //
+      // SCOPED try/catch: this query only feeds an OPTIONAL affordance. If it
+      // fails, drop the release control and KEEP the identity resolved above, so a
+      // valid answered member still gets their greeting and confirm button.
+      // Falling through to the outer catch would trade a cosmetic degradation for
+      // an identity dead-end.
+      try {
+        // readGroupQuota returns null unless the parent is genuinely a group row.
+        // A parent_id pointing at a non-group row is unreachable through the API
+        // (admin rejects a non-null parentId, and a claim always parents to a
+        // resolved group), but if the database were hand-edited the release href
+        // would rebind this member's cookie to someone else's invite — an identity
+        // swap, not a release. Null therefore means: no release affordance.
+        const quota = await readGroupQuota(parentId);
+        if (quota) {
+          inviteGroupLinkId = parentId;
+          inviteGroupQuota = quota;
+        }
+      } catch (err) {
+        console.error("[invite-greeting] parent group lookup failed:", err);
+        inviteGroupLinkId = null;
+        inviteGroupQuota = null;
+      }
+    }
   } catch (err) {
     // The page must never break on a lookup failure — degrade to anonymous.
     console.error("[invite-greeting] lookup failed:", err);
+    inviteDisplayName = null;
+    inviteRsvpAttending = null;
+    inviteKind = null;
+    inviteGroupQuota = null;
+    inviteGroupLinkId = null;
   }
 }
 
@@ -160,6 +240,9 @@ Astro.response.headers.set("Cache-Control", "no-store");
         <RsvpSection
           inviteDisplayName={inviteDisplayName}
           rsvpAttending={inviteRsvpAttending}
+          inviteKind={inviteKind}
+          groupLinkId={inviteGroupLinkId}
+          groupQuota={inviteGroupQuota}
         />
       </div>
     </div>

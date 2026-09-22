@@ -9,6 +9,7 @@ import {
   serviceUnavailable,
   type ResolvedInvite,
 } from "../../../lib/invite-session";
+import { crossOriginPostForbidden, isSameOriginRequest } from "../../../lib/same-origin";
 
 function json(status: number, body: unknown) {
   return new Response(JSON.stringify(body), {
@@ -62,7 +63,25 @@ export const POST: APIRoute = async ({ cookies, request }) => {
   if (resolution.status === "error") {
     return serviceUnavailable();
   }
+  // Cross-origin guard. Astro's framework checkOrigin is DISABLED in
+  // astro.config.mjs, because its naive `Origin === request.url.origin`
+  // comparison cannot match behind a TLS-terminating proxy and it runs before
+  // user middleware so it cannot be corrected there (see lib/same-origin.ts).
+  // This call is what replaces it — every cookie-authenticated POST must have
+  // one, and tests/origin-guard.spec.ts fails the build if one goes missing.
+  // Placed after the identity checks so an anonymous caller still gets the
+  // uniform bare 404.
+  if (!isSameOriginRequest(request)) {
+    return crossOriginPostForbidden();
+  }
   const { invite } = resolution;
+
+  // A group cookie is a VALID but UNCLAIMED identity: it must never write shared
+  // state on behalf of a whole party. Standalone individuals and claimed members
+  // pass through unchanged (rsvp-responses spec).
+  if (invite.kind === "group") {
+    return json(409, { error: "claim_required" });
+  }
 
   let payload: unknown;
   try {

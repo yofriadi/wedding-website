@@ -16,9 +16,18 @@ CREATE TABLE `invites` (
 	`seen_at` integer,
 	`seen_count` integer DEFAULT 0 NOT NULL,
 	`opened_at` integer,
-	`opened_count` integer DEFAULT 0 NOT NULL
+	`opened_count` integer DEFAULT 0 NOT NULL,
+	`parent_id` text,
+	`type` text DEFAULT 'individual' NOT NULL,
+	`max_members` integer,
+	FOREIGN KEY (`parent_id`) REFERENCES `invites`(`id`) ON UPDATE no action ON DELETE no action,
+	CONSTRAINT "invites_type_chk" CHECK("invites"."type" IN ('individual','group')),
+	CONSTRAINT "invites_group_shape_chk" CHECK(("invites"."type" = 'group') = ("invites"."max_members" IS NOT NULL)),
+	CONSTRAINT "invites_member_shape_chk" CHECK("invites"."parent_id" IS NULL OR "invites"."type" = 'individual'),
+	CONSTRAINT "invites_max_members_range_chk" CHECK("invites"."max_members" IS NULL OR "invites"."max_members" BETWEEN 2 AND 50)
 );
 --> statement-breakpoint
+CREATE INDEX `invites_parent_id_idx` ON `invites` (`parent_id`);--> statement-breakpoint
 CREATE TABLE `rsvps` (
 	`invite_id` text PRIMARY KEY NOT NULL,
 	`attending` integer NOT NULL,

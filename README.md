@@ -57,12 +57,13 @@ Use `db:generate` after schema edits and commit SQL, snapshot, and journal toget
 
 ### Current contracts
 
-- `GET /<12-character-invite-id>` records a visit, binds/rebinds `ww_invite_id`, and redirects to `/`.
-- `GET /api/invite/me` resolves identity without changing metrics.
+- `GET /<12-character-invite-id>` records a visit, binds/rebinds `ww_invite_id`, and redirects to `/`. **Sticky exception:** a _group_ link keeps a cookie that already maps to one of its own members, re-setting it with a fresh `Max-Age` instead of rebinding; `GET /<group-id>?fresh=1` releases back to the group identity (creates no rows and consumes no slot; the group's seen-metrics still bump as for any link visit). The release is honoured only for a real visit to our own page (`Sec-Fetch-Site: same-origin`/`none` + `Sec-Fetch-Dest: document`) and only while the group has an open slot — at capacity it is refused, because releasing then could never be undone.
+- `POST /api/invite/claim` mints one member slot under a group invite and rebinds the cookie to it. Opening a group link is free and unlimited — only a claim consumes a slot, capped atomically at `maxMembers`.
+- `GET /api/invite/me` resolves identity without changing metrics, returning `{ displayName, kind }` plus `group: { maxMembers, claimedCount }` for group cookies.
 - `POST /api/invite/opened` records opening the invitation.
-- `GET` / `POST /api/rsvp` read/upsert boolean attendance. Response timestamps are retained; the public count is attending invitations, not party headcount.
+- `GET` / `POST /api/rsvp` read/upsert boolean attendance. Response timestamps are retained; the public count is attending invitations, not party headcount — so a group contributes one count per attending member. An unclaimed group cookie POSTs to `409 { "error": "claim_required" }` and reads as `{ attending: null }`.
 - `GET /api/guest-photos` returns `{ inviteValid, mineId, photos: [{ id, photoUrl, createdAt }] }` for everyone. Names and invitation IDs are not public photo metadata.
-- `POST /api/guest-photos` accepts exactly one multipart `photo` file for a resolved invitation, once only.
+- `POST /api/guest-photos` accepts exactly one multipart `photo` file for a resolved invitation, once only. `409` means `already_posted` or (for an unclaimed group cookie) `claim_required` — branch on the code, not the status.
 - Canonical files are private-storage `guest-photos/<photo-id>/photo.webp`, with an optional `photo.avif`. `/api/photos/<key>` serves public immutable content, with AVIF negotiated through `Vary: Accept`.
 
 [NOTE.md](NOTE.md) provides an isolated manual walkthrough. [SPEC.md](SPEC.md) summarizes the current invitation contract; detailed capability specs live in `openspec/specs/`.

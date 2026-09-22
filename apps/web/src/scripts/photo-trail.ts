@@ -18,9 +18,66 @@ const PHOTO_ERRORS: Record<string, string> = {
   photo_too_large: "Ukuran gambar maksimal 10 MB.",
   invalid_photo_type: "Pilih gambar JPEG, PNG, WebP, atau AVIF yang valid.",
   empty_photo: "Pilih satu gambar terlebih dahulu.",
+  // Group identities are valid but UNCLAIMED: they route to the shared claim
+  // flow, or to the read-only capacity state, instead of the uploader.
+  claim_required: "Klaim tempatmu dulu untuk menambahkan gambar.",
+  group_full: "Undangan grup ini sudah penuh.",
 };
 const SYNC_ERROR =
   "Gambar sudah diunggah, tetapi galeri belum diperbarui. Coba lagi untuk memuatnya.";
+const GROUP_CLAIM_LABEL = "Klaim tempatmu";
+const GROUP_FULL_LABEL = "Grup sudah penuh";
+
+/**
+ * "none"    — standalone individual or claimed member: the normal uploader rules.
+ * "claim"   — group cookie with slots open: show the claim affordance.
+ * "full"    — group cookie at quota: show the read-only capacity state.
+ * "unknown" — the identity probe could not answer. Treated as INELIGIBLE (the
+ *             guest-photo-trail spec bars "unresolved/error states" from opening
+ *             a chooser) but not as a group, so the pill stays hidden instead of
+ *             advertising a control that cannot work. Retried on the next
+ *             refresh rather than pinned for the whole page lifetime.
+ */
+type GroupIdentityState = "none" | "claim" | "full" | "unknown";
+
+// Identity kind comes from the cookie-gated /api/invite/me, never from cookie
+// shape.
+//
+// The presence check below is NOT authorization — it only avoids a
+// guaranteed-404 identity probe on every anonymous homepage load, since this
+// control renders unconditionally. Eligibility still comes solely from the
+// server responses. The cookie is httpOnly:false by design so it is readable
+// here; if that ever changed the probe would simply be skipped and the server's
+// 409 claim_required path would remain the backstop. Mirrors
+// INVITE_COOKIE_NAME/INVITE_ID_RE in lib/invite-session.ts.
+const INVITE_COOKIE_PRESENT = /(?:^|;\s*)ww_invite_id=[A-Za-z0-9_-]{12}(?:\s|;|$)/;
+
+async function loadGroupIdentityState(): Promise<GroupIdentityState> {
+  if (!INVITE_COOKIE_PRESENT.test(document.cookie)) return "none";
+  try {
+    const response = await fetch("/api/invite/me", {
+      credentials: "same-origin",
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+    });
+    // A 404 is a DEFINITIVE answer — no valid identity, so not a group. Any
+    // other non-200 (503, an aborted request) means "we could not find out",
+    // which must not be confused with "not a group".
+    if (response.status === 404) return "none";
+    if (!response.ok) return "unknown";
+    const payload = (await response.json()) as {
+      kind?: unknown;
+      group?: { maxMembers?: unknown; claimedCount?: unknown };
+    };
+    if (payload.kind !== "group") return "none";
+    const max = Number(payload.group?.maxMembers);
+    if (!Number.isFinite(max)) return "claim";
+    const claimed = Number(payload.group?.claimedCount ?? 0);
+    return (Number.isFinite(claimed) ? claimed : 0) >= max ? "full" : "claim";
+  } catch {
+    return "unknown";
+  }
+}
 
 /** Public photos and an invite-only uploader; feedback stays inside the sticky CTA. */
 export function initPhotoTrail(controls: HTMLElement): () => void {
@@ -38,6 +95,40 @@ export function initPhotoTrail(controls: HTMLElement): () => void {
   let disposed = false;
   let inviteValid = false;
   let canPost = false;
+  // Identity kind only changes through a claim, and a successful claim does a
+  // FULL page reload — so a DEFINITIVE answer is authoritative for the page
+  // lifetime and is cached. A failed probe is deliberately NOT cached: one
+  // transient blip would otherwise hide the uploader until a manual reload.
+  let groupState: GroupIdentityState = "none";
+  // Started EAGERLY, not lazily inside syncGroupState: refresh() awaits that
+  // AFTER `await loadGuestPhotos()`, so a lazily-created probe would make the
+  // pill's first paint wait on two SERIAL round trips. Kicking it off here lets
+  // it run in parallel with the first collection read — on a slow connection
+  // that is the difference between one latency budget and two.
+  let groupProbe: Promise<GroupIdentityState> | null = loadGroupIdentityState();
+  let groupRetryTimer = 0;
+  const syncGroupState = async () => {
+    if (groupProbe === null) groupProbe = loadGroupIdentityState();
+    const probe = groupProbe;
+    const next = await probe;
+    // Identity-guard the reset: two refreshes can overlap and both await the
+    // shared promise, so a stale continuation must not drop a NEWER in-flight
+    // probe that a third caller has already installed.
+    if (next === "unknown" && groupProbe === probe) groupProbe = null;
+    groupState = next;
+    // Recovery must not depend on the guest happening to switch tabs — focus and
+    // visibilitychange are the only other triggers, so a single-page visit would
+    // never retry. "unknown" fails closed for the pill, which is right for a
+    // group identity, but it also hides the uploader from an eligible INDIVIDUAL
+    // whose only problem was a blip on this secondary endpoint while
+    // /api/guest-photos answered fine. Schedule one delayed retry.
+    if (next === "unknown" && groupRetryTimer === 0 && !disposed) {
+      groupRetryTimer = window.setTimeout(() => {
+        groupRetryTimer = 0;
+        if (!disposed) void reloadPhotos();
+      }, 3000);
+    }
+  };
   let state: UploadState = "idle";
   let selectedFile: File | null = null;
   // Once the server commits, retry only the gallery refresh, never the upload.
@@ -70,8 +161,36 @@ export function initPhotoTrail(controls: HTMLElement): () => void {
     error.hidden = !message;
   };
 
+  // ONE shared claim affordance: the photo CTA routes to the RSVP section's
+  // claim form instead of rendering a second, ad-hoc prompt.
+  const openClaimFlow = () => {
+    const claimForm = document.querySelector<HTMLElement>("[data-claim-form]");
+    // The two identity paths are independent (the RSVP surface resolves inline
+    // server-side, this one probes /api/invite/me), so SSR can have degraded to
+    // anonymous while we still know the visitor is a group. Reload rather than
+    // scroll to a section whose claim form does not exist — the same
+    // self-healing move RsvpSection makes on a 409 claim_required.
+    if (!claimForm) {
+      window.location.reload();
+      return;
+    }
+    // Clear a stale upload error only once we know a reload is not about to
+    // discard the message anyway.
+    showError();
+    claimForm.scrollIntoView({ behavior: "smooth", block: "center" });
+    const nameInput = claimForm.querySelector<HTMLInputElement>("[data-claim-name]");
+    // Focus once the scroll has started so the caret lands without a second jump.
+    window.setTimeout(() => nameInput?.focus({ preventScroll: true }), 320);
+  };
+
   const render = () => {
-    button.hidden = !inviteValid || (!canPost && !committed && !uncertain);
+    // A group identity reveals the pill as the claim/capacity affordance rather
+    // than hiding it — but it can never open the picker, because canPost below
+    // stays false for the whole time groupState is not "none". An "unknown"
+    // probe keeps the pill hidden: a visible control that cannot work is worse
+    // than no control, and the next refresh retries the probe.
+    const groupAffordance = groupState === "claim" || groupState === "full";
+    button.hidden = !inviteValid || (!canPost && !committed && !uncertain && !groupAffordance);
     button.dataset.state = state;
     button.setAttribute("aria-busy", String(state === "uploading"));
     // Keep keyboard focus on the status button, but guard every activation.
@@ -79,6 +198,8 @@ export function initPhotoTrail(controls: HTMLElement): () => void {
     input.disabled = !canPost || state !== "idle";
     if (state === "uploading") label.textContent = "Mengunggah…";
     else if (state === "success") label.textContent = "Foto ditambahkan";
+    else if (groupState === "claim") label.textContent = GROUP_CLAIM_LABEL;
+    else if (groupState === "full") label.textContent = GROUP_FULL_LABEL;
     else if (selectedFile || committed || uncertain) label.textContent = "Coba lagi";
     else label.textContent = "Tambah punyamu";
     indicator?.setUploading(state === "uploading");
@@ -89,6 +210,8 @@ export function initPhotoTrail(controls: HTMLElement): () => void {
     const version = ++requestVersion;
     const data = await loadGuestPhotos();
     if (disposed || version !== requestVersion) return null;
+    await syncGroupState();
+    if (disposed || version !== requestVersion) return null;
 
     // Fail closed. A cookie's shape alone is never permission to post. A
     // transient read failure after a committed upload must not hide its status.
@@ -98,7 +221,13 @@ export function initPhotoTrail(controls: HTMLElement): () => void {
       uncertain = false;
       selectedFile = null;
     }
-    canPost = data?.inviteValid === true && data.mineId === null && !committed && !uncertain;
+    canPost =
+      data?.inviteValid === true &&
+      data.mineId === null &&
+      !committed &&
+      !uncertain &&
+      // An unclaimed group identity is never eligible for a chooser.
+      groupState === "none";
     controls.dataset.ready = "true";
     render();
     if (!data) return null; // Keep the last shown photos on network/DB failures.
@@ -157,30 +286,65 @@ export function initPhotoTrail(controls: HTMLElement): () => void {
           invalidateGuestPhotos();
           return;
         }
-        if (response.status === 201 || response.status === 409) {
+        if (response.status === 201) {
           committed = true;
           canPost = false;
           selectedFile = null;
           invalidateGuestPhotos();
           window.dispatchEvent(new CustomEvent(GUEST_PHOTO_POSTED_EVENT));
-        } else if (response.status === 404) {
-          inviteValid = false;
-          canPost = false;
-          selectedFile = null;
-          invalidateGuestPhotos();
-          throw new Error("Buka kembali tautan undanganmu untuk menambahkan gambar.");
         } else {
-          const payload = (await response.json().catch(() => ({}))) as { error?: string };
-          if (response.status === 400) {
+          // CLASSIFY BY ERROR CODE, NEVER BY STATUS ALONE. `already_posted` is
+          // the ONLY 409 that means committed; an unreadable or unrecognized
+          // body — including any other 409 — is an uncertain outcome and must
+          // never set `committed`.
+          const payload = (await response.json().catch(() => null)) as {
+            error?: string;
+          } | null;
+          const code = typeof payload?.error === "string" ? payload.error : "";
+          if (response.status === 409 && code === "already_posted") {
+            committed = true;
+            canPost = false;
+            selectedFile = null;
+            invalidateGuestPhotos();
+            window.dispatchEvent(new CustomEvent(GUEST_PHOTO_POSTED_EVENT));
+          } else if (response.status === 409 && code === "claim_required") {
+            // A stale page after a release: this browser is a group identity
+            // again. Route to the shared claim flow — never the committed path,
+            // so no upload-success or SYNC_ERROR messaging is shown.
+            groupState = "claim";
+            // Invalidate the cached probe: the server just told us something the
+            // earlier answer did not know, and the next refresh must not silently
+            // revert the pill by awaiting a stale definitive value.
+            groupProbe = null;
+            canPost = false;
+            selectedFile = null;
+            invalidateGuestPhotos();
+            state = "idle";
+            status.textContent = "";
+            showError();
+            return;
+          } else if (response.status === 409 && code === "group_full") {
+            groupState = "full";
+            groupProbe = null; // as above — the quota moved under this render
+            canPost = false;
+            selectedFile = null;
+            invalidateGuestPhotos();
+            throw new Error(PHOTO_ERRORS.group_full);
+          } else if (response.status === 404) {
+            inviteValid = false;
+            canPost = false;
+            selectedFile = null;
+            invalidateGuestPhotos();
+            throw new Error("Buka kembali tautan undanganmu untuk menambahkan gambar.");
+          } else if (response.status === 400) {
             selectedFile = null; // Invalid input needs a new selection, not a retry.
-            throw new Error(
-              PHOTO_ERRORS[payload.error ?? ""] ?? "Pilih gambar lain dan coba lagi.",
-            );
+            throw new Error(PHOTO_ERRORS[code] ?? "Pilih gambar lain dan coba lagi.");
+          } else {
+            uncertain = true; // A 503 may conceal a commit whose reconciliation failed.
+            canPost = false;
+            invalidateGuestPhotos();
+            throw new Error("Gambar belum berhasil diunggah. Coba lagi.");
           }
-          uncertain = true; // A 503 may conceal a commit whose reconciliation failed.
-          canPost = false;
-          invalidateGuestPhotos();
-          throw new Error("Gambar belum berhasil diunggah. Coba lagi.");
         }
       } else {
         invalidateGuestPhotos();
@@ -213,7 +377,9 @@ export function initPhotoTrail(controls: HTMLElement): () => void {
     }
   };
 
-  const reload = async () => {
+  // Named apart from `window.location.reload()` on purpose: this module calls
+  // both, and a bare `reload()` next to a full-page reload is a refactor hazard.
+  const reloadPhotos = async () => {
     if (disposed || state === "uploading") return;
     if (uncertain || (committed && state !== "success")) {
       void submit();
@@ -235,7 +401,18 @@ export function initPhotoTrail(controls: HTMLElement): () => void {
   };
 
   const open = () => {
-    if (disposed || !inviteValid || state !== "idle") return;
+    if (disposed || state !== "idle") return;
+    // Group identities never reach the file chooser. Slots open ⇒ the shared
+    // claim flow; quota exhausted ⇒ the read-only capacity state.
+    if (groupState === "claim") {
+      openClaimFlow();
+      return;
+    }
+    if (groupState === "full") {
+      showError(PHOTO_ERRORS.group_full);
+      return;
+    }
+    if (!inviteValid) return;
     if (committed || uncertain || selectedFile) {
       void submit();
     } else if (canPost) {
@@ -264,10 +441,10 @@ export function initPhotoTrail(controls: HTMLElement): () => void {
   };
   const cancel = () => button.focus({ preventScroll: true });
   const retry = () => {
-    if (document.visibilityState === "visible") void reload();
+    if (document.visibilityState === "visible") void reloadPhotos();
   };
   const posted = () => {
-    void reload();
+    void reloadPhotos();
   };
 
   const observer = new IntersectionObserver(reveal);
@@ -280,12 +457,13 @@ export function initPhotoTrail(controls: HTMLElement): () => void {
   window.addEventListener(GUEST_PHOTO_POSTED_EVENT, posted);
   window.addEventListener("focus", retry);
   document.addEventListener("visibilitychange", retry);
-  void reload();
+  void reloadPhotos();
 
   return () => {
     disposed = true;
     ++requestVersion;
     cancelAnimationFrame(revealFrame);
+    window.clearTimeout(groupRetryTimer);
     observer.disconnect();
     indicator?.destroy();
     button.removeEventListener("click", open);

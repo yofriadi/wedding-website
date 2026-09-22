@@ -2,6 +2,8 @@
 
 Photos are public. Each invitation can own one `guest_photos` row. Invitation display names remain private to invitation/admin features, not photo labels.
 
+A **group member** is an ordinary `invites` row with a `parent_id`, so it owns its own photo slot and is moderated exactly like a standalone invitation. The group row itself never owns a photo. Find a member's group with `SELECT id, display_name, parent_id, type FROM invites WHERE id = :invite_id;` — and treat those ids as private invitation access data, like every other `invite_id` below.
+
 ## Remove one photo
 
 1. Confirm the exact database and `PHOTO_STORAGE_DIR` from the running service. Take a matched database/photo backup. Stop application writers and all AVIF jobs before manual filesystem changes.
@@ -26,7 +28,12 @@ Photos are public. Each invitation can own one `guest_photos` row. Invitation di
 
 4. Remove or quarantine only `PHOTO_STORAGE_DIR/guest-photos/<reviewed-photo-id>/`. Validate the 12-character URL-safe ID and that the resolved directory stays under the configured root. Do not touch `apps/web/public/` or other upload directories. Restart only after database/filesystem handling is complete.
 
-Deleting the row frees that invitation's unique upload slot, so it can post again. **Do not delete the invitation as a ban**: dependent RSVP/photo foreign keys and shared-link semantics require a separate policy. No moderation API or ban feature is implemented.
+Deleting the row frees that invitation's unique upload slot, so it can post again — for a group member, that frees only _their_ slot, and the group's `claimedCount` is unchanged because the member row still exists.
+
+**Do not delete the invitation as a ban**: dependent RSVP/photo foreign keys and shared-link semantics require a separate policy. No moderation API or ban feature is implemented. Two group-specific consequences of that rule:
+
+- Deleting a group that still has member rows **fails** on the `invites.parent_id` self-foreign key (with foreign keys enabled). This is a backstop, not a procedure — never disable foreign keys to force it, and never delete the members first to work around it.
+- Removing a member row **fails** on the `rsvps`/`guest_photos` foreign keys as soon as that member has an RSVP or a photo — the same no-action protection that stops a group being deleted out from under its members. Even for a member with neither, removing the row releases that person's slot irreversibly, and it is _not_ how a double-claim is cleaned up. Double-claims from one person using several browsers are expected under cookie identity: they are visible in the admin list's per-group `members[]` breakdown and bounded by `max_members`. Do not hand-delete rows to resolve them — design an explicit, reviewed slot-release procedure first. One known cause deserves that procedure: a transient storage failure can leave a claim committed without its browser ever receiving the `Set-Cookie`, and the guest's retry then consumes a second slot (recorded as a residual risk in `openspec/changes/group-invitations/handoff.md`).
 
 Browser/CDN caches can keep already-served immutable photos; local removal does not remotely revoke them. Backups also retain removed content until their retention policy expires. Account for both if removal is privacy-sensitive.
 

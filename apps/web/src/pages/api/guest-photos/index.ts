@@ -7,6 +7,7 @@ import { publishGuestPhoto } from "../../../lib/guest-photo-upload";
 import type { GuestPhotosPayload } from "../../../lib/guest-photos";
 import { canonicalizePhoto } from "../../../lib/image-encode";
 import { notFound, resolveInvite, serviceUnavailable } from "../../../lib/invite-session";
+import { crossOriginPostForbidden, isSameOriginRequest } from "../../../lib/same-origin";
 import {
   detectPhotoType,
   MAX_PHOTO_BYTES,
@@ -51,12 +52,22 @@ export const POST: APIRoute = async ({ cookies, request }) => {
   if (resolution.status === "not_found") return notFound();
   if (resolution.status === "error") return serviceUnavailable();
 
-  const origin = request.headers.get("origin");
-  if (origin && origin !== new URL(request.url).origin)
-    return new Response(null, {
-      status: 403,
-      headers: { "Cache-Control": "no-store" },
-    });
+  // THE origin check for this endpoint — Astro's framework `checkOrigin` is
+  // disabled repo-wide (see lib/same-origin.ts), so nothing else inspects this
+  // request. Proxy-aware: behind the documented Caddy/HTTPS deployment
+  // `request.url` is `http://<host>` while the browser's Origin is `https://<host>`,
+  // and a naive comparison would 403 every legitimate upload. Placed BEFORE the
+  // authorization branch below, so a cross-origin caller learns nothing about
+  // group state, and before ANY multipart or storage handling, so nothing is
+  // persisted or even reserved for a refused request.
+  if (!isSameOriginRequest(request)) return crossOriginPostForbidden();
+
+  // A group cookie is a VALID but UNCLAIMED identity: reject before any multipart
+  // or storage handling so nothing is persisted or even reserved for it
+  // (guest-photos spec). Claimed members pass through exactly as standalone
+  // individuals do — each holds its own single photo slot.
+  if (resolution.invite.kind === "group") return json(409, { error: "claim_required" });
+
   if (!/^multipart\/form-data(?:;|$)/i.test(request.headers.get("content-type") ?? "")) {
     return json(400, { error: "invalid_body" });
   }

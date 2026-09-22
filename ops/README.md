@@ -14,7 +14,7 @@ BACKUP_DEST=/mnt/backup/wedding
 
 These are examples: verify the actual application's configuration first. Backup/restore scripts support only absolute local `file:` URLs, not remote libSQL databases. The application can use remote libSQL with `DATABASE_AUTH_TOKEN`, but remote backup, reset, and migration authorization require provider-specific procedures.
 
-Tables: `invites`, `rsvps`, `guest_photos`. Upload files:
+Tables: `invites`, `rsvps`, `guest_photos`. `invites` also holds **group rows** (`type = 'group'`, `max_members` 2-50) and their **member rows** (`type = 'individual'` with `parent_id` pointing at the group). Members are created only by `POST /api/invite/claim`, never by the admin endpoint, and each member owns its own RSVP and photo slot exactly like a standalone invitation — so counting invitations is not counting people, and a group's live member count is always `SELECT COUNT(*) FROM invites WHERE parent_id = <group id>`, never a stored column. Upload files:
 
 ```text
 photos/guest-photos/<12-character-photo-id>/photo.webp  # required canonical
@@ -76,7 +76,15 @@ Missing tables, SQL failures on either side, missing canonical files, or checksu
 
 ## Moderation and offline recovery
 
-See [MODERATION.md](MODERATION.md). Deleting a photo releases that invitation's posting slot; deleting an invitation is not a safe ban mechanism. Any orphan reconciliation requires stopped writers/AVIF jobs and explicit review, not automatic age-based deletion.
+See [MODERATION.md](MODERATION.md). Deleting a photo releases that invitation's posting slot; deleting an invitation is not a safe ban mechanism. The `invites.parent_id` self-foreign key is now a mechanical backstop on that rule: with foreign keys enabled, `DELETE FROM invites WHERE id = <group id>` **fails** for as long as the group has member rows, so a group cannot be removed out from under its members' RSVP and photo records. A memberless group can be deleted. Releasing a _slot_ (removing one member) is not implemented — the browser-side `?fresh=1` path only drops that browser's cookie and leaves the member row intact. Any orphan reconciliation requires stopped writers/AVIF jobs and explicit review, not automatic age-based deletion.
+
+## Origin checks and the TLS-terminating proxy
+
+`security.checkOrigin` is disabled in `apps/web/astro.config.mjs` — **do not re-enable it**. Astro derives `request.url`'s scheme from the socket, so behind `Caddyfile.example` (TLS terminated upstream, plain HTTP forwarded) it computes `http://<host>` while browsers send `Origin: https://<host>`. With the check on, every form-like and bodiless POST is rejected in production: guest photo upload and invite-open tracking both fail, while `/api/rsvp` keeps working because JSON bodies are exempt — which is exactly why this went unnoticed. `apps/web/tests/origin-guard.spec.ts` fails the build if it is turned back on.
+
+The replacement is `isSameOriginRequest()` in `apps/web/src/lib/same-origin.ts`, which reconstructs the public origin from `X-Forwarded-Proto`/`X-Forwarded-Host`. Every cookie-authenticated POST must call it; the same spec file fails if a new one does not. This requires the proxy to set those headers — Caddy, Traefik, and cloudflared all do. If you front the app with something that rewrites `Host` and sends no `X-Forwarded-Host`, that endpoint will 403 legitimate traffic.
+
+The clean long-term fix would be a single configured public origin (`site:` in `astro.config.mjs`, currently unset) compared against `Origin`, which removes header trust entirely. It needs a per-deployment env value and touches canonical-URL behaviour, so it is deliberately not part of this change.
 
 ## Deployment checks still pending
 
