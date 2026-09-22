@@ -208,8 +208,8 @@
      into crisp focus. Triggered sequentially after the couple names settle:
      1. Aisha & Yofri completes entrance at 50%
      2. Pernikahan blur reveals (53% → 66%)
-     3. Date blur reveals (63% → 76%)
-     4. Completed lockup stays pinned and held (76% → 100%) for a quiet reading beat */
+     3. Date blur reveals (59.5% → 72.5%, starting halfway through Pernikahan)
+     4. Completed lockup stays pinned and held (72.5% → 100%) for a quiet reading beat */
   @keyframes blur-reveal-pernikahan {
     0%, 53% {
       opacity: 0;
@@ -225,14 +225,14 @@
   }
 
   @keyframes blur-reveal-date {
-    0%, 63% {
+    0%, 59.5% {
       opacity: 0;
       filter: blur(16px);
     }
-    69% {
+    65.5% {
       opacity: 1;
     }
-    76%, 100% {
+    72.5%, 100% {
       opacity: 1;
       filter: blur(0px);
     }
@@ -400,8 +400,8 @@
         //     &: 39% → 46%
         //     Yofri: 43% → 50%
         // - Pernikahan blur reveal: 53% → 66%
-        // - Date blur reveal: 63% → 76%
-        // - Completed lockup stays held: 76% → 100%
+        // - Date blur reveal: 59.5% → 72.5% (starting halfway through Pernikahan)
+        // - Completed lockup stays held: 72.5% → 100%
         const zoomEnd = (travel * 28) / 100;
         const pauseEnd = (travel * 35) / 100;
         const aishaStart = (travel * 35) / 100;
@@ -412,8 +412,8 @@
         const yofriEnd = (travel * 50) / 100;
         const pernikahanStart = (travel * 53) / 100;
         const pernikahanEnd = (travel * 66) / 100;
-        const dateStart = (travel * 63) / 100;
-        const dateEnd = (travel * 76) / 100;
+        const dateStart = (travel * 59.5) / 100;
+        const dateEnd = (travel * 72.5) / 100;
 
         if (scrolled <= zoomEnd) {
           const progress = Math.min(scrolled / zoomEnd, 1);
