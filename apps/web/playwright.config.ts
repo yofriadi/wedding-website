@@ -27,5 +27,16 @@ export default defineConfig({
       name: "mobile-chrome",
       use: { ...devices["Pixel 7"] },
     },
+    {
+      // Media-tiering tasks 7.5/7.10 (archive gate): the video's exit
+      // detection reads `intersectionRatio` against a threshold list —
+      // semantics that diverge between engines — and the warm-cache verdict
+      // leans on the 304 `transferSize` shape, which is Chromium-measured but
+      // WebKit-reported-only. Run the tiering suite on WebKit; the rest of
+      // the suite synthesizes touch through CDP and stays Chromium-only.
+      name: "webkit",
+      use: { ...devices["Desktop Safari"] },
+      testIgnore: /^(?!.*media-tiering)/,
+    },
   ],
 });

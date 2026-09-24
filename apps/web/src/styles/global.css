@@ -4,12 +4,16 @@
 /* See the TailwindCSS v4 docs for more info: https://tailwindcss.com/docs/v4-beta */
 
 @theme {
-  /* Geist (variable, loaded via @fontsource-variable/geist in Layout.astro) —
-     the stack Magic UI's docs use. The previous "Inter" token resolved to a
-     family that was never loaded anywhere, so the whole site silently fell
-     back to system sans; the token now names a font that actually exists. */
-  --font-sans: "Geist Variable", "Geist", sans-serif;
-  --font-serif: "Fraunces Variable", "Fraunces", serif;
+  /* One family per typographic role (webfont-delivery). Both tokens resolve to the
+     variable family loaded by Layout.astro and then straight to the generic —
+     no static-instance name sits between them. The dropped entries were dead:
+     "Geist" came from `@fontsource/geist-sans`, which the variable Geist
+     supersedes at weights 100–900, and "Fraunces" was never loaded at all (the
+     package registers "Fraunces Variable"). The previous "Inter" token resolved
+     to a family that was never loaded anywhere, so the whole site silently fell
+     back to system sans; a name in the stack must name a font that exists. */
+  --font-sans: "Geist Variable", sans-serif;
+  --font-serif: "Fraunces Variable", serif;
 
   /* Motion easing tokens. JS twin: EASE_OUT_EXPO = [0.16, 1, 0.3, 1] — keep in sync. */
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);

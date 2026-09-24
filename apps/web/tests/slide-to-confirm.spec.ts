@@ -53,11 +53,6 @@ async function palette(page: Page, selector: string) {
       // `color(srgb r g b / a)` carries 0–1 channels; `rgb()/rgba()` carry 0–255.
       return out.startsWith("color(") ? [r * 255, g * 255, b * 255, a] : [r, g, b, a];
     };
-    // The leading color functions of a gradient value are its stops, in order.
-    const stops = (gradient: string, count: number) =>
-      (gradient.match(/(?:rgba?|color|hsla?|oklab|oklch)\([^)]*\)/g) ?? [])
-        .slice(0, count)
-        .map(resolve);
 
     const style = getComputedStyle(el);
     const handleStyle = getComputedStyle(el.querySelector(".slide-to-confirm__handle")!);
@@ -219,7 +214,6 @@ test.describe("slide-to-confirm", () => {
   test("light theme flips the polarity, and only the polarity", async ({ page }) => {
     await page.emulateMedia({ colorScheme: "dark" });
     await openFixture(page);
-    const dark = await palette(page, FRESH);
 
     await page.emulateMedia({ colorScheme: "light" });
     // The label's color rides the morph transition (380ms), so a live theme

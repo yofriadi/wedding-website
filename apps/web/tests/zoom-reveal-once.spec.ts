@@ -1,7 +1,12 @@
 import { test, expect } from "@playwright/test";
-import { dismissWelcomeGate } from "./helpers";
-
+import { dismissWelcomeGate, pinFullTier } from "./helpers";
 test.setTimeout(180_000);
+// Media-tiering task 7.3: every test here walks the pinned runway or asserts
+// the reduced-motion collapse, so the verdict must be `full` (or reduced
+// motion), never a measured `lite` from a busy-machine burst.
+test.beforeEach(({ page }) => {
+  pinFullTier(page);
+});
 
 /**
  * The center cover scale is measured from the stage rect (100svh), never from

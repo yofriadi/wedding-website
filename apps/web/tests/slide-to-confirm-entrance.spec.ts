@@ -286,12 +286,13 @@ test("scrolling back collapses the pill before lowering it", async ({ page }) =>
 test("when confirmed: circle rises, black pill expands, checkmark glides to far end, then label appears", async ({
   page,
 }) => {
+  // Wrap the CONFIRMED button in the scrollable stage. Anchored on its id
+  // and whitespace-tolerant: the dev server pretty-prints the generated
+  // fixture's markup (attributes split across lines), so exact-string
+  // replaces silently no-op and the wrapper never exists.
   const html = fixture
-    .replace(
-      '<button class="slide-to-confirm" type="button" disabled',
-      '<div data-confirmed-target><button class="slide-to-confirm" type="button" disabled',
-    )
-    .replace("</button></body>", "</button></div></body>")
+    .replace(/<button(?=[^>]*id="slide-confirmed")/, "<div data-confirmed-target><button")
+    .replace(/<\/button>(?=\s*<\/body>)/, "</button></div>")
     .replace(
       "</head>",
       `<style>
@@ -392,11 +393,10 @@ test("when confirmed: circle rises, black pill expands, checkmark glides to far 
 
 test("when confirmed: scrolling back collapses the pill before lowering it", async ({ page }) => {
   const html = fixture
-    .replace(
-      '<button class="slide-to-confirm" type="button" disabled',
-      '<div data-confirmed-target><button class="slide-to-confirm" type="button" disabled',
-    )
-    .replace("</button></body>", "</button></div></body>")
+    // Same id-anchored, whitespace-tolerant wrap as the confirmed-entrance
+    // test above: pretty-printed fixture markup breaks exact-string matches.
+    .replace(/<button(?=[^>]*id="slide-confirmed")/, "<div data-confirmed-target><button")
+    .replace(/<\/button>(?=\s*<\/body>)/, "</button></div>")
     .replace(
       "</head>",
       `<style>

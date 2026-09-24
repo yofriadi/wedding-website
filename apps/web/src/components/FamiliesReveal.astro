@@ -242,7 +242,9 @@ const isName = (w: string) => !NON_NAMES.has(w);
 		padding-block: 30lvh;
 		background-color: var(--families-bg);
 		color: var(--families-ink);
-		font-family: var(--font-sans, "Geist", sans-serif);
+		/* Fallback names no unloaded family (webfont-delivery): the token resolves to
+		   "Geist Variable" then straight to the generic. */
+		font-family: var(--font-sans, sans-serif);
 	}
 
 	@media (prefers-color-scheme: light) {

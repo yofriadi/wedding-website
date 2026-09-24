@@ -8,12 +8,9 @@ interface Props {
   inviteDisplayName?: string | null;
   rsvpAttending?: boolean | null;
   inviteKind?: InviteKind | null;
-  /** The group link for this visitor: a group cookie's own id, or a member's parent. */
-  groupLinkId?: string | null;
   /**
-   * Quota of the group this visitor belongs to: for a group cookie it is that
-   * group's own quota, for a MEMBER cookie it is the PARENT group's quota (used
-   * only to decide whether the release control is safe to offer).
+   * Quota of the group this visitor belongs to: used to evaluate whether
+   * the group is at capacity.
    */
   groupQuota?: { maxMembers: number; claimedCount: number } | null;
 }
@@ -22,43 +19,17 @@ const {
   inviteDisplayName = null,
   rsvpAttending = null,
   inviteKind = null,
-  groupLinkId = null,
   groupQuota = null,
 } = Astro.props;
 
 const hasIdentity = typeof inviteDisplayName === "string" && inviteDisplayName.length > 0;
 // A group cookie is a VALID but UNCLAIMED identity: it never gets the confirm
-// button. It gets the name-prompt claim form while slots remain, or the
+// button until claimed. It gets the read-only guidance while slots remain, or the
 // read-only capacity state once the quota is exhausted.
 const isGroupIdentity = hasIdentity && inviteKind === "group";
 const isInvitee = hasIdentity && !isGroupIdentity;
-const isMember = isInvitee && inviteKind === "member";
 const groupAtCapacity =
   isGroupIdentity && groupQuota !== null && groupQuota.claimedCount >= groupQuota.maxMembers;
-// Fail CLOSED on unknown quota. `groupAtCapacity` requires a non-null quota, so
-// without this third term a group cookie with no quota data would render the
-// name-prompt form — the exact submit → 409 → reload → submit loop that
-// `index.astro` degrades to anonymous to avoid. `index.astro` never passes a null
-// quota for a group today, but the component's own contract should not depend on
-// that; this also makes the claim path fail closed the same way the release path
-// below already does.
-const canClaimSlot = isGroupIdentity && groupQuota !== null && !groupAtCapacity;
-// The release is one-way: it drops a member id that exists only in the cookie.
-// Offering it while the parent group is FULL would strand that member — no slot
-// could ever be re-claimed — so at capacity there is no release affordance at
-// all. It would help nobody either: the second household member the release
-// exists to unblock cannot claim a slot that does not exist.
-const parentGroupFull =
-  isMember && groupQuota !== null && groupQuota.claimedCount >= groupQuota.maxMembers;
-// Fail CLOSED: with no quota data the release is not offered at all. `index.astro`
-// sets groupLinkId and groupQuota together so this is unreachable today, but the
-// component's own contract should not depend on that — offering an irreversible
-// destructive affordance on *unknown* quota is the wrong default. Folding the
-// guards into the value also keeps `releaseHref` member-only by construction.
-const releaseHref =
-  isMember && groupLinkId && groupQuota !== null && !parentGroupFull
-    ? `/${groupLinkId}?fresh=1`
-    : null;
 
 // A stored "attending" is the only state that renders the confirmed button;
 // "declined" and "never answered" both get the fresh one (the POST upserts over
@@ -104,11 +75,12 @@ const countDigits = String(confirmedCount);
 </div>
 
 {
-  isInvitee ? (
+  (isInvitee || (isGroupIdentity && !groupAtCapacity)) && (
     <form
       id="rsvp-form"
       class="pt-4 space-y-6"
       data-rsvp-form
+      hidden={isGroupIdentity ? true : undefined}
     >
       {/* tabindex="-1": the confirmed button is `disabled`, and a disabled
           control is barred from focus, so this wrapper is what keeps the
@@ -125,117 +97,41 @@ const countDigits = String(confirmedCount);
         </SlideToConfirm>
       </div>
 
-
       <p data-rsvp-error class="hidden text-sm text-[color:var(--rsvp-error)]" role="alert" />
       {/* Always rendered (never display:none) so it is a live region the
           first time it is written to. */}
       <p data-rsvp-note class="text-sm text-[color:var(--rsvp-muted)]" aria-live="polite" />
     </form>
-  ) : canClaimSlot ? (
-    /* Without scripting, a submit must not carry the guest's name in the URL —
-       that would leak a private display name into history and any Referrer. POST
-       keeps it in the body; the endpoint answers 400 for a non-JSON body, which
-       is a poor no-script experience but leaks nothing, and every surface on
-       this site already requires scripting. */
-    <form
-      id="claim-form"
-      class="pt-4 space-y-6"
-      data-claim-form
-      method="post"
-      action="/api/invite/claim"
-    >
-      <p class="text-sm leading-relaxed text-[color:var(--rsvp-muted)] max-w-md mx-auto text-pretty">
-        This invitation is shared with your group. Claim your own spot to confirm your
-        attendance and add your photo.
-      </p>
-      <div class="flex flex-col items-center gap-3">
-        <label
-          for="claim-display-name"
-          class="text-xs tracking-widest uppercase text-[color:var(--rsvp-muted)]"
-        >
-          Your name
-        </label>
-        <input
-          id="claim-display-name"
-          name="displayName"
-          type="text"
-          required
-          maxlength="120"
-          autocomplete="name"
-          placeholder="Your name"
-          class="claim-field"
-          data-claim-name
-        />
-        <button type="submit" class="claim-button" data-claim-submit>Claim Your Spot</button>
+  )
+}
+
+{
+  isGroupIdentity ? (
+    <>
+      <div class="pt-12 space-y-3" data-scroll-fade data-group-capacity hidden={groupAtCapacity ? undefined : true}>
+        <p class="text-xs tracking-widest uppercase text-[color:var(--rsvp-muted)]">
+          This group invitation is at capacity
+        </p>
+        <p class="text-sm leading-relaxed text-[color:var(--rsvp-muted)] max-w-md mx-auto text-pretty">
+          Every spot has been claimed. You are still very welcome to browse and enjoy the
+          memories — thank you for being part of our story.
+        </p>
       </div>
-      <p data-claim-error class="hidden text-sm text-[color:var(--rsvp-error)]" role="alert" />
-      {/* Always rendered so it is a live region the first time it is written to. */}
-      <p data-claim-note class="text-sm text-[color:var(--rsvp-muted)]" aria-live="polite" />
-    </form>
-  ) : isGroupIdentity ? (
-    <div class="pt-12 space-y-3" data-scroll-fade data-group-capacity>
-      {/* Reached when a group identity can neither claim nor has a known-exhausted
-          quota — i.e. genuinely at capacity, OR `groupQuota === null`. The second case
-          is unreachable from index.astro (both of its branches degrade a group with an
-          unreadable quota to anonymous, and readGroupQuota throws rather than returning
-          null on a DB error), so this copy is only ever shown when the group really is
-          full. Failing closed into "at capacity" rather than into the name-prompt form
-          is deliberate: that form would loop submit → 409 → reload. If a caller ever
-          passed a group kind with a null quota this branch would say "at capacity"
-          when the truth is "unknown" — acceptable, but worth knowing. */}
-      <p class="text-xs tracking-widest uppercase text-[color:var(--rsvp-muted)]">
-        This group invitation is at capacity
-      </p>
-      <p class="text-sm leading-relaxed text-[color:var(--rsvp-muted)] max-w-md mx-auto text-pretty">
-        Every spot has been claimed. You are still very welcome to browse and enjoy the
-        memories — thank you for being part of our story.
-      </p>
-    </div>
-  ) : (
+      <div class="pt-12 space-y-3" data-scroll-fade data-claim-guidance hidden={groupAtCapacity ? true : undefined}>
+        <p class="text-sm leading-relaxed text-[color:var(--rsvp-muted)] max-w-md mx-auto text-pretty">
+          Buka kembali tautan undangan untuk mengklaim tempat.
+        </p>
+      </div>
+    </>
+  ) : !isInvitee ? (
     <div class="pt-12" data-scroll-fade>
       <p class="text-xs tracking-widest uppercase text-[color:var(--rsvp-muted)]">
         RSVP through your personal invitation link
       </p>
     </div>
-  )
-}
-
-{
-  releaseHref ? (
-    <p class="pt-6 text-sm" data-release-wrap>
-      {/* A BUTTON, not an anchor. With a static href the two-step is bypassed by
-          every gesture that does not fire `click`: middle-click/auxclick, the
-          context menu's "Open Link in New Tab", iOS long-press (the shared
-          family phone this feature exists for), dragging to the bookmarks bar,
-          Copy Link Address, and a single tap with scripting disabled. All of
-          those reach /{groupId}?fresh=1 with Sec-Fetch-Site same-origin or none
-          plus Sec-Fetch-Dest document — straight through the server-side gate.
-          `location.assign` from our own page sends the same Sec-Fetch metadata,
-          so the gate still passes, and with no URL in the DOM there is nothing
-          for those gestures to act on. */}
-      <button
-        type="button"
-        class="claim-release"
-        data-release-control
-        data-release-href={releaseHref}
-        data-armed="false"
-        aria-describedby="rsvp-release-desc"
-      >
-        Not you? Claim your own spot
-      </button>
-      {/* Static description, kept SEPARATE from the announcement region: writing
-          "Release cancelled." into an aria-describedby target would make it the
-          control's permanent description on every later focus. */}
-      <span id="rsvp-release-desc" class="sr-only">
-        Two-step control: activate once to arm, then again to confirm.
-      </span>
-      {/* The armed state is otherwise conveyed only by the visual label swap, so
-          a screen reader needs its own announcement that a SECOND activation is
-          required — without it the control silently seems inert. */}
-      <span class="sr-only" data-release-hint aria-live="polite" />
-    </p>
   ) : null
 }
+
 
 <p
   data-scroll-fade
@@ -258,60 +154,6 @@ const countDigits = String(confirmedCount);
   </div>
 </div>
 
-<style>
-  .claim-field {
-    width: 100%;
-    max-width: 20rem;
-    padding: 0.625rem 1.125rem;
-    border: 1px solid color-mix(in srgb, var(--rsvp-muted) 45%, transparent);
-    border-radius: 999px;
-    background: transparent;
-    color: var(--rsvp-fg);
-    font-size: 0.9375rem;
-    text-align: center;
-  }
-  .claim-field::placeholder { color: var(--rsvp-muted); }
-  .claim-field:focus-visible {
-    outline: 2px solid var(--rsvp-fg);
-    outline-offset: 2px;
-  }
-
-  .claim-button {
-    padding: 0.625rem 1.75rem;
-    border: 1px solid color-mix(in srgb, var(--rsvp-fg) 30%, transparent);
-    border-radius: 999px;
-    background: transparent;
-    color: var(--rsvp-fg);
-    font-size: 0.9375rem;
-    font-weight: 500;
-    letter-spacing: -0.015em;
-    cursor: pointer;
-    transition: background-color 160ms ease;
-  }
-  .claim-button:hover { background: color-mix(in srgb, var(--rsvp-fg) 10%, transparent); }
-  .claim-button:disabled { cursor: default; opacity: 0.55; }
-  .claim-button:focus-visible { outline: 2px solid var(--rsvp-fg); outline-offset: 4px; }
-
-  .claim-release {
-    /* Rendered as a <button> (see the markup note) — strip the UA chrome so it
-       still reads as the inline text link it replaces. */
-    background: none;
-    border: 0;
-    padding: 0;
-    font: inherit;
-    color: var(--rsvp-muted);
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 0.25em;
-    cursor: pointer;
-  }
-  .claim-release[data-armed="true"] { color: var(--rsvp-fg); }
-  .claim-release:focus-visible { outline: 2px solid var(--rsvp-fg); outline-offset: 3px; }
-
-  @media (prefers-reduced-motion: reduce) {
-    .claim-button { transition: none; }
-  }
-</style>
 
 <script>
   import "./number-ticker";
@@ -394,8 +236,7 @@ const countDigits = String(confirmedCount);
           body: JSON.stringify({ attending: true }),
         });
         if (!res.ok) {
-          // A stale render (e.g. this browser released its member identity
-          // elsewhere) can still POST as a group. Reload so every server-rendered
+          // A stale render can still POST as a group. Reload so every server-rendered
           // surface re-resolves identity, instead of showing a generic failure
           // the guest cannot act on.
           if (res.status === 409) {
@@ -441,180 +282,20 @@ const countDigits = String(confirmedCount);
         showError("Couldn't save your RSVP. Please try again.");
       }
     });
-  }
-
-  // Group claim flow (server-rendered; absent for individual and anonymous
-  // visitors). This is the ONE claim affordance on the page — the photo CTA
-  // routes here rather than rendering a second prompt.
-  const claimForm = document.querySelector("[data-claim-form]");
-  if (claimForm instanceof HTMLFormElement) {
-    const nameInput = claimForm.querySelector<HTMLInputElement>("[data-claim-name]");
-    const claimBtn = claimForm.querySelector<HTMLButtonElement>("[data-claim-submit]");
-    const claimError = claimForm.querySelector<HTMLElement>("[data-claim-error]");
-    const claimNote = claimForm.querySelector<HTMLElement>("[data-claim-note]");
-    let claiming = false;
-
-    const showClaimError = (message: string) => {
-      if (claimNote) claimNote.textContent = "";
-      if (claimError) {
-        claimError.textContent = message;
-        claimError.classList.toggle("hidden", message === "");
-      }
-    };
-
-    // Shown when a claim's outcome is UNKNOWN — a 503, or a fetch that threw. A
-    // claim can commit and then lose its response (a storage failure after the
-    // INSERT, or a connection reset mid-statement), in which case the browser
-    // never received the new cookie and the guest still looks unclaimed. Retrying
-    // then mints a SECOND member row out of a quota that may be 2. The guest
-    // cannot check for themselves — member names are private — so the copy has to
-    // steer them away from a blind retry. Accepted residual risk; see design.md.
-    const AMBIGUOUS_CLAIM_COPY =
-      "Something went wrong and your spot may already be claimed. Please don't keep retrying — reload the page, and if this form is still here, let us know and we'll sort it out.";
-
-    claimForm.addEventListener("submit", async (event) => {
-      event.preventDefault();
-      if (claiming) return;
-      const displayName = (nameInput?.value ?? "").trim();
-      if (!displayName) {
-        showClaimError("Please enter your name.");
-        nameInput?.focus();
-        return;
-      }
-      claiming = true;
-      if (claimBtn) claimBtn.disabled = true;
-      showClaimError("");
-      if (claimNote) claimNote.textContent = "Claiming your spot…";
-      try {
-        const res = await fetch("/api/invite/claim", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          cache: "no-store",
-          body: JSON.stringify({ displayName }),
-        });
-        // 201 first claim, 200 already a member: either way this browser now
-        // holds a member identity.
-        if (res.status === 201 || res.status === 200) {
-          if (claimNote) claimNote.textContent = "Spot claimed — reloading…";
-          // FULL PAGE RELOAD on purpose: the confirm-reservation control is
-          // server-rendered and absent from group-cookie HTML, so only a reload
-          // puts RSVP, greeting, and photo surfaces on one consistent identity.
-          window.location.reload();
-          return;
-        }
-        const body = (await res.json().catch(() => null)) as { error?: string } | null;
-        if (res.status === 409 || res.status === 404) {
-          // group_full, claim_required, or a cookie that went stale mid-session:
-          // reload so the server re-resolves and paints the correct state.
-          window.location.reload();
-          return;
-        }
-        if (res.status === 400) {
-          showClaimError(
-            body?.error === "display_name_too_long"
-              ? "That name is too long (120 characters max)."
-              : "Please enter your name.",
-          );
-        } else if (res.status === 403) {
-          // cross_origin_post: a definite failure, nothing committed, so a plain
-          // retry is safe.
-          showClaimError("Couldn't claim your spot. Please try again.");
-        } else if (res.status >= 500) {
-          // Outcome UNKNOWN — see AMBIGUOUS_CLAIM_COPY. This is `>= 500`, NOT
-          // `=== 503`: behind the documented Caddy deployment a process death or a
-          // connection reset between the committed INSERT and the response write
-          // surfaces as a 502/504 synthesised by the PROXY, never as a 503 from the
-          // app. That is precisely the shape the accepted residual risk takes in
-          // production, so matching only 503 would show the plain retry copy for
-          // the one case this rewording exists to prevent — and a blind retry there
-          // mints a second member row out of a quota that may be 2.
-          showClaimError(AMBIGUOUS_CLAIM_COPY);
-        } else {
-          // Anything else unforeseen and non-5xx: treat as a definite failure.
-          showClaimError("Couldn't claim your spot. Please try again.");
-        }
-      } catch {
-        // The request may still have reached the server, so this is ambiguous too.
-        showClaimError(AMBIGUOUS_CLAIM_COPY);
-      } finally {
-        claiming = false;
-        if (claimBtn) claimBtn.disabled = false;
-      }
+    window.addEventListener("claim:success", () => {
+      form.removeAttribute("hidden");
+      const guidance = document.querySelector("[data-claim-guidance]");
+      if (guidance) guidance.setAttribute("hidden", "");
     });
   }
 
-  // "Not you?" release — a TWO-STEP confirmation on a BUTTON (see the markup for
-  // why not an anchor). The release is one-way for this browser, because the
-  // member id lives only in the cookie, and a re-claim consumes another slot —
-  // so no single gesture may navigate.
-  const releaseControl = document.querySelector<HTMLButtonElement>("[data-release-control]");
-  if (releaseControl) {
-    const releaseHref = releaseControl.dataset.releaseHref ?? "";
-    const baseLabel = releaseControl.textContent ?? "";
-    const hint = document.querySelector<HTMLElement>("[data-release-hint]");
-    const say = (message: string) => {
-      if (hint) hint.textContent = message;
-    };
-    // A nervous double-tap must not pass for a considered two-step: both
-    // activations would otherwise land inside ~200ms, the first arming and the
-    // second navigating — one accidental gesture, not a confirmation.
-    const MIN_ARMED_MS = 450;
-    // The armed hint is ~24 words (15–20s at a default screen-reader rate),
-    // longer than the auto-disarm, so the countdown must not fire while the
-    // control holds focus. A self-rescheduling tick checks focus AT FIRE TIME.
-    // focusin/focusout listeners cannot work here: focusin fires BEFORE click for
-    // mouse, touch, and VoiceOver activation, so nothing ever pauses the first
-    // timer — and clearing on focusin could leave the control armed with no
-    // pending timer at all, i.e. armed forever on a shared browser.
-    const DISARM_MS = 6000;
-    let armed = false;
-    let armedAt = 0;
-    let disarmTimer = 0;
-    const disarm = (message: string) => {
-      armed = false;
-      window.clearTimeout(disarmTimer);
-      disarmTimer = 0;
-      releaseControl.textContent = baseLabel;
-      releaseControl.setAttribute("data-armed", "false");
-      // Emptying a live region announces nothing, and a reverted accessible name
-      // is not announced either — so say it explicitly. Otherwise the next
-      // activation silently re-arms instead of releasing.
-      say(message);
-    };
-    const onDisarmTick = () => {
-      if (armed && releaseControl.matches(":focus")) {
-        disarmTimer = window.setTimeout(onDisarmTick, DISARM_MS);
-        return;
-      }
-      disarm("Release cancelled.");
-    };
-    releaseControl.addEventListener("click", () => {
-      if (armed) {
-        if (performance.now() - armedAt < MIN_ARMED_MS) {
-          // Too fast to be deliberate. Refuse — and SAY so, because with no
-          // feedback the control just looks broken, to a screen-reader user
-          // especially.
-          armedAt = performance.now();
-          say("Wait a moment, then activate again to confirm.");
-          return;
-        }
-        // Stop the pending tick before the document unloads, or a slow navigation
-        // can announce "Release cancelled." over a release that succeeded.
-        window.clearTimeout(disarmTimer);
-        disarmTimer = 0;
-        armed = false;
-        say("Releasing this identity…");
-        if (releaseHref) window.location.assign(releaseHref);
-        return;
-      }
-      armed = true;
-      armedAt = performance.now();
-      releaseControl.textContent = "Tap again to release this identity";
-      releaseControl.setAttribute("data-armed", "true");
-      say(
-        "Releasing returns this browser to the shared group invitation. Activate the control again to confirm. This cannot be undone here, and claiming again uses another spot.",
-      );
-      disarmTimer = window.setTimeout(onDisarmTick, DISARM_MS);
-    });
-  }
+  window.addEventListener("claim:capacity", () => {
+    const rsvpFormEl = document.querySelector("[data-rsvp-form]");
+    if (rsvpFormEl) rsvpFormEl.setAttribute("hidden", "");
+    const guidance = document.querySelector("[data-claim-guidance]");
+    if (guidance) guidance.setAttribute("hidden", "");
+    const capacityNotice = document.querySelector("[data-group-capacity]");
+    if (capacityNotice) capacityNotice.removeAttribute("hidden");
+  });
+
 </script>

@@ -30,6 +30,12 @@ packages/db/local.db-wal
 **/.artifacts
 **/.wrangler
 **/.astro
+# Derived responsive variants: up to 85 files (84 derivatives plus manifest.json),
+# and on a restored machine the derivatives
+# are derivatives of REAL private photos. `prebuild` regenerates them inside the
+# image from whatever masters the context carries, so shipping them is both
+# bloat and a leak of private media into the build context and its cache.
+**/public/generated
 .agents
 .pi
 skills-lock.json

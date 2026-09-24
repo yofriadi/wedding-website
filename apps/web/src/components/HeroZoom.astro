@@ -1,15 +1,26 @@
 ---
+// Hero media URLs are shared with the document-head preload in
+// pages/index.astro so the hint cannot drift from this `<img>` (see the module
+// comment for why a bare-href preload would double-fetch).
+import {
+  HERO_BLUR_AVIF,
+  HERO_BLUR_WEBP,
+  HERO_FALLBACK_SRC,
+  HERO_SIZES,
+  HERO_SRCSET_AVIF,
+  HERO_SRCSET_WEBP,
+} from "../lib/hero-media";
 ---
 <section class="relative hero-scroll" id="hero-container">
   <div class="hero-stage sticky top-0 w-full overflow-hidden">
     <!-- Sharp image stays visible while the hero zooms out. -->
     <picture>
-      <source srcset="/wedding_photo-390.avif 390w, /wedding_photo-640.avif 640w, /wedding_photo.avif 768w, /wedding_photo-1024.avif 1024w, /wedding_photo-1536.avif 1536w" sizes="min(280vw, 1536px)" type="image/avif" />
-      <source srcset="/wedding_photo-390.webp 390w, /wedding_photo-640.webp 640w, /wedding_photo.webp 768w, /wedding_photo-1024.webp 1024w, /wedding_photo-1536.webp 1536w" sizes="min(280vw, 1536px)" type="image/webp" />
+      <source srcset={HERO_SRCSET_AVIF} sizes={HERO_SIZES} type="image/avif" />
+      <source srcset={HERO_SRCSET_WEBP} sizes={HERO_SIZES} type="image/webp" />
       <img
-        src="/wedding_photo-1024.webp"
-        srcset="/wedding_photo-390.webp 390w, /wedding_photo-640.webp 640w, /wedding_photo.webp 768w, /wedding_photo-1024.webp 1024w, /wedding_photo-1536.webp 1536w"
-        sizes="min(280vw, 1536px)"
+        src={HERO_FALLBACK_SRC}
+        srcset={HERO_SRCSET_WEBP}
+        sizes={HERO_SIZES}
         width="1024"
         height="1835"
         alt="Aisha Amalia and Yofriadi Yahya displaying their wedding rings"
@@ -22,10 +33,10 @@
     </picture>
     <!-- Pre-blurred layer fades in instead of animating an expensive CSS filter. -->
     <picture>
-      <source src="/wedding_photo_blur.avif" type="image/avif" />
-      <source src="/wedding_photo_blur.webp" type="image/webp" />
+      <source src={HERO_BLUR_AVIF} type="image/avif" />
+      <source src={HERO_BLUR_WEBP} type="image/webp" />
       <img
-        src="/wedding_photo_blur.webp"
+        src={HERO_BLUR_WEBP}
         width="768"
         height="1376"
         alt=""

@@ -5,7 +5,13 @@
   Regenerate: pnpm dev:bare && node scripts/make-slide-to-confirm-fixture.mjs
   Consumed by: apps/web/tests/slide-to-confirm.spec.ts (rsvp-star-confirm 1.4 / 3.2).
 -->
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>SlideToConfirm fixture</title><style>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SlideToConfirm fixture</title>
+    <style>
       html {
         color-scheme: light dark;
         background: #0a0a0a;
@@ -27,842 +33,1024 @@
         letter-spacing: 0.1em;
         text-transform: uppercase;
       }
-    </style><style>.slide-to-confirm[data-astro-cid-kj3nfrvf] {
-  --slide-to-confirm-track: #262626;
-  --slide-to-confirm-surface: #fafafa;
-  --slide-to-confirm-ink: #fafafa;
-  --slide-to-confirm-handle-ink: #0a0a0a;
-  --slide-to-confirm-confirmed: #000;
-  --slide-to-confirm-confirmed-label: #fafafa;
-  --slide-to-confirm-radius: 50px;
-  --slide-to-confirm-height: 58px;
-  --slide-to-confirm-handle-width: 50px;
-  --slide-to-confirm-inset: 4px;
-  --slide-to-confirm-duration-morph: .38s;
-  --slide-to-confirm-duration-fill: .52s;
-  --slide-to-confirm-duration-handle: .22s;
-  --slide-to-confirm-delay-handle: .26s;
-  --slide-to-confirm-rise-duration: .2s;
-  --slide-to-confirm-expand-duration: .5s;
-  --slide-to-confirm-collapsed-inset: calc((100% - var(--slide-to-confirm-height)) / 2);
-  --slide-to-confirm-pad-x: clamp(.75rem, 4vw, 3.5rem);
-  --slide-to-confirm-font-size: .875rem;
-  --slide-to-confirm-line-height: 1.5rem;
-  --slide-to-confirm-font-weight: 500;
-  --slide-to-confirm-letter-spacing: normal;
-  --slide-to-confirm-text-transform: none;
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 288px;
-  max-width: 100%;
-  height: var(--slide-to-confirm-height);
-  border: 1px solid var(--slide-to-confirm-track);
-  border-radius: var(--slide-to-confirm-radius);
-  background-color: var(--slide-to-confirm-track);
-  color: var(--slide-to-confirm-ink);
-  font-family: inherit;
-  font-size: var(--slide-to-confirm-font-size);
-  font-weight: var(--slide-to-confirm-font-weight);
-  line-height: var(--slide-to-confirm-line-height);
-  letter-spacing: var(--slide-to-confirm-letter-spacing);
-  text-transform: var(--slide-to-confirm-text-transform);
-  cursor: grab;
-  -webkit-tap-highlight-color: transparent;
-  user-select: none;
-  touch-action: none;
-  transition: transform .16s ease-out;
-}
+    </style>
+    <style>
+      .slide-to-confirm[data-astro-cid-kj3nfrvf] {
+        --slide-to-confirm-track: #262626;
+        --slide-to-confirm-surface: #fafafa;
+        --slide-to-confirm-ink: #fafafa;
+        --slide-to-confirm-handle-ink: #0a0a0a;
+        --slide-to-confirm-confirmed: #000;
+        --slide-to-confirm-confirmed-label: #fafafa;
+        --slide-to-confirm-radius: 50px;
+        --slide-to-confirm-height: 58px;
+        --slide-to-confirm-handle-width: 50px;
+        --slide-to-confirm-inset: 4px;
+        --slide-to-confirm-duration-morph: 0.38s;
+        --slide-to-confirm-duration-fill: 0.52s;
+        --slide-to-confirm-duration-handle: 0.22s;
+        --slide-to-confirm-delay-handle: 0.26s;
+        --slide-to-confirm-rise-duration: 0.2s;
+        --slide-to-confirm-expand-duration: 0.5s;
+        --slide-to-confirm-collapsed-inset: calc((100% - var(--slide-to-confirm-height)) / 2);
+        --slide-to-confirm-pad-x: clamp(0.75rem, 4vw, 3.5rem);
+        --slide-to-confirm-font-size: 0.875rem;
+        --slide-to-confirm-line-height: 1.5rem;
+        --slide-to-confirm-font-weight: 500;
+        --slide-to-confirm-letter-spacing: normal;
+        --slide-to-confirm-text-transform: none;
+        position: relative;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 288px;
+        max-width: 100%;
+        height: var(--slide-to-confirm-height);
+        border: 1px solid var(--slide-to-confirm-track);
+        border-radius: var(--slide-to-confirm-radius);
+        background-color: var(--slide-to-confirm-track);
+        color: var(--slide-to-confirm-ink);
+        font-family: inherit;
+        font-size: var(--slide-to-confirm-font-size);
+        font-weight: var(--slide-to-confirm-font-weight);
+        line-height: var(--slide-to-confirm-line-height);
+        letter-spacing: var(--slide-to-confirm-letter-spacing);
+        text-transform: var(--slide-to-confirm-text-transform);
+        cursor: grab;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+        touch-action: none;
+        transition: transform 0.16s ease-out;
+      }
 
-.slide-to-confirm[data-astro-cid-kj3nfrvf]:not(.slide-to-confirm--confirmed):active {
-  transform: scale(.97);
-}
+      .slide-to-confirm[data-astro-cid-kj3nfrvf]:not(.slide-to-confirm--confirmed):active {
+        transform: scale(0.97);
+      }
 
-.slide-to-confirm--dragging[data-astro-cid-kj3nfrvf] {
-  cursor: grabbing;
-}
+      .slide-to-confirm--dragging[data-astro-cid-kj3nfrvf] {
+        cursor: grabbing;
+      }
 
-@media (prefers-color-scheme: light) {
-  .slide-to-confirm[data-astro-cid-kj3nfrvf] {
-    --slide-to-confirm-track: #f5f5f5;
-    --slide-to-confirm-surface: #0a0a0a;
-    --slide-to-confirm-ink: #0a0a0a;
-    --slide-to-confirm-handle-ink: #fafafa;
-  }
-}
+      @media (prefers-color-scheme: light) {
+        .slide-to-confirm[data-astro-cid-kj3nfrvf] {
+          --slide-to-confirm-track: #f5f5f5;
+          --slide-to-confirm-surface: #0a0a0a;
+          --slide-to-confirm-ink: #0a0a0a;
+          --slide-to-confirm-handle-ink: #fafafa;
+        }
+      }
 
-.slide-to-confirm[data-astro-cid-kj3nfrvf]:disabled {
-  cursor: default;
-}
+      .slide-to-confirm[data-astro-cid-kj3nfrvf]:disabled {
+        cursor: default;
+      }
 
-.slide-to-confirm[data-astro-cid-kj3nfrvf]:focus-visible {
-  outline: 2px solid var(--slide-to-confirm-surface);
-  outline-offset: 3px;
-}
+      .slide-to-confirm[data-astro-cid-kj3nfrvf]:focus-visible {
+        outline: 2px solid var(--slide-to-confirm-surface);
+        outline-offset: 3px;
+      }
 
-.slide-to-confirm__label[data-astro-cid-kj3nfrvf] {
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 var(--slide-to-confirm-pad-x);
-  white-space: nowrap;
-  color: var(--slide-to-confirm-ink);
-  opacity: var(--slide-to-confirm-label-opacity, 1);
-  pointer-events: none;
-}
+      .slide-to-confirm__label[data-astro-cid-kj3nfrvf] {
+        position: absolute;
+        inset: 0;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 var(--slide-to-confirm-pad-x);
+        white-space: nowrap;
+        color: var(--slide-to-confirm-ink);
+        opacity: var(--slide-to-confirm-label-opacity, 1);
+        pointer-events: none;
+      }
 
-.slide-to-confirm__handle[data-astro-cid-kj3nfrvf] {
-  position: absolute;
-  top: var(--slide-to-confirm-inset);
-  bottom: var(--slide-to-confirm-inset);
-  left: var(--slide-to-confirm-inset);
-  z-index: 1;
-  width: var(--slide-to-confirm-handle-width);
-  display: grid;
-  place-items: center;
-  border-radius: calc(var(--slide-to-confirm-radius) - var(--slide-to-confirm-inset));
-  background-color: var(--slide-to-confirm-surface);
-  color: var(--slide-to-confirm-handle-ink);
-  transform: translateX(var(--slide-to-confirm-x, 0px));
-  cursor: grab;
-  will-change: transform;
-}
+      .slide-to-confirm__handle[data-astro-cid-kj3nfrvf] {
+        position: absolute;
+        top: var(--slide-to-confirm-inset);
+        bottom: var(--slide-to-confirm-inset);
+        left: var(--slide-to-confirm-inset);
+        z-index: 1;
+        width: var(--slide-to-confirm-handle-width);
+        display: grid;
+        place-items: center;
+        border-radius: calc(var(--slide-to-confirm-radius) - var(--slide-to-confirm-inset));
+        background-color: var(--slide-to-confirm-surface);
+        color: var(--slide-to-confirm-handle-ink);
+        transform: translateX(var(--slide-to-confirm-x, 0px));
+        cursor: grab;
+        will-change: transform;
+      }
 
-.slide-to-confirm--dragging[data-astro-cid-kj3nfrvf] .slide-to-confirm__handle[data-astro-cid-kj3nfrvf] {
-  cursor: grabbing;
-}
+      .slide-to-confirm--dragging[data-astro-cid-kj3nfrvf]
+        .slide-to-confirm__handle[data-astro-cid-kj3nfrvf] {
+        cursor: grabbing;
+      }
 
-.slide-to-confirm[data-astro-cid-kj3nfrvf]:disabled .slide-to-confirm__handle[data-astro-cid-kj3nfrvf] {
-  cursor: default;
-}
+      .slide-to-confirm[data-astro-cid-kj3nfrvf]:disabled
+        .slide-to-confirm__handle[data-astro-cid-kj3nfrvf] {
+        cursor: default;
+      }
 
-.slide-to-confirm__icon[data-astro-cid-kj3nfrvf] {
-  grid-area: 1 / 1;
-  width: 20px;
-  height: 20px;
-}
+      .slide-to-confirm__icon[data-astro-cid-kj3nfrvf] {
+        grid-area: 1 / 1;
+        width: 20px;
+        height: 20px;
+      }
 
-.slide-to-confirm[data-astro-cid-kj3nfrvf]:before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  border-radius: var(--slide-to-confirm-radius);
-  background-color: var(--slide-to-confirm-confirmed);
-  clip-path: circle(var(--slide-to-confirm-fill-r, 0px) at var(--slide-to-confirm-fill-x, 100%) 50%);
-  pointer-events: none;
-}
+      .slide-to-confirm[data-astro-cid-kj3nfrvf]:before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        border-radius: var(--slide-to-confirm-radius);
+        background-color: var(--slide-to-confirm-confirmed);
+        clip-path: circle(
+          var(--slide-to-confirm-fill-r, 0px) at var(--slide-to-confirm-fill-x, 100%) 50%
+        );
+        pointer-events: none;
+      }
 
-.slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf] {
-  background-color: var(--slide-to-confirm-confirmed);
-  border-color: var(--slide-to-confirm-confirmed);
-  box-shadow: none;
-  transition: background-color 0s linear var(--slide-to-confirm-duration-fill),
-      border-color var(--slide-to-confirm-duration-handle) ease-out
-        var(--slide-to-confirm-delay-handle),
-      box-shadow var(--slide-to-confirm-duration-morph) ease-out;
-}
+      .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf] {
+        background-color: var(--slide-to-confirm-confirmed);
+        border-color: var(--slide-to-confirm-confirmed);
+        box-shadow: none;
+        transition:
+          background-color 0s linear var(--slide-to-confirm-duration-fill),
+          border-color var(--slide-to-confirm-duration-handle) ease-out
+            var(--slide-to-confirm-delay-handle),
+          box-shadow var(--slide-to-confirm-duration-morph) ease-out;
+      }
 
-.slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf] .slide-to-confirm__label[data-astro-cid-kj3nfrvf] {
-  color: var(--slide-to-confirm-confirmed-label);
-  transition: color .14s ease-out;
-}
+      .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf]
+        .slide-to-confirm__label[data-astro-cid-kj3nfrvf] {
+        color: var(--slide-to-confirm-confirmed-label);
+        transition: color 0.14s ease-out;
+      }
 
-.slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf] .slide-to-confirm__handle[data-astro-cid-kj3nfrvf] {
-  background-color: var(--slide-to-confirm-confirmed);
-  color: var(--slide-to-confirm-confirmed-label);
-  box-shadow: none;
-  transition: background-color var(--slide-to-confirm-duration-handle) ease-out
-        var(--slide-to-confirm-delay-handle),
-      color var(--slide-to-confirm-duration-handle) ease-out
-        var(--slide-to-confirm-delay-handle),
-      box-shadow var(--slide-to-confirm-duration-handle) ease-out
-        var(--slide-to-confirm-delay-handle);
-}
+      .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf]
+        .slide-to-confirm__handle[data-astro-cid-kj3nfrvf] {
+        background-color: var(--slide-to-confirm-confirmed);
+        color: var(--slide-to-confirm-confirmed-label);
+        box-shadow: none;
+        transition:
+          background-color var(--slide-to-confirm-duration-handle) ease-out
+            var(--slide-to-confirm-delay-handle),
+          color var(--slide-to-confirm-duration-handle) ease-out
+            var(--slide-to-confirm-delay-handle),
+          box-shadow var(--slide-to-confirm-duration-handle) ease-out
+            var(--slide-to-confirm-delay-handle);
+      }
 
-.slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance], .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance] {
-  opacity: 0;
-  transform: translateY(50%) scale(.95);
-  clip-path: inset(0 var(--slide-to-confirm-collapsed-inset) round calc(var(--slide-to-confirm-height) / 2));
-  pointer-events: none;
-  transition: opacity var(--slide-to-confirm-rise-duration) var(--ease-out-strong, cubic-bezier(.23, 1, .32, 1)) var(--slide-to-confirm-expand-duration),
-      transform var(--slide-to-confirm-rise-duration) var(--ease-out-strong, cubic-bezier(.23, 1, .32, 1)) var(--slide-to-confirm-expand-duration),
-      clip-path var(--slide-to-confirm-expand-duration) var(--ease-in-out-strong, cubic-bezier(.77, 0, .175, 1)),
-      border-color var(--slide-to-confirm-duration-handle) ease-out var(--slide-to-confirm-delay-handle),
-      box-shadow var(--slide-to-confirm-duration-morph) ease-out,
-      background-color .16s ease;
-}
+      .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance],
+      .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance] {
+        opacity: 0;
+        transform: translateY(50%) scale(0.95);
+        clip-path: inset(
+          0 var(--slide-to-confirm-collapsed-inset) round calc(var(--slide-to-confirm-height) / 2)
+        );
+        pointer-events: none;
+        transition:
+          opacity var(--slide-to-confirm-rise-duration)
+            var(--ease-out-strong, cubic-bezier(0.23, 1, 0.32, 1))
+            var(--slide-to-confirm-expand-duration),
+          transform var(--slide-to-confirm-rise-duration)
+            var(--ease-out-strong, cubic-bezier(0.23, 1, 0.32, 1))
+            var(--slide-to-confirm-expand-duration),
+          clip-path var(--slide-to-confirm-expand-duration)
+            var(--ease-in-out-strong, cubic-bezier(0.77, 0, 0.175, 1)),
+          border-color var(--slide-to-confirm-duration-handle) ease-out
+            var(--slide-to-confirm-delay-handle),
+          box-shadow var(--slide-to-confirm-duration-morph) ease-out,
+          background-color 0.16s ease;
+      }
 
-.slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance] .slide-to-confirm__handle[data-astro-cid-kj3nfrvf], .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance] .slide-to-confirm__handle[data-astro-cid-kj3nfrvf] {
-  transform: translateX(var(--slide-to-confirm-entrance-x, 0px));
-  transition: transform var(--slide-to-confirm-expand-duration) var(--ease-in-out-strong, cubic-bezier(.77, 0, .175, 1)),
-      background-color var(--slide-to-confirm-duration-handle) ease-out var(--slide-to-confirm-delay-handle),
-      color var(--slide-to-confirm-duration-handle) ease-out var(--slide-to-confirm-delay-handle),
-      box-shadow var(--slide-to-confirm-duration-handle) ease-out var(--slide-to-confirm-delay-handle);
-}
+      .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance]
+        .slide-to-confirm__handle[data-astro-cid-kj3nfrvf],
+      .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance]
+        .slide-to-confirm__handle[data-astro-cid-kj3nfrvf] {
+        transform: translateX(var(--slide-to-confirm-entrance-x, 0px));
+        transition:
+          transform var(--slide-to-confirm-expand-duration)
+            var(--ease-in-out-strong, cubic-bezier(0.77, 0, 0.175, 1)),
+          background-color var(--slide-to-confirm-duration-handle) ease-out
+            var(--slide-to-confirm-delay-handle),
+          color var(--slide-to-confirm-duration-handle) ease-out
+            var(--slide-to-confirm-delay-handle),
+          box-shadow var(--slide-to-confirm-duration-handle) ease-out
+            var(--slide-to-confirm-delay-handle);
+      }
 
-.slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance] .slide-to-confirm__label[data-astro-cid-kj3nfrvf], .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance] .slide-to-confirm__label[data-astro-cid-kj3nfrvf] {
-  opacity: 0;
-  transition: opacity .16s var(--ease-out-strong, cubic-bezier(.23, 1, .32, 1));
-}
+      .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance]
+        .slide-to-confirm__label[data-astro-cid-kj3nfrvf],
+      .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance]
+        .slide-to-confirm__label[data-astro-cid-kj3nfrvf] {
+        opacity: 0;
+        transition: opacity 0.16s var(--ease-out-strong, cubic-bezier(0.23, 1, 0.32, 1));
+      }
 
-.slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance="pending"], .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance="pending"], .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance="pending"] .slide-to-confirm__handle[data-astro-cid-kj3nfrvf], .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance="pending"] .slide-to-confirm__handle[data-astro-cid-kj3nfrvf], .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance="pending"] .slide-to-confirm__label[data-astro-cid-kj3nfrvf], .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance="pending"] .slide-to-confirm__label[data-astro-cid-kj3nfrvf] {
-  transition: none;
-}
+      .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance="pending"],
+      .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance="pending"],
+      .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance="pending"]
+        .slide-to-confirm__handle[data-astro-cid-kj3nfrvf],
+      .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance="pending"]
+        .slide-to-confirm__handle[data-astro-cid-kj3nfrvf],
+      .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance="pending"]
+        .slide-to-confirm__label[data-astro-cid-kj3nfrvf],
+      .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance="pending"]
+        .slide-to-confirm__label[data-astro-cid-kj3nfrvf] {
+        transition: none;
+      }
 
-.slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance="revealing"], .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance="revealing"], .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance]:focus-visible, .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance]:focus-visible {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  clip-path: inset(0 0 round calc(var(--slide-to-confirm-height) / 2));
-  pointer-events: auto;
-}
+      .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance="revealing"],
+      .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance="revealing"],
+      .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance]:focus-visible,
+      .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance]:focus-visible {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        clip-path: inset(0 0 round calc(var(--slide-to-confirm-height) / 2));
+        pointer-events: auto;
+      }
 
-.slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance="revealing"], .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance="revealing"] {
-  transition-delay: 0s, 0s, var(--slide-to-confirm-rise-duration), 0s, 0s, 0s;
-}
+      .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance="revealing"],
+      .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance="revealing"] {
+        transition-delay: 0s, 0s, var(--slide-to-confirm-rise-duration), 0s, 0s, 0s;
+      }
 
-.slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance="revealing"] .slide-to-confirm__handle[data-astro-cid-kj3nfrvf], .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance="revealing"] .slide-to-confirm__handle[data-astro-cid-kj3nfrvf] {
-  transform: translateX(var(--slide-to-confirm-x, 0px));
-  transition-delay: var(--slide-to-confirm-rise-duration), 0s, 0s, 0s;
-}
+      .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance="revealing"]
+        .slide-to-confirm__handle[data-astro-cid-kj3nfrvf],
+      .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance="revealing"]
+        .slide-to-confirm__handle[data-astro-cid-kj3nfrvf] {
+        transform: translateX(var(--slide-to-confirm-x, 0px));
+        transition-delay: var(--slide-to-confirm-rise-duration), 0s, 0s, 0s;
+      }
 
-.slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance="revealing"] .slide-to-confirm__label[data-astro-cid-kj3nfrvf], .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance="revealing"] .slide-to-confirm__label[data-astro-cid-kj3nfrvf] {
-  opacity: var(--slide-to-confirm-label-opacity, 1);
-  transition-delay: calc(var(--slide-to-confirm-rise-duration) + var(--slide-to-confirm-expand-duration));
-}
+      .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance="revealing"]
+        .slide-to-confirm__label[data-astro-cid-kj3nfrvf],
+      .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance="revealing"]
+        .slide-to-confirm__label[data-astro-cid-kj3nfrvf] {
+        opacity: var(--slide-to-confirm-label-opacity, 1);
+        transition-delay: calc(
+          var(--slide-to-confirm-rise-duration) + var(--slide-to-confirm-expand-duration)
+        );
+      }
 
-.slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance="revealing"]:not(.slide-to-confirm--confirmed):active {
-  transform: scale(.97);
-  transition: transform .1s var(--ease-out-strong, cubic-bezier(.23, 1, .32, 1));
-}
+      .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance="revealing"]:not(
+          .slide-to-confirm--confirmed
+        ):active {
+        transform: scale(0.97);
+        transition: transform 0.1s var(--ease-out-strong, cubic-bezier(0.23, 1, 0.32, 1));
+      }
 
-.slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance]:focus-visible, .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance]:focus-visible {
-  opacity: 1;
-  transform: none;
-  clip-path: none;
-  pointer-events: auto;
-  transition: none;
-}
+      .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance]:focus-visible,
+      .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance]:focus-visible {
+        opacity: 1;
+        transform: none;
+        clip-path: none;
+        pointer-events: auto;
+        transition: none;
+      }
 
-.slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance]:focus-visible .slide-to-confirm__handle[data-astro-cid-kj3nfrvf], .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance]:focus-visible .slide-to-confirm__handle[data-astro-cid-kj3nfrvf] {
-  transform: translateX(0);
-  transition: none;
-}
+      .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance]:focus-visible
+        .slide-to-confirm__handle[data-astro-cid-kj3nfrvf],
+      .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance]:focus-visible
+        .slide-to-confirm__handle[data-astro-cid-kj3nfrvf] {
+        transform: translateX(0);
+        transition: none;
+      }
 
-.slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance]:focus-visible .slide-to-confirm__label[data-astro-cid-kj3nfrvf], .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance]:focus-visible .slide-to-confirm__label[data-astro-cid-kj3nfrvf] {
-  opacity: 1;
-  transition: none;
-}
+      .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance]:focus-visible
+        .slide-to-confirm__label[data-astro-cid-kj3nfrvf],
+      .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance]:focus-visible
+        .slide-to-confirm__label[data-astro-cid-kj3nfrvf] {
+        opacity: 1;
+        transition: none;
+      }
 
-@media (prefers-reduced-motion: reduce) {
-  .slide-to-confirm[data-astro-cid-kj3nfrvf], .slide-to-confirm[data-astro-cid-kj3nfrvf]:before, .slide-to-confirm__handle[data-astro-cid-kj3nfrvf], .slide-to-confirm__label[data-astro-cid-kj3nfrvf], .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf], .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf]:before, .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf] .slide-to-confirm__handle[data-astro-cid-kj3nfrvf], .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf] .slide-to-confirm__label[data-astro-cid-kj3nfrvf], .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance], .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance], .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance="revealing"]:not(.slide-to-confirm--confirmed):active, .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance] .slide-to-confirm__handle[data-astro-cid-kj3nfrvf], .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance] .slide-to-confirm__handle[data-astro-cid-kj3nfrvf], .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance] .slide-to-confirm__label[data-astro-cid-kj3nfrvf], .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance] .slide-to-confirm__label[data-astro-cid-kj3nfrvf] {
-    transition: none;
-  }
+      @media (prefers-reduced-motion: reduce) {
+        .slide-to-confirm[data-astro-cid-kj3nfrvf],
+        .slide-to-confirm[data-astro-cid-kj3nfrvf]:before,
+        .slide-to-confirm__handle[data-astro-cid-kj3nfrvf],
+        .slide-to-confirm__label[data-astro-cid-kj3nfrvf],
+        .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf],
+        .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf]:before,
+        .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf]
+          .slide-to-confirm__handle[data-astro-cid-kj3nfrvf],
+        .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf]
+          .slide-to-confirm__label[data-astro-cid-kj3nfrvf],
+        .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance],
+        .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance],
+        .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance="revealing"]:not(
+            .slide-to-confirm--confirmed
+          ):active,
+        .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance]
+          .slide-to-confirm__handle[data-astro-cid-kj3nfrvf],
+        .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance]
+          .slide-to-confirm__handle[data-astro-cid-kj3nfrvf],
+        .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance]
+          .slide-to-confirm__label[data-astro-cid-kj3nfrvf],
+        .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance]
+          .slide-to-confirm__label[data-astro-cid-kj3nfrvf] {
+          transition: none;
+        }
 
-  .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance], .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance] {
-    opacity: 1;
-    transform: none;
-    clip-path: none;
-    pointer-events: auto;
-  }
+        .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance],
+        .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance] {
+          opacity: 1;
+          transform: none;
+          clip-path: none;
+          pointer-events: auto;
+        }
 
-  .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance] .slide-to-confirm__handle[data-astro-cid-kj3nfrvf], .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance] .slide-to-confirm__handle[data-astro-cid-kj3nfrvf] {
-    transform: translateX(var(--slide-to-confirm-x, 0px));
-  }
+        .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance]
+          .slide-to-confirm__handle[data-astro-cid-kj3nfrvf],
+        .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance]
+          .slide-to-confirm__handle[data-astro-cid-kj3nfrvf] {
+          transform: translateX(var(--slide-to-confirm-x, 0px));
+        }
 
-  .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance] .slide-to-confirm__label[data-astro-cid-kj3nfrvf], .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance] .slide-to-confirm__label[data-astro-cid-kj3nfrvf] {
-    opacity: var(--slide-to-confirm-label-opacity, 1);
-  }
-}
+        .slide-to-confirm[data-astro-cid-kj3nfrvf][data-slide-entrance]
+          .slide-to-confirm__label[data-astro-cid-kj3nfrvf],
+        .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf][data-slide-entrance]
+          .slide-to-confirm__label[data-astro-cid-kj3nfrvf] {
+          opacity: var(--slide-to-confirm-label-opacity, 1);
+        }
+      }
 
-@media (forced-colors: active) {
-  .slide-to-confirm[data-astro-cid-kj3nfrvf] {
-    background-color: #0000;
-    border-color: buttonborder;
-    box-shadow: none;
-  }
+      @media (forced-colors: active) {
+        .slide-to-confirm[data-astro-cid-kj3nfrvf] {
+          background-color: #0000;
+          border-color: buttonborder;
+          box-shadow: none;
+        }
 
-  .slide-to-confirm[data-astro-cid-kj3nfrvf]:before {
-    background-color: buttontext;
-  }
+        .slide-to-confirm[data-astro-cid-kj3nfrvf]:before {
+          background-color: buttontext;
+        }
 
-  .slide-to-confirm[data-astro-cid-kj3nfrvf]:focus-visible {
-    outline: 3px solid highlight;
-    outline-offset: 2px;
-  }
+        .slide-to-confirm[data-astro-cid-kj3nfrvf]:focus-visible {
+          outline: 3px solid highlight;
+          outline-offset: 2px;
+        }
 
-  .slide-to-confirm__handle[data-astro-cid-kj3nfrvf] {
-    background-color: buttonface;
-    color: buttontext;
-    border: 1px solid buttonborder;
-    box-shadow: none;
-  }
+        .slide-to-confirm__handle[data-astro-cid-kj3nfrvf] {
+          background-color: buttonface;
+          color: buttontext;
+          border: 1px solid buttonborder;
+          box-shadow: none;
+        }
 
-  .slide-to-confirm__label[data-astro-cid-kj3nfrvf] {
-    color: buttontext;
-  }
+        .slide-to-confirm__label[data-astro-cid-kj3nfrvf] {
+          color: buttontext;
+        }
 
-  .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf] {
-    background-color: buttontext;
-    border-color: buttontext;
-  }
+        .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf] {
+          background-color: buttontext;
+          border-color: buttontext;
+        }
 
-  .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf] .slide-to-confirm__label[data-astro-cid-kj3nfrvf], .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf] .slide-to-confirm__handle[data-astro-cid-kj3nfrvf] {
-    color: buttonface;
-  }
+        .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf]
+          .slide-to-confirm__label[data-astro-cid-kj3nfrvf],
+        .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf]
+          .slide-to-confirm__handle[data-astro-cid-kj3nfrvf] {
+          color: buttonface;
+        }
 
-  .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf] .slide-to-confirm__handle[data-astro-cid-kj3nfrvf] {
-    background-color: buttontext;
-    border-color: buttontext;
-  }
+        .slide-to-confirm--confirmed[data-astro-cid-kj3nfrvf]
+          .slide-to-confirm__handle[data-astro-cid-kj3nfrvf] {
+          background-color: buttontext;
+          border-color: buttontext;
+        }
 
-  .slide-to-confirm[data-astro-cid-kj3nfrvf]:disabled .slide-to-confirm__label[data-astro-cid-kj3nfrvf], .slide-to-confirm[data-astro-cid-kj3nfrvf]:disabled .slide-to-confirm__handle[data-astro-cid-kj3nfrvf] {
-    color: graytext;
-  }
-}
-</style></head><body><button class="slide-to-confirm" type="button" data-slide-to-confirm id="slide-fresh" data-astro-cid-kj3nfrvf><span class="slide-to-confirm__label" data-slide-to-confirm-text data-astro-cid-kj3nfrvf>Confirm Reservation</span><span class="slide-to-confirm__handle" data-slide-to-confirm-handle aria-hidden="true" data-astro-cid-kj3nfrvf><svg class="slide-to-confirm__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-kj3nfrvf><path class="slide-to-confirm__stroke" d="M6 17 11 12 6 7" data-morph-from="M6 17 11 12 6 7" data-morph-to="M9 17 6.5 14.5 4 12" data-astro-cid-kj3nfrvf></path><path class="slide-to-confirm__stroke" d="M13 17 18 12 13 7" data-morph-from="M13 17 18 12 13 7" data-morph-to="M9 17 14.5 11.5 20 6" data-astro-cid-kj3nfrvf></path></svg></span></button><script type="module">
-import { animate } from "https://esm.sh/motion@13";
-import confetti from "https://esm.sh/canvas-confetti@1.9.4";
-// JS twins of the CSS easing tokens; keep in sync.
-const EASE_OUT_EXPO = [
-	.16,
-	1,
-	.3,
-	1
-];
-// --ease-in-out-strong: the file's clip-path curve (the entrance uses it
-// too), and the confirmed fill's — see growFill on why a circle's radius
-// wants a curve that starts from rest.
-const EASE_IN_OUT_STRONG = [
-	.77,
-	0,
-	.175,
-	1
-];
-// JS twins of the confirmed fill's CSS timings (--slide-to-confirm-duration-fill
-// and --slide-to-confirm-delay-handle). The circle's growth is scripted and
-// the handle/label/rim changes are CSS transitions off the same clock, so
-// these two numbers are the seam between them: the handle flips and the
-// words return at the delay, once the black is past them, and the track's
-// own background lands at the full duration, under a circle that already
-// covers it.
-const FILL_MS = 520;
-const FILL_HANDOFF_MS = 260;
-// The SlideToDetonate geometry, taken literally: the handle must be parked
-// at the FAR END to arm (setX clamps the drag to the track, so a drag to or
-// past the end reaches exactly range), and a springy return when let go
-// anywhere short of it. A tap or a partial slide never confirms.
-const ARM_THRESHOLD = 1;
-// Parses "M13 17 18 12 13 7" into [[13,17],[18,12],[13,7]]. The glyph paths
-// are authored as plain polylines (an M followed by implicit-lineto pairs)
-// precisely so the morph can be pure number interpolation: every number in
-// the string is a coordinate, in order.
-const points = (d) => {
-	const nums = (d.match(/-?[\d.]+/g) ?? []).map(Number);
-	const out = [];
-	for (let i = 0; i + 1 < nums.length; i += 2) out.push([nums[i], nums[i + 1]]);
-	return out;
-};
-// Rounded to 0.01: enough precision that the motion is smooth at 20px, short
-// enough that the per-frame attribute write stays cheap.
-const toPath = (pts) => `M${pts.map(([x, y]) => `${Math.round(x * 100) / 100} ${Math.round(y * 100) / 100}`).join(" ")}`;
-const setupEntrance = (btn, label) => {
-	const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
-	const isConfirmed = btn.classList.contains("slide-to-confirm--confirmed");
-	if (motionPreference.matches || btn.matches(":focus") || typeof IntersectionObserver === "undefined") return () => {};
-	let observer;
-	let frame = 0;
-	let disposed = false;
-	const target = btn.parentElement ?? btn;
-	const finish = () => {
-		if (disposed) return;
-		disposed = true;
-		observer?.disconnect();
-		cancelAnimationFrame(frame);
-		btn.removeAttribute("data-slide-entrance");
-		btn.getAnimations({ subtree: true }).forEach((animation) => animation.cancel());
-		btn.removeEventListener("focus", finish);
-		motionPreference.removeEventListener("change", onMotionChange);
-		window.removeEventListener("pagehide", finish);
-		window.removeEventListener("scroll", reveal);
-		window.removeEventListener("resize", reveal);
-	};
-	const onMotionChange = () => {
-		if (motionPreference.matches) finish();
-	};
-	btn.setAttribute("data-slide-entrance", "pending");
-	btn.addEventListener("focus", finish);
-	motionPreference.addEventListener("change", onMotionChange);
-	window.addEventListener("pagehide", finish);
-	let hasRevealed = false;
-	const reveal = () => {
-		if (disposed || frame) return;
-		frame = requestAnimationFrame(() => {
-			frame = requestAnimationFrame(() => {
-				frame = 0;
-				if (disposed) return;
-				// Going back above the button's natural location reverses its entrance.
-				// Going past it keeps the pill expanded and parked inside the section.
-				// Matches AddImageButton in photo-trail.ts.
-				const inView = target.getBoundingClientRect().top < window.innerHeight;
-				if (inView) {
-					hasRevealed = true;
-					btn.setAttribute("data-slide-entrance", "revealing");
-				} else if (hasRevealed) {
-					btn.setAttribute("data-slide-entrance", "collapsed");
-				}
-			});
-		});
-	};
-	observer = new IntersectionObserver(reveal);
-	observer.observe(target);
-	window.addEventListener("scroll", reveal, { passive: true });
-	window.addEventListener("resize", reveal);
-	reveal();
-	return finish;
-};
-const setupSlider = (btn) => {
-	const handle = btn.querySelector("[data-slide-to-confirm-handle]");
-	const label = btn.querySelector("[data-slide-to-confirm-text]");
-	if (!handle || !label) return;
-	// Each stroke carries its own from/to shape, pre-parsed once. A stroke
-	// whose endpoints don't have matching point counts is skipped rather than
-	// morphed into nonsense — it simply stays at its authored shape.
-	const strokes = [...btn.querySelectorAll(".slide-to-confirm__stroke")].map((el) => {
-		const from = points(el.dataset.morphFrom ?? "");
-		const to = points(el.dataset.morphTo ?? "");
-		return from.length && from.length === to.length ? {
-			el,
-			from,
-			to
-		} : null;
-	}).filter((s) => s !== null);
-	// The whole morph: every point of every stroke moved to its interpolated
-	// position, written straight to the `d` attribute (CSS `d` is Chromium-only
-	// — see the note in the stylesheet). This is the "line changing into a new
-	// one": at m = 0.5 each path is a real intermediate shape, not a blend of
-	// two overlaid glyphs. Both strokes are live geometry the whole way — one
-	// becomes the check's short arm, the other its long arm — so there is no
-	// opacity anywhere in the morph.
-	const setMorph = (m) => {
-		for (const { el, from, to } of strokes) {
-			el.setAttribute("d", toPath(from.map(([x, y], i) => [x + (to[i][0] - x) * m, y + (to[i][1] - y) * m])));
-		}
-	};
-	const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-	let confirmed = btn.disabled || btn.classList.contains("slide-to-confirm--confirmed");
-	if (confirmed) {
-		btn.classList.add("slide-to-confirm--confirmed");
-	}
-	// The distance the handle can travel: the pill's inner width minus the
-	// handle and its (symmetric) insets, read off the layout so the CSS owns
-	// every number. Measured lazily on the first pointerdown (the pill may be
-	// inside an unlaid-out container at connect time) and re-measured on
-	// resize so rotation/viewport changes stay honest.
-	let range = 0;
-	// The confirmed fill's geometry, in the same measured units: the circle
-	// is seeded at the PARKED handle's center (the gesture's endpoint, which
-	// is where the new state comes from) and has to reach the far corner of
-	// the pill to cover it — that corner is the opposite end, so the radius
-	// is the distance from the handle's center to the pill's far edge.
-	let fillOrigin = 0;
-	let fillRadius = 0;
-	const measure = () => {
-		range = Math.max(0, btn.clientWidth - handle.offsetWidth - handle.offsetLeft * 2);
-		// This offset belongs to the entrance only, not the user's slide x.
-		// Set it on the handle itself; its translated position never affects range.
-		handle.style.setProperty("--slide-to-confirm-entrance-x", `${range / 2}px`);
-		fillOrigin = handle.offsetLeft + range + handle.offsetWidth / 2;
-		const w = btn.offsetWidth;
-		const h = btn.offsetHeight;
-		fillRadius = Math.hypot(Math.max(fillOrigin, w - fillOrigin), h / 2) + 2;
-		btn.style.setProperty("--slide-to-confirm-fill-x", `${fillOrigin}px`);
-		if (confirmed) {
-			btn.style.setProperty("--slide-to-confirm-fill-r", `${fillRadius}px`);
-			handle.style.setProperty("--slide-to-confirm-x", `${range}px`);
-			setMorph(1);
-		}
-	};
-	measure();
-	if (typeof ResizeObserver !== "undefined") {
-		new ResizeObserver(measure).observe(btn);
-	} else {
-		window.addEventListener("resize", measure);
-	}
-	const finishEntrance = setupEntrance(btn, label);
-	// Set by a threshold-crossing release so that gesture's own click is
-	// allowed through to the submit (see the click listener).
-	let armedViaDrag = false;
-	let x = 0;
-	// The settle/confirm spring, kept so a new gesture can stop it — motion's
-	// default when overlapping animations on one value race (stop wins).
-	let ride = null;
-	// The confirmed choreography's cancellable tail. The celebration starts
-	// the moment the slide arms — before the host page's submit handler has
-	// even sent its fetch — so a save that FAILS can resolve while the black
-	// flood, the label's return and the volley's staggered shots are still
-	// in flight. These handles (and `later`, the one scheduler every beat of
-	// the celebration goes through) are what `slide-to-confirm:reset` stops.
-	let fillAnimation = null;
-	// The settle-pop, same treatment: a reset arriving mid-pop would leave
-	// its committed transform on the pill.
-	let popAnimation = null;
-	const pendingTimers = [];
-	const later = (fn, ms) => {
-		pendingTimers.push(window.setTimeout(fn, ms));
-	};
-	let dragging = false;
-	let pointerId = null;
-	let startClientX = 0;
-	let startX = 0;
-	const setX = (next) => {
-		x = Math.min(Math.max(next, 0), range);
-		handle.style.setProperty("--slide-to-confirm-x", `${x}px`);
-		// Both the label fade and the icon morph are the SAME slide progress,
-		// taken to completion over the first 70% of the travel (the reference's
-		// label curve): the words are gone and the glyph has become a check
-		// while there is still track left, so the last stretch is pure commit.
-		const progress = range > 0 ? x / range : 0;
-		const eased = Math.min(progress / .7, 1);
-		label.style.setProperty("--slide-to-confirm-label-opacity", String(1 - eased));
-		// Redraws the glyph under the user's thumb, and reverses frame-for-frame
-		// if they drag back — the strokes travel with the gesture instead of
-		// announcing its result.
-		setMorph(eased);
-	};
-	// The reference's settle spring (stiffness 500 / damping 38). Motion
-	// animates a plain number; each tick re-renders offset + label fade.
-	// onComplete pins the exact endpoint, so a release a hair short of the
-	// end can never freeze where it let go — the parked position IS the far
-	// end (and only the far end arms).
-	const rideTo = (to) => {
-		ride?.stop();
-		if (reducedMotion) {
-			setX(to);
-			return;
-		}
-		ride = animate(x, to, {
-			type: "spring",
-			stiffness: 500,
-			damping: 38,
-			onUpdate: (v) => setX(v),
-			onComplete: () => setX(to)
-		});
-	};
-	// The confirmed fill's growth: the black circle swells out of the parked
-	// handle until it has covered the pill. Only its RADIUS animates (the
-	// center was written by measure()), so the whole flood is one clip-path
-	// on a pseudo-element — no layout, no second painted element.
-	//
-	// `motion` cannot target a pseudo-element, so the radius rides a custom
-	// property on the button and is written per tick like the handle's offset.
-	// Same shape as TimelineScroll's finale (circle(0.001px) → full cover),
-	// scaled from the viewport to a 58px pill.
-	//
-	// The curve is the file's clip-path curve (the entrance's
-	// --ease-in-out-strong), not the expo used for fades, and for a reason
-	// specific to circles: painted AREA goes as r², so an ease-out radius
-	// dumps most of the black in the first few frames and reads as a flash
-	// rather than a sweep. Starting from rest keeps the edge legible as it
-	// crosses the pill — the expansion is the thing being watched here.
-	const setFill = (r) => {
-		btn.style.setProperty("--slide-to-confirm-fill-r", `${Math.max(0, r)}px`);
-	};
-	// `onCovered` runs the instant the circle has swallowed the whole pill,
-	// which is what the confetti waits for (see confirm).
-	const growFill = (onCovered) => {
-		if (reducedMotion) {
-			// No journey: the fill is simply already there, which is what the
-			// confirmed background-color would have painted anyway.
-			setFill(fillRadius);
-			onCovered?.();
-			return;
-		}
-		fillAnimation = animate(0, fillRadius, {
-			duration: FILL_MS / 1e3,
-			ease: EASE_IN_OUT_STRONG,
-			onUpdate: setFill,
-			onComplete: () => {
-				setFill(fillRadius);
-				onCovered?.();
-			}
-		});
-	};
-	// The MagicUI ConfettiButton origin math: burst from the button's center,
-	// expressed as a fraction of the viewport. The palette flips with the
-	// device theme — hues stay, lightness inverts — so the volley reads
-	// against the page it lands on, same mirrored-by-construction contract as
-	// the pill. Volley shape is the magicui stars demo: three staggered shots
-	// of a large shape plus a few small circles.
-	//
-	// Fired once the fill has covered the pill, so the rect it measures is
-	// the settled one (the settle-pop is over by then) and the origin is the
-	// finished black pill rather than a mid-scale frame of it.
-	const fireConfetti = () => {
-		const rect = btn.getBoundingClientRect();
-		const origin = {
-			x: (rect.left + rect.width / 2) / window.innerWidth,
-			y: (rect.top + rect.height / 2) / window.innerHeight
-		};
-		const light = window.matchMedia("(prefers-color-scheme: light)").matches;
-		const colors = light ? [
-			"#b45309",
-			"#be123c",
-			"#1d4ed8",
-			"#047857",
-			"#111111"
-		] : [
-			"#fcd34d",
-			"#fda4af",
-			"#93c5fd",
-			"#6ee7b7",
-			"#fafafa"
-		];
-		const defaults = {
-			origin,
-			colors,
-			spread: 70,
-			ticks: 200,
-			gravity: 1,
-			decay: .94,
-			startVelocity: 38,
-			zIndex: 9999
-		};
-		if (reducedMotion) {
-			// No volley at all. Forty ballistic particles was the largest movement
-			// on the page, handed to the guests who asked for less of it; "quiet"
-			// is a smaller burst, not a different kind of thing. The celebration
-			// survives in the channels reduced motion keeps: the pill goes black,
-			// the glyph is a check, and the label swaps to "Reservation Confirmed".
-			return;
-		}
-		const shoot = () => {
-			void confetti({
-				...defaults,
-				particleCount: 50,
-				scalar: 1.1,
-				shapes: ["star"]
-			});
-			void confetti({
-				...defaults,
-				particleCount: 14,
-				scalar: .7,
-				shapes: ["circle"]
-			});
-		};
-		shoot();
-		later(shoot, 120);
-		later(shoot, 240);
-	};
-	// Fully slid, in order: a black circle grows out of the parked handle
-	// until it has swallowed the track, the handle joins that black and the
-	// label rides back in behind it — and only once the pill is completely
-	// covered does the volley fire. The confetti is the payoff for a finished
-	// state, so it waits for that state to actually be finished; overlapping
-	// it with the expansion made two events compete for the same moment and
-	// hid the sweep behind the particles.
-	//
-	// RsvpSection catches the same gesture's submit event, so the fetch, the
-	// disable (D12) and the focus move stay exactly where they were — none of
-	// them wait on this choreography.
-	const confirm = () => {
-		if (confirmed) return;
-		finishEntrance();
-		confirmed = true;
-		// The fill's origin depends on the handle's parked center, so the
-		// geometry has to be current before the circle is seeded (a keyboard
-		// confirm may never have gone through pointerdown's measure()).
-		measure();
-		btn.classList.add("slide-to-confirm--confirmed");
-		btn.classList.remove("slide-to-confirm--dragging");
-		// The label was faded by the slide; the confirmed words rise back in
-		// (color flips via the class transition). RsvpSection has already
-		// swapped the text by now — it runs on submit, which fires first.
-		const labelIn = () => {
-			label.style.setProperty("--slide-to-confirm-label-opacity", "1");
-			if (reducedMotion) return;
-			animate(label, {
-				opacity: [0, 1],
-				transform: ["translateY(6px)", "translateY(0px)"]
-			}, {
-				duration: .25,
-				ease: EASE_OUT_EXPO
-			});
-		};
-		if (reducedMotion) {
-			setX(range);
-			// The fill is simply already there; no volley follows it under reduced
-			// motion, so nothing waits on coverage.
-			growFill();
-			labelIn();
-		} else {
-			// The handle springs the rest of the way home and STAYS there — the
-			// check parked at the far end is part of the confirmed composition.
-			// The spring's onUpdate keeps writing the morph, so a keyboard
-			// activation (which starts at x = 0) still gets the glyph change as
-			// travel rather than a jump.
-			rideTo(range);
-			// The black comes OUT of that parked handle: the circle is seeded at
-			// its center and grows past both ends of the pill. The handle rides
-			// above it (z-index) and only turns black once the circle is well
-			// clear of it — the CSS delays that flip — so the fill reads as
-			// having been released by the gesture's endpoint. The volley is this
-			// sweep's completion callback, not a parallel track.
-			growFill(fireConfetti);
-			// The words come back once the circle has passed the pill's center,
-			// i.e. once there is black behind them to read against — the same
-			// instant the handle starts joining that black.
-			later(labelIn, FILL_HANDOFF_MS);
-			// Gentle settle-pop on the pill (a settle, not a bounce).
-			popAnimation = animate(btn, { scale: [
-				1,
-				1.04,
-				1
-			] }, {
-				duration: .35,
-				ease: EASE_OUT_EXPO
-			});
-		}
-	};
-	btn.addEventListener("pointerdown", (event) => {
-		if (confirmed || btn.disabled) return;
-		// Left button / touch / pen only.
-		if (event.pointerType === "mouse" && event.button !== 0) return;
-		finishEntrance();
-		// A ride may still be springing when the guest grabs the handle: a
-		// short drag's release, or a reset's rollback. Its per-frame setX
-		// writes would fight this gesture for the handle (the drag's own
-		// writes get overwritten every tick — the handle appears pinned at
-		// home until the spring dies). Motion's overlap rule is stop-wins,
-		// so stop it here and let the drag own x outright.
-		ride?.stop();
-		measure();
-		dragging = true;
-		pointerId = event.pointerId;
-		startClientX = event.clientX;
-		startX = x;
-		btn.classList.add("slide-to-confirm--dragging");
-		// Synthetic pointer events (tests) have no active pointer to capture;
-		// real ones always do. Without capture a pointerup off-pill would
-		// strand the drag, hence capture-or-nothing, not capture-or-crash.
-		try {
-			btn.setPointerCapture(pointerId);
-		} catch {}
-		event.preventDefault();
-	});
-	btn.addEventListener("pointermove", (event) => {
-		if (!dragging || event.pointerId !== pointerId) return;
-		setX(startX + (event.clientX - startClientX));
-	});
-	// A release is the only way a drag confirms, and only a FULL slide arms:
-	// the threshold compares against where the handle ACTUALLY is, so a tap,
-	// a nudge, or a 30–40% pull all spring home — only the handle parked at
-	// the far end confirms on release.
-	const release = (event) => {
-		if (!dragging || event.pointerId !== pointerId) return;
-		dragging = false;
-		pointerId = null;
-		btn.classList.remove("slide-to-confirm--dragging");
-		if (range > 0 && x >= range * ARM_THRESHOLD) {
-			// The pointerup's own click follows immediately; mark it as this
-			// gesture's so the click listener lets it through to the submit.
-			armedViaDrag = true;
-			confirm();
-		} else {
-			rideTo(0);
-		}
-	};
-	btn.addEventListener("pointerup", release);
-	// A cancel (scroll takeover, browser gesture) is NOT a release: the only
-	// honest outcome is the spring home. Confirming here is how a half-slide
-	// would "immediately confirm".
-	btn.addEventListener("pointercancel", (event) => {
-		if (!dragging || event.pointerId !== pointerId) return;
-		dragging = false;
-		pointerId = null;
-		btn.classList.remove("slide-to-confirm--dragging");
-		rideTo(0);
-	});
-	// Pointer activation is slide-only — a tap is NEVER an activation: this
-	// is a slider, not a button. The only pointer path through is an armed
-	// full slide, whose release (a frame ago) flagged its own trailing click.
-	// Keyboard and AT activation — Enter/Space/screen-reader press, a click
-	// with no pointer, so `detail === 0` — counts as a full slide, because a
-	// keyboard can't drag. Every other click is swallowed: a tap, a short
-	// drag's trailing click, or a press while the handle is away from home
-	// mid-gesture.
-	btn.addEventListener("click", (event) => {
-		if (confirmed) {
-			if (!armedViaDrag) event.preventDefault();
-			armedViaDrag = false;
-			return;
-		}
-		if (btn.disabled || event.detail !== 0 || x > 0) {
-			event.preventDefault();
-			return;
-		}
-		confirm();
-		// No preventDefault on the arming paths: a submit button's click
-		// dispatches the form's submit event, which RsvpSection turns into the
-		// RSVP POST.
-	});
-	// The host page owns the truth. This control arms its celebration on the
-	// GESTURE — the pill goes black and the volley fires while the submit
-	// handler's fetch is still in flight — and only that handler learns
-	// whether the action actually landed. When it didn't, it dispatches
-	// `slide-to-confirm:reset` on the button and this rolls the presentation
-	// back to the fresh idle state. Without it a failed save would leave a
-	// black pill with a parked check that no gesture can move again — lying
-	// about a state that never happened, recoverable only by a refresh.
-	//
-	// The rollback is a cut, not a second morph: the confirmed class's own
-	// transitions were declared on the class, so removing it snaps the paint
-	// back while the handle springs home under the reversing morph — the same
-	// settle-back a short drag gets. Everything still scheduled (the circle's
-	// remaining growth, the label's timed return, the volley's staggered
-	// shots) is stopped first so nothing lands on a pill that is no longer
-	// confirmed.
-	btn.addEventListener("slide-to-confirm:reset", () => {
-		if (!confirmed) return;
-		confirmed = false;
-		armedViaDrag = false;
-		fillAnimation?.stop();
-		fillAnimation = null;
-		popAnimation?.stop();
-		popAnimation = null;
-		for (const timer of pendingTimers.splice(0)) window.clearTimeout(timer);
-		btn.classList.remove("slide-to-confirm--confirmed");
-		btn.classList.remove("slide-to-confirm--dragging");
-		// Motion commits the celebration's final keyframes as inline styles
-		// (the label's return, the settle-pop). Inline beats the stylesheet,
-		// so a rolled-back control would inherit them: a label that can no
-		// longer fade under the handle on the retry drag, a press that can no
-		// longer scale. Take them off — the idle rules own these again.
-		label.style.removeProperty("opacity");
-		label.style.removeProperty("transform");
-		btn.style.removeProperty("transform");
-		setFill(0);
-		rideTo(0);
-	});
-	// The server can render the control already confirmed (returning guest):
-	// park the handle at the far end with no motion and no volley — the state
-	// is old news, not a fresh celebration. The morph transitions only exist
-	// on the confirmed class, so adding the class would fade the fill in from
-	// its idle values (a page-load artifact on a state that isn't fresh):
-	// suppress them for the one frame the class lands in.
-	if (confirmed && reducedMotion) {
-		setFill(fillRadius);
-		setX(range);
-		label.style.setProperty("--slide-to-confirm-label-opacity", "1");
-	}
-};
-for (const btn of document.querySelectorAll("[data-slide-to-confirm]")) {
-	setupSlider(btn);
-}
+        .slide-to-confirm[data-astro-cid-kj3nfrvf]:disabled
+          .slide-to-confirm__label[data-astro-cid-kj3nfrvf],
+        .slide-to-confirm[data-astro-cid-kj3nfrvf]:disabled
+          .slide-to-confirm__handle[data-astro-cid-kj3nfrvf] {
+          color: graytext;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <button
+      class="slide-to-confirm"
+      type="button"
+      data-slide-to-confirm
+      id="slide-fresh"
+      data-astro-cid-kj3nfrvf
+    >
+      <span class="slide-to-confirm__label" data-slide-to-confirm-text data-astro-cid-kj3nfrvf
+        >Confirm Reservation</span
+      ><span
+        class="slide-to-confirm__handle"
+        data-slide-to-confirm-handle
+        aria-hidden="true"
+        data-astro-cid-kj3nfrvf
+        ><svg
+          class="slide-to-confirm__icon"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.25"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          data-astro-cid-kj3nfrvf
+        >
+          <path
+            class="slide-to-confirm__stroke"
+            d="M6 17 11 12 6 7"
+            data-morph-from="M6 17 11 12 6 7"
+            data-morph-to="M9 17 6.5 14.5 4 12"
+            data-astro-cid-kj3nfrvf
+          ></path>
+          <path
+            class="slide-to-confirm__stroke"
+            d="M13 17 18 12 13 7"
+            data-morph-from="M13 17 18 12 13 7"
+            data-morph-to="M9 17 14.5 11.5 20 6"
+            data-astro-cid-kj3nfrvf
+          ></path></svg
+      ></span>
+    </button>
+    <script type="module">
+      import { animate } from "https://esm.sh/motion@13";
+      import confetti from "https://esm.sh/canvas-confetti@1.9.4";
+      // JS twins of the CSS easing tokens; keep in sync.
+      const EASE_OUT_EXPO = [0.16, 1, 0.3, 1];
+      // --ease-in-out-strong: the file's clip-path curve (the entrance uses it
+      // too), and the confirmed fill's — see growFill on why a circle's radius
+      // wants a curve that starts from rest.
+      const EASE_IN_OUT_STRONG = [0.77, 0, 0.175, 1];
+      // JS twins of the confirmed fill's CSS timings (--slide-to-confirm-duration-fill
+      // and --slide-to-confirm-delay-handle). The circle's growth is scripted and
+      // the handle/label/rim changes are CSS transitions off the same clock, so
+      // these two numbers are the seam between them: the handle flips and the
+      // words return at the delay, once the black is past them, and the track's
+      // own background lands at the full duration, under a circle that already
+      // covers it.
+      const FILL_MS = 520;
+      const FILL_HANDOFF_MS = 260;
+      // The SlideToDetonate geometry, taken literally: the handle must be parked
+      // at the FAR END to arm (setX clamps the drag to the track, so a drag to or
+      // past the end reaches exactly range), and a springy return when let go
+      // anywhere short of it. A tap or a partial slide never confirms.
+      const ARM_THRESHOLD = 1;
+      // Parses "M13 17 18 12 13 7" into [[13,17],[18,12],[13,7]]. The glyph paths
+      // are authored as plain polylines (an M followed by implicit-lineto pairs)
+      // precisely so the morph can be pure number interpolation: every number in
+      // the string is a coordinate, in order.
+      const points = (d) => {
+        const nums = (d.match(/-?[\d.]+/g) ?? []).map(Number);
+        const out = [];
+        for (let i = 0; i + 1 < nums.length; i += 2) out.push([nums[i], nums[i + 1]]);
+        return out;
+      };
+      // Rounded to 0.01: enough precision that the motion is smooth at 20px, short
+      // enough that the per-frame attribute write stays cheap.
+      const toPath = (pts) =>
+        `M${pts.map(([x, y]) => `${Math.round(x * 100) / 100} ${Math.round(y * 100) / 100}`).join(" ")}`;
+      const setupEntrance = (btn) => {
+        const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
+        if (
+          motionPreference.matches ||
+          btn.matches(":focus") ||
+          typeof IntersectionObserver === "undefined"
+        )
+          return () => {};
+        let observer;
+        let frame = 0;
+        let disposed = false;
+        const target = btn.parentElement ?? btn;
+        const finish = () => {
+          if (disposed) return;
+          disposed = true;
+          observer?.disconnect();
+          cancelAnimationFrame(frame);
+          btn.removeAttribute("data-slide-entrance");
+          btn.getAnimations({ subtree: true }).forEach((animation) => animation.cancel());
+          btn.removeEventListener("focus", finish);
+          motionPreference.removeEventListener("change", onMotionChange);
+          window.removeEventListener("pagehide", finish);
+          window.removeEventListener("scroll", reveal);
+          window.removeEventListener("resize", reveal);
+        };
+        const onMotionChange = () => {
+          if (motionPreference.matches) finish();
+        };
+        btn.setAttribute("data-slide-entrance", "pending");
+        btn.addEventListener("focus", finish);
+        motionPreference.addEventListener("change", onMotionChange);
+        window.addEventListener("pagehide", finish);
+        let hasRevealed = false;
+        const reveal = () => {
+          if (disposed || frame) return;
+          frame = requestAnimationFrame(() => {
+            frame = requestAnimationFrame(() => {
+              frame = 0;
+              if (disposed) return;
+              // Going back above the button's natural location reverses its entrance.
+              // Going past it keeps the pill expanded and parked inside the section.
+              // Matches AddImageButton in photo-trail.ts.
+              const inView = target.getBoundingClientRect().top < window.innerHeight;
+              if (inView) {
+                hasRevealed = true;
+                btn.setAttribute("data-slide-entrance", "revealing");
+              } else if (hasRevealed) {
+                btn.setAttribute("data-slide-entrance", "collapsed");
+              }
+            });
+          });
+        };
+        observer = new IntersectionObserver(reveal);
+        observer.observe(target);
+        window.addEventListener("scroll", reveal, { passive: true });
+        window.addEventListener("resize", reveal);
+        reveal();
+        return finish;
+      };
+      const setupSlider = (btn) => {
+        const handle = btn.querySelector("[data-slide-to-confirm-handle]");
+        const label = btn.querySelector("[data-slide-to-confirm-text]");
+        if (!handle || !label) return;
+        // Each stroke carries its own from/to shape, pre-parsed once. A stroke
+        // whose endpoints don't have matching point counts is skipped rather than
+        // morphed into nonsense — it simply stays at its authored shape.
+        const strokes = [...btn.querySelectorAll(".slide-to-confirm__stroke")]
+          .map((el) => {
+            const from = points(el.dataset.morphFrom ?? "");
+            const to = points(el.dataset.morphTo ?? "");
+            return from.length && from.length === to.length
+              ? {
+                  el,
+                  from,
+                  to,
+                }
+              : null;
+          })
+          .filter((s) => s !== null);
+        // The whole morph: every point of every stroke moved to its interpolated
+        // position, written straight to the `d` attribute (CSS `d` is Chromium-only
+        // — see the note in the stylesheet). This is the "line changing into a new
+        // one": at m = 0.5 each path is a real intermediate shape, not a blend of
+        // two overlaid glyphs. Both strokes are live geometry the whole way — one
+        // becomes the check's short arm, the other its long arm — so there is no
+        // opacity anywhere in the morph.
+        const setMorph = (m) => {
+          for (const { el, from, to } of strokes) {
+            el.setAttribute(
+              "d",
+              toPath(from.map(([x, y], i) => [x + (to[i][0] - x) * m, y + (to[i][1] - y) * m])),
+            );
+          }
+        };
+        const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        let confirmed = btn.disabled || btn.classList.contains("slide-to-confirm--confirmed");
+        if (confirmed) {
+          btn.classList.add("slide-to-confirm--confirmed");
+        }
+        // The distance the handle can travel: the pill's inner width minus the
+        // handle and its (symmetric) insets, read off the layout so the CSS owns
+        // every number. Measured lazily on the first pointerdown (the pill may be
+        // inside an unlaid-out container at connect time) and re-measured on
+        // resize so rotation/viewport changes stay honest.
+        let range = 0;
+        // The confirmed fill's geometry, in the same measured units: the circle
+        // is seeded at the PARKED handle's center (the gesture's endpoint, which
+        // is where the new state comes from) and has to reach the far corner of
+        // the pill to cover it — that corner is the opposite end, so the radius
+        // is the distance from the handle's center to the pill's far edge.
+        let fillOrigin = 0;
+        let fillRadius = 0;
+        const measure = () => {
+          range = Math.max(0, btn.clientWidth - handle.offsetWidth - handle.offsetLeft * 2);
+          // This offset belongs to the entrance only, not the user's slide x.
+          // Set it on the handle itself; its translated position never affects range.
+          handle.style.setProperty("--slide-to-confirm-entrance-x", `${range / 2}px`);
+          fillOrigin = handle.offsetLeft + range + handle.offsetWidth / 2;
+          const w = btn.offsetWidth;
+          const h = btn.offsetHeight;
+          fillRadius = Math.hypot(Math.max(fillOrigin, w - fillOrigin), h / 2) + 2;
+          btn.style.setProperty("--slide-to-confirm-fill-x", `${fillOrigin}px`);
+          if (confirmed) {
+            btn.style.setProperty("--slide-to-confirm-fill-r", `${fillRadius}px`);
+            handle.style.setProperty("--slide-to-confirm-x", `${range}px`);
+            setMorph(1);
+          }
+        };
+        measure();
+        if (typeof ResizeObserver !== "undefined") {
+          new ResizeObserver(measure).observe(btn);
+        } else {
+          window.addEventListener("resize", measure);
+        }
+        const finishEntrance = setupEntrance(btn);
+        // Set by a threshold-crossing release so that gesture's own click is
+        // allowed through to the submit (see the click listener).
+        let armedViaDrag = false;
+        let x = 0;
+        // The settle/confirm spring, kept so a new gesture can stop it — motion's
+        // default when overlapping animations on one value race (stop wins).
+        let ride = null;
+        // The confirmed choreography's cancellable tail. The celebration starts
+        // the moment the slide arms — before the host page's submit handler has
+        // even sent its fetch — so a save that FAILS can resolve while the black
+        // flood, the label's return and the volley's staggered shots are still
+        // in flight. These handles (and `later`, the one scheduler every beat of
+        // the celebration goes through) are what `slide-to-confirm:reset` stops.
+        let fillAnimation = null;
+        // The settle-pop, same treatment: a reset arriving mid-pop would leave
+        // its committed transform on the pill.
+        let popAnimation = null;
+        const pendingTimers = [];
+        const later = (fn, ms) => {
+          pendingTimers.push(window.setTimeout(fn, ms));
+        };
+        let dragging = false;
+        let pointerId = null;
+        let startClientX = 0;
+        let startX = 0;
+        const setX = (next) => {
+          x = Math.min(Math.max(next, 0), range);
+          handle.style.setProperty("--slide-to-confirm-x", `${x}px`);
+          // Both the label fade and the icon morph are the SAME slide progress,
+          // taken to completion over the first 70% of the travel (the reference's
+          // label curve): the words are gone and the glyph has become a check
+          // while there is still track left, so the last stretch is pure commit.
+          const progress = range > 0 ? x / range : 0;
+          const eased = Math.min(progress / 0.7, 1);
+          label.style.setProperty("--slide-to-confirm-label-opacity", String(1 - eased));
+          // Redraws the glyph under the user's thumb, and reverses frame-for-frame
+          // if they drag back — the strokes travel with the gesture instead of
+          // announcing its result.
+          setMorph(eased);
+        };
+        // The reference's settle spring (stiffness 500 / damping 38). Motion
+        // animates a plain number; each tick re-renders offset + label fade.
+        // onComplete pins the exact endpoint, so a release a hair short of the
+        // end can never freeze where it let go — the parked position IS the far
+        // end (and only the far end arms).
+        const rideTo = (to) => {
+          ride?.stop();
+          if (reducedMotion) {
+            setX(to);
+            return;
+          }
+          ride = animate(x, to, {
+            type: "spring",
+            stiffness: 500,
+            damping: 38,
+            onUpdate: (v) => setX(v),
+            onComplete: () => setX(to),
+          });
+        };
+        // The confirmed fill's growth: the black circle swells out of the parked
+        // handle until it has covered the pill. Only its RADIUS animates (the
+        // center was written by measure()), so the whole flood is one clip-path
+        // on a pseudo-element — no layout, no second painted element.
+        //
+        // `motion` cannot target a pseudo-element, so the radius rides a custom
+        // property on the button and is written per tick like the handle's offset.
+        // Same shape as TimelineScroll's finale (circle(0.001px) → full cover),
+        // scaled from the viewport to a 58px pill.
+        //
+        // The curve is the file's clip-path curve (the entrance's
+        // --ease-in-out-strong), not the expo used for fades, and for a reason
+        // specific to circles: painted AREA goes as r², so an ease-out radius
+        // dumps most of the black in the first few frames and reads as a flash
+        // rather than a sweep. Starting from rest keeps the edge legible as it
+        // crosses the pill — the expansion is the thing being watched here.
+        const setFill = (r) => {
+          btn.style.setProperty("--slide-to-confirm-fill-r", `${Math.max(0, r)}px`);
+        };
+        // `onCovered` runs the instant the circle has swallowed the whole pill,
+        // which is what the confetti waits for (see confirm).
+        const growFill = (onCovered) => {
+          if (reducedMotion) {
+            // No journey: the fill is simply already there, which is what the
+            // confirmed background-color would have painted anyway.
+            setFill(fillRadius);
+            onCovered?.();
+            return;
+          }
+          fillAnimation = animate(0, fillRadius, {
+            duration: FILL_MS / 1e3,
+            ease: EASE_IN_OUT_STRONG,
+            onUpdate: setFill,
+            onComplete: () => {
+              setFill(fillRadius);
+              onCovered?.();
+            },
+          });
+        };
+        // The MagicUI ConfettiButton origin math: burst from the button's center,
+        // expressed as a fraction of the viewport. The palette flips with the
+        // device theme — hues stay, lightness inverts — so the volley reads
+        // against the page it lands on, same mirrored-by-construction contract as
+        // the pill. Volley shape is the magicui stars demo: three staggered shots
+        // of a large shape plus a few small circles.
+        //
+        // Fired once the fill has covered the pill, so the rect it measures is
+        // the settled one (the settle-pop is over by then) and the origin is the
+        // finished black pill rather than a mid-scale frame of it.
+        const fireConfetti = () => {
+          const rect = btn.getBoundingClientRect();
+          const origin = {
+            x: (rect.left + rect.width / 2) / window.innerWidth,
+            y: (rect.top + rect.height / 2) / window.innerHeight,
+          };
+          const light = window.matchMedia("(prefers-color-scheme: light)").matches;
+          const colors = light
+            ? ["#b45309", "#be123c", "#1d4ed8", "#047857", "#111111"]
+            : ["#fcd34d", "#fda4af", "#93c5fd", "#6ee7b7", "#fafafa"];
+          const defaults = {
+            origin,
+            colors,
+            spread: 70,
+            ticks: 200,
+            gravity: 1,
+            decay: 0.94,
+            startVelocity: 38,
+            zIndex: 9999,
+          };
+          if (reducedMotion) {
+            // No volley at all. Forty ballistic particles was the largest movement
+            // on the page, handed to the guests who asked for less of it; "quiet"
+            // is a smaller burst, not a different kind of thing. The celebration
+            // survives in the channels reduced motion keeps: the pill goes black,
+            // the glyph is a check, and the label swaps to "Reservation Confirmed".
+            return;
+          }
+          const shoot = () => {
+            void confetti({
+              ...defaults,
+              particleCount: 50,
+              scalar: 1.1,
+              shapes: ["star"],
+            });
+            void confetti({
+              ...defaults,
+              particleCount: 14,
+              scalar: 0.7,
+              shapes: ["circle"],
+            });
+          };
+          shoot();
+          later(shoot, 120);
+          later(shoot, 240);
+        };
+        // Fully slid, in order: a black circle grows out of the parked handle
+        // until it has swallowed the track, the handle joins that black and the
+        // label rides back in behind it — and only once the pill is completely
+        // covered does the volley fire. The confetti is the payoff for a finished
+        // state, so it waits for that state to actually be finished; overlapping
+        // it with the expansion made two events compete for the same moment and
+        // hid the sweep behind the particles.
+        //
+        // RsvpSection catches the same gesture's submit event, so the fetch, the
+        // disable (D12) and the focus move stay exactly where they were — none of
+        // them wait on this choreography.
+        const confirm = () => {
+          if (confirmed) return;
+          finishEntrance();
+          confirmed = true;
+          // The fill's origin depends on the handle's parked center, so the
+          // geometry has to be current before the circle is seeded (a keyboard
+          // confirm may never have gone through pointerdown's measure()).
+          measure();
+          btn.classList.add("slide-to-confirm--confirmed");
+          btn.classList.remove("slide-to-confirm--dragging");
+          // The label was faded by the slide; the confirmed words rise back in
+          // (color flips via the class transition). RsvpSection has already
+          // swapped the text by now — it runs on submit, which fires first.
+          const labelIn = () => {
+            label.style.setProperty("--slide-to-confirm-label-opacity", "1");
+            if (reducedMotion) return;
+            animate(
+              label,
+              {
+                opacity: [0, 1],
+                transform: ["translateY(6px)", "translateY(0px)"],
+              },
+              {
+                duration: 0.25,
+                ease: EASE_OUT_EXPO,
+              },
+            );
+          };
+          if (reducedMotion) {
+            setX(range);
+            // The fill is simply already there; no volley follows it under reduced
+            // motion, so nothing waits on coverage.
+            growFill();
+            labelIn();
+          } else {
+            // The handle springs the rest of the way home and STAYS there — the
+            // check parked at the far end is part of the confirmed composition.
+            // The spring's onUpdate keeps writing the morph, so a keyboard
+            // activation (which starts at x = 0) still gets the glyph change as
+            // travel rather than a jump.
+            rideTo(range);
+            // The black comes OUT of that parked handle: the circle is seeded at
+            // its center and grows past both ends of the pill. The handle rides
+            // above it (z-index) and only turns black once the circle is well
+            // clear of it — the CSS delays that flip — so the fill reads as
+            // having been released by the gesture's endpoint. The volley is this
+            // sweep's completion callback, not a parallel track.
+            growFill(fireConfetti);
+            // The words come back once the circle has passed the pill's center,
+            // i.e. once there is black behind them to read against — the same
+            // instant the handle starts joining that black.
+            later(labelIn, FILL_HANDOFF_MS);
+            // Gentle settle-pop on the pill (a settle, not a bounce).
+            popAnimation = animate(
+              btn,
+              { scale: [1, 1.04, 1] },
+              {
+                duration: 0.35,
+                ease: EASE_OUT_EXPO,
+              },
+            );
+          }
+        };
+        btn.addEventListener("pointerdown", (event) => {
+          if (confirmed || btn.disabled) return;
+          // Left button / touch / pen only.
+          if (event.pointerType === "mouse" && event.button !== 0) return;
+          finishEntrance();
+          // A ride may still be springing when the guest grabs the handle: a
+          // short drag's release, or a reset's rollback. Its per-frame setX
+          // writes would fight this gesture for the handle (the drag's own
+          // writes get overwritten every tick — the handle appears pinned at
+          // home until the spring dies). Motion's overlap rule is stop-wins,
+          // so stop it here and let the drag own x outright.
+          ride?.stop();
+          measure();
+          dragging = true;
+          pointerId = event.pointerId;
+          startClientX = event.clientX;
+          startX = x;
+          btn.classList.add("slide-to-confirm--dragging");
+          // Synthetic pointer events (tests) have no active pointer to capture;
+          // real ones always do. Without capture a pointerup off-pill would
+          // strand the drag, hence capture-or-nothing, not capture-or-crash.
+          try {
+            btn.setPointerCapture(pointerId);
+          } catch {}
+          event.preventDefault();
+        });
+        btn.addEventListener("pointermove", (event) => {
+          if (!dragging || event.pointerId !== pointerId) return;
+          setX(startX + (event.clientX - startClientX));
+        });
+        // A release is the only way a drag confirms, and only a FULL slide arms:
+        // the threshold compares against where the handle ACTUALLY is, so a tap,
+        // a nudge, or a 30–40% pull all spring home — only the handle parked at
+        // the far end confirms on release.
+        const release = (event) => {
+          if (!dragging || event.pointerId !== pointerId) return;
+          dragging = false;
+          pointerId = null;
+          btn.classList.remove("slide-to-confirm--dragging");
+          if (range > 0 && x >= range * ARM_THRESHOLD) {
+            // The pointerup's own click follows immediately; mark it as this
+            // gesture's so the click listener lets it through to the submit.
+            armedViaDrag = true;
+            confirm();
+          } else {
+            rideTo(0);
+          }
+        };
+        btn.addEventListener("pointerup", release);
+        // A cancel (scroll takeover, browser gesture) is NOT a release: the only
+        // honest outcome is the spring home. Confirming here is how a half-slide
+        // would "immediately confirm".
+        btn.addEventListener("pointercancel", (event) => {
+          if (!dragging || event.pointerId !== pointerId) return;
+          dragging = false;
+          pointerId = null;
+          btn.classList.remove("slide-to-confirm--dragging");
+          rideTo(0);
+        });
+        // Pointer activation is slide-only — a tap is NEVER an activation: this
+        // is a slider, not a button. The only pointer path through is an armed
+        // full slide, whose release (a frame ago) flagged its own trailing click.
+        // Keyboard and AT activation — Enter/Space/screen-reader press, a click
+        // with no pointer, so `detail === 0` — counts as a full slide, because a
+        // keyboard can't drag. Every other click is swallowed: a tap, a short
+        // drag's trailing click, or a press while the handle is away from home
+        // mid-gesture.
+        btn.addEventListener("click", (event) => {
+          if (confirmed) {
+            if (!armedViaDrag) event.preventDefault();
+            armedViaDrag = false;
+            return;
+          }
+          if (btn.disabled || event.detail !== 0 || x > 0) {
+            event.preventDefault();
+            return;
+          }
+          confirm();
+          // No preventDefault on the arming paths: a submit button's click
+          // dispatches the form's submit event, which RsvpSection turns into the
+          // RSVP POST.
+        });
+        // The host page owns the truth. This control arms its celebration on the
+        // GESTURE — the pill goes black and the volley fires while the submit
+        // handler's fetch is still in flight — and only that handler learns
+        // whether the action actually landed. When it didn't, it dispatches
+        // `slide-to-confirm:reset` on the button and this rolls the presentation
+        // back to the fresh idle state. Without it a failed save would leave a
+        // black pill with a parked check that no gesture can move again — lying
+        // about a state that never happened, recoverable only by a refresh.
+        //
+        // The rollback is a cut, not a second morph: the confirmed class's own
+        // transitions were declared on the class, so removing it snaps the paint
+        // back while the handle springs home under the reversing morph — the same
+        // settle-back a short drag gets. Everything still scheduled (the circle's
+        // remaining growth, the label's timed return, the volley's staggered
+        // shots) is stopped first so nothing lands on a pill that is no longer
+        // confirmed.
+        btn.addEventListener("slide-to-confirm:reset", () => {
+          if (!confirmed) return;
+          confirmed = false;
+          armedViaDrag = false;
+          fillAnimation?.stop();
+          fillAnimation = null;
+          popAnimation?.stop();
+          popAnimation = null;
+          for (const timer of pendingTimers.splice(0)) window.clearTimeout(timer);
+          btn.classList.remove("slide-to-confirm--confirmed");
+          btn.classList.remove("slide-to-confirm--dragging");
+          // Motion commits the celebration's final keyframes as inline styles
+          // (the label's return, the settle-pop). Inline beats the stylesheet,
+          // so a rolled-back control would inherit them: a label that can no
+          // longer fade under the handle on the retry drag, a press that can no
+          // longer scale. Take them off — the idle rules own these again.
+          label.style.removeProperty("opacity");
+          label.style.removeProperty("transform");
+          btn.style.removeProperty("transform");
+          setFill(0);
+          rideTo(0);
+        });
+        // The server can render the control already confirmed (returning guest):
+        // park the handle at the far end with no motion and no volley — the state
+        // is old news, not a fresh celebration. The morph transitions only exist
+        // on the confirmed class, so adding the class would fade the fill in from
+        // its idle values (a page-load artifact on a state that isn't fresh):
+        // suppress them for the one frame the class lands in.
+        if (confirmed && reducedMotion) {
+          setFill(fillRadius);
+          setX(range);
+          label.style.setProperty("--slide-to-confirm-label-opacity", "1");
+        }
+      };
+      for (const btn of document.querySelectorAll("[data-slide-to-confirm]")) {
+        setupSlider(btn);
+      }
 
-//# sourceMappingURL=data:application/json;base64,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Q0Q7RUFDQSxRQUFROzs7O0NBSVQsQ0FBQzs7Ozs7Ozs7Ozs7Ozs7Ozs7Q0FpQkQsSUFBSSxpQkFBaUIsZ0NBQWdDO0VBQ3BELElBQUksQ0FBQyxXQUFXO0VBQ2hCLFlBQVk7RUFDWixlQUFlO0VBQ2YsZUFBZSxLQUFLO0VBQ3BCLGdCQUFnQjtFQUNoQixjQUFjLEtBQUs7RUFDbkIsZUFBZTtFQUNmLEtBQUssTUFBTSxTQUFTLGNBQWMsT0FBTyxDQUFDLEdBQUcsT0FBTyxhQUFhLEtBQUs7RUFDdEUsSUFBSSxVQUFVLE9BQU8sNkJBQTZCO0VBQ2xELElBQUksVUFBVSxPQUFPLDRCQUE0Qjs7Ozs7O0VBTWpELE1BQU0sTUFBTSxlQUFlLFNBQVM7RUFDcEMsTUFBTSxNQUFNLGVBQWUsV0FBVztFQUN0QyxJQUFJLE1BQU0sZUFBZSxXQUFXO0VBQ3BDLFFBQVEsQ0FBQztFQUNULE9BQU8sQ0FBQztDQUNULENBQUM7Ozs7Ozs7Q0FPRCxJQUFJLGFBQWEsZUFBZTtFQUMvQixRQUFRLFVBQVU7RUFDbEIsS0FBSyxLQUFLO0VBQ1YsTUFBTSxNQUFNLFlBQVksb0NBQW9DLEdBQUc7Q0FDaEU7QUFDRDtBQUNBLEtBQUssTUFBTSxPQUFPLFNBQVMsaUJBQW9DLHlCQUF5QixHQUFHO0NBQzFGLFlBQVksR0FBRztBQUNoQiIsIm5hbWVzIjpbXSwic291cmNlcyI6WyJTbGlkZVRvQ29uZmlybS5hc3Rybz9hc3RybyZ0eXBlPXNjcmlwdCZpbmRleD0wJmxhbmcudHMiXSwidmVyc2lvbiI6Mywic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IHsgYW5pbWF0ZSB9IGZyb20gXCJtb3Rpb25cIjtcbmltcG9ydCBjb25mZXR0aSBmcm9tIFwiY2FudmFzLWNvbmZldHRpXCI7XG4vLyBKUyB0d2lucyBvZiB0aGUgQ1NTIGVhc2luZyB0b2tlbnM7IGtlZXAgaW4gc3luYy5cbmNvbnN0IEVBU0VfT1VUX0VYUE8gPSBbXG5cdC4xNixcblx0MSxcblx0LjMsXG5cdDFcbl0gYXMgY29uc3Q7XG4vLyAtLWVhc2UtaW4tb3V0LXN0cm9uZzogdGhlIGZpbGUncyBjbGlwLXBhdGggY3VydmUgKHRoZSBlbnRyYW5jZSB1c2VzIGl0XG4vLyB0b28pLCBhbmQgdGhlIGNvbmZpcm1lZCBmaWxsJ3Mg4oCUIHNlZSBncm93RmlsbCBvbiB3aHkgYSBjaXJjbGUncyByYWRpdXNcbi8vIHdhbnRzIGEgY3VydmUgdGhhdCBzdGFydHMgZnJvbSByZXN0LlxuY29uc3QgRUFTRV9JTl9PVVRfU1RST05HID0gW1xuXHQuNzcsXG5cdDAsXG5cdC4xNzUsXG5cdDFcbl0gYXMgY29uc3Q7XG4vLyBKUyB0d2lucyBvZiB0aGUgY29uZmlybWVkIGZpbGwncyBDU1MgdGltaW5ncyAoLS1zbGlkZS10by1jb25maXJtLWR1cmF0aW9uLWZpbGxcbi8vIGFuZCAtLXNsaWRlLXRvLWNvbmZpcm0tZGVsYXktaGFuZGxlKS4gVGhlIGNpcmNsZSdzIGdyb3d0aCBpcyBzY3JpcHRlZCBhbmRcbi8vIHRoZSBoYW5kbGUvbGFiZWwvcmltIGNoYW5nZXMgYXJlIENTUyB0cmFuc2l0aW9ucyBvZmYgdGhlIHNhbWUgY2xvY2ssIHNvXG4vLyB0aGVzZSB0d28gbnVtYmVycyBhcmUgdGhlIHNlYW0gYmV0d2VlbiB0aGVtOiB0aGUgaGFuZGxlIGZsaXBzIGFuZCB0aGVcbi8vIHdvcmRzIHJldHVybiBhdCB0aGUgZGVsYXksIG9uY2UgdGhlIGJsYWNrIGlzIHBhc3QgdGhlbSwgYW5kIHRoZSB0cmFjaydzXG4vLyBvd24gYmFja2dyb3VuZCBsYW5kcyBhdCB0aGUgZnVsbCBkdXJhdGlvbiwgdW5kZXIgYSBjaXJjbGUgdGhhdCBhbHJlYWR5XG4vLyBjb3ZlcnMgaXQuXG5jb25zdCBGSUxMX01TID0gNTIwO1xuY29uc3QgRklMTF9IQU5ET0ZGX01TID0gMjYwO1xuLy8gVGhlIFNsaWRlVG9EZXRvbmF0ZSBnZW9tZXRyeSwgdGFrZW4gbGl0ZXJhbGx5OiB0aGUgaGFuZGxlIG11c3QgYmUgcGFya2VkXG4vLyBhdCB0aGUgRkFSIEVORCB0byBhcm0gKHNldFggY2xhbXBzIHRoZSBkcmFnIHRvIHRoZSB0cmFjaywgc28gYSBkcmFnIHRvIG9yXG4vLyBwYXN0IHRoZSBlbmQgcmVhY2hlcyBleGFjdGx5IHJhbmdlKSwgYW5kIGEgc3ByaW5neSByZXR1cm4gd2hlbiBsZXQgZ29cbi8vIGFueXdoZXJlIHNob3J0IG9mIGl0LiBBIHRhcCBvciBhIHBhcnRpYWwgc2xpZGUgbmV2ZXIgY29uZmlybXMuXG5jb25zdCBBUk1fVEhSRVNIT0xEID0gMTtcbi8vIFBhcnNlcyBcIk0xMyAxNyAxOCAxMiAxMyA3XCIgaW50byBbWzEzLDE3XSxbMTgsMTJdLFsxMyw3XV0uIFRoZSBnbHlwaCBwYXRoc1xuLy8gYXJlIGF1dGhvcmVkIGFzIHBsYWluIHBvbHlsaW5lcyAoYW4gTSBmb2xsb3dlZCBieSBpbXBsaWNpdC1saW5ldG8gcGFpcnMpXG4vLyBwcmVjaXNlbHkgc28gdGhlIG1vcnBoIGNhbiBiZSBwdXJlIG51bWJlciBpbnRlcnBvbGF0aW9uOiBldmVyeSBudW1iZXIgaW5cbi8vIHRoZSBzdHJpbmcgaXMgYSBjb29yZGluYXRlLCBpbiBvcmRlci5cbmNvbnN0IHBvaW50cyA9IChkOiBzdHJpbmcpOiBudW1iZXJbXVtdID0+IHtcblx0Y29uc3QgbnVtcyA9IChkLm1hdGNoKC8tP1tcXGQuXSsvZykgPz8gW10pLm1hcChOdW1iZXIpO1xuXHRjb25zdCBvdXQ6IG51bWJlcltdW10gPSBbXTtcblx0Zm9yIChsZXQgaSA9IDA7IGkgKyAxIDwgbnVtcy5sZW5ndGg7IGkgKz0gMikgb3V0LnB1c2goW251bXNbaV0hLCBudW1zW2kgKyAxXSFdKTtcblx0cmV0dXJuIG91dDtcbn07XG4vLyBSb3VuZGVkIHRvIDAuMDE6IGVub3VnaCBwcmVjaXNpb24gdGhhdCB0aGUgbW90aW9uIGlzIHNtb290aCBhdCAyMHB4LCBzaG9ydFxuLy8gZW5vdWdoIHRoYXQgdGhlIHBlci1mcmFtZSBhdHRyaWJ1dGUgd3JpdGUgc3RheXMgY2hlYXAuXG5jb25zdCB0b1BhdGggPSAocHRzOiBudW1iZXJbXVtdKSA9PiBgTSR7cHRzLm1hcCgoW3gsIHldKSA9PiBgJHtNYXRoLnJvdW5kKHghICogMTAwKSAvIDEwMH0gJHtNYXRoLnJvdW5kKHkhICogMTAwKSAvIDEwMH1gKS5qb2luKFwiIFwiKX1gO1xuY29uc3Qgc2V0dXBFbnRyYW5jZSA9IChidG46IEhUTUxCdXR0b25FbGVtZW50LCBsYWJlbDogSFRNTEVsZW1lbnQpID0+IHtcblx0Y29uc3QgbW90aW9uUHJlZmVyZW5jZSA9IHdpbmRvdy5tYXRjaE1lZGlhKFwiKHByZWZlcnMtcmVkdWNlZC1tb3Rpb246IHJlZHVjZSlcIik7XG5cdGNvbnN0IGlzQ29uZmlybWVkID0gYnRuLmNsYXNzTGlzdC5jb250YWlucyhcInNsaWRlLXRvLWNvbmZpcm0tLWNvbmZpcm1lZFwiKTtcblx0aWYgKG1vdGlvblByZWZlcmVuY2UubWF0Y2hlcyB8fCBidG4ubWF0Y2hlcyhcIjpmb2N1c1wiKSB8fCB0eXBlb2YgSW50ZXJzZWN0aW9uT2JzZXJ2ZXIgPT09IFwidW5kZWZpbmVkXCIpIHJldHVybiAoKSA9PiB7fTtcblx0bGV0IG9ic2VydmVyOiBJbnRlcnNlY3Rpb25PYnNlcnZlciB8IHVuZGVmaW5lZDtcblx0bGV0IGZyYW1lID0gMDtcblx0bGV0IGRpc3Bvc2VkID0gZmFsc2U7XG5cdGNvbnN0IHRhcmdldCA9IGJ0bi5wYXJlbnRFbGVtZW50ID8/IGJ0bjtcblx0Y29uc3QgZmluaXNoID0gKCkgPT4ge1xuXHRcdGlmIChkaXNwb3NlZCkgcmV0dXJuO1xuXHRcdGRpc3Bvc2VkID0gdHJ1ZTtcblx0XHRvYnNlcnZlcj8uZGlzY29ubmVjdCgpO1xuXHRcdGNhbmNlbEFuaW1hdGlvbkZyYW1lKGZyYW1lKTtcblx0XHRidG4ucmVtb3ZlQXR0cmlidXRlKFwiZGF0YS1zbGlkZS1lbnRyYW5jZVwiKTtcblx0XHRidG4uZ2V0QW5pbWF0aW9ucyh7IHN1YnRyZWU6IHRydWUgfSkuZm9yRWFjaCgoYW5pbWF0aW9uKSA9PiBhbmltYXRpb24uY2FuY2VsKCkpO1xuXHRcdGJ0bi5yZW1vdmVFdmVudExpc3RlbmVyKFwiZm9jdXNcIiwgZmluaXNoKTtcblx0XHRtb3Rpb25QcmVmZXJlbmNlLnJlbW92ZUV2ZW50TGlzdGVuZXIoXCJjaGFuZ2VcIiwgb25Nb3Rpb25DaGFuZ2UpO1xuXHRcdHdpbmRvdy5yZW1vdmVFdmVudExpc3RlbmVyKFwicGFnZWhpZGVcIiwgZmluaXNoKTtcblx0XHR3aW5kb3cucmVtb3ZlRXZlbnRMaXN0ZW5lcihcInNjcm9sbFwiLCByZXZlYWwpO1xuXHRcdHdpbmRvdy5yZW1vdmVFdmVudExpc3RlbmVyKFwicmVzaXplXCIsIHJldmVhbCk7XG5cdH07XG5cdGNvbnN0IG9uTW90aW9uQ2hhbmdlID0gKCkgPT4ge1xuXHRcdGlmIChtb3Rpb25QcmVmZXJlbmNlLm1hdGNoZXMpIGZpbmlzaCgpO1xuXHR9O1xuXHRidG4uc2V0QXR0cmlidXRlKFwiZGF0YS1zbGlkZS1lbnRyYW5jZVwiLCBcInBlbmRpbmdcIik7XG5cdGJ0bi5hZGRFdmVudExpc3RlbmVyKFwiZm9jdXNcIiwgZmluaXNoKTtcblx0bW90aW9uUHJlZmVyZW5jZS5hZGRFdmVudExpc3RlbmVyKFwiY2hhbmdlXCIsIG9uTW90aW9uQ2hhbmdlKTtcblx0d2luZG93LmFkZEV2ZW50TGlzdGVuZXIoXCJwYWdlaGlkZVwiLCBmaW5pc2gpO1xuXHRsZXQgaGFzUmV2ZWFsZWQgPSBmYWxzZTtcblx0Y29uc3QgcmV2ZWFsID0gKCkgPT4ge1xuXHRcdGlmIChkaXNwb3NlZCB8fCBmcmFtZSkgcmV0dXJuO1xuXHRcdGZyYW1lID0gcmVxdWVzdEFuaW1hdGlvbkZyYW1lKCgpID0+IHtcblx0XHRcdGZyYW1lID0gcmVxdWVzdEFuaW1hdGlvbkZyYW1lKCgpID0+IHtcblx0XHRcdFx0ZnJhbWUgPSAwO1xuXHRcdFx0XHRpZiAoZGlzcG9zZWQpIHJldHVybjtcblx0XHRcdFx0Ly8gR29pbmcgYmFjayBhYm92ZSB0aGUgYnV0dG9uJ3MgbmF0dXJhbCBsb2NhdGlvbiByZXZlcnNlcyBpdHMgZW50cmFuY2UuXG5cdFx0XHRcdC8vIEdvaW5nIHBhc3QgaXQga2VlcHMgdGhlIHBpbGwgZXhwYW5kZWQgYW5kIHBhcmtlZCBpbnNpZGUgdGhlIHNlY3Rpb24uXG5cdFx0XHRcdC8vIE1hdGNoZXMgQWRkSW1hZ2VCdXR0b24gaW4gcGhvdG8tdHJhaWwudHMuXG5cdFx0XHRcdGNvbnN0IGluVmlldyA9IHRhcmdldC5nZXRCb3VuZGluZ0NsaWVudFJlY3QoKS50b3AgPCB3aW5kb3cuaW5uZXJIZWlnaHQ7XG5cdFx0XHRcdGlmIChpblZpZXcpIHtcblx0XHRcdFx0XHRoYXNSZXZlYWxlZCA9IHRydWU7XG5cdFx0XHRcdFx0YnRuLnNldEF0dHJpYnV0ZShcImRhdGEtc2xpZGUtZW50cmFuY2VcIiwgXCJyZXZlYWxpbmdcIik7XG5cdFx0XHRcdH0gZWxzZSBpZiAoaGFzUmV2ZWFsZWQpIHtcblx0XHRcdFx0XHRidG4uc2V0QXR0cmlidXRlKFwiZGF0YS1zbGlkZS1lbnRyYW5jZVwiLCBcImNvbGxhcHNlZFwiKTtcblx0XHRcdFx0fVxuXHRcdFx0fSk7XG5cdFx0fSk7XG5cdH07XG5cdG9ic2VydmVyID0gbmV3IEludGVyc2VjdGlvbk9ic2VydmVyKHJldmVhbCk7XG5cdG9ic2VydmVyLm9ic2VydmUodGFyZ2V0KTtcblx0d2luZG93LmFkZEV2ZW50TGlzdGVuZXIoXCJzY3JvbGxcIiwgcmV2ZWFsLCB7IHBhc3NpdmU6IHRydWUgfSk7XG5cdHdpbmRvdy5hZGRFdmVudExpc3RlbmVyKFwicmVzaXplXCIsIHJldmVhbCk7XG5cdHJldmVhbCgpO1xuXHRyZXR1cm4gZmluaXNoO1xufTtcbmNvbnN0IHNldHVwU2xpZGVyID0gKGJ0bjogSFRNTEJ1dHRvbkVsZW1lbnQpID0+IHtcblx0Y29uc3QgaGFuZGxlID0gYnRuLnF1ZXJ5U2VsZWN0b3I8SFRNTEVsZW1lbnQ+KFwiW2RhdGEtc2xpZGUtdG8tY29uZmlybS1oYW5kbGVdXCIpO1xuXHRjb25zdCBsYWJlbCA9IGJ0bi5xdWVyeVNlbGVjdG9yPEhUTUxFbGVtZW50PihcIltkYXRhLXNsaWRlLXRvLWNvbmZpcm0tdGV4dF1cIik7XG5cdGlmICghaGFuZGxlIHx8ICFsYWJlbCkgcmV0dXJuO1xuXHQvLyBFYWNoIHN0cm9rZSBjYXJyaWVzIGl0cyBvd24gZnJvbS90byBzaGFwZSwgcHJlLXBhcnNlZCBvbmNlLiBBIHN0cm9rZVxuXHQvLyB3aG9zZSBlbmRwb2ludHMgZG9uJ3QgaGF2ZSBtYXRjaGluZyBwb2ludCBjb3VudHMgaXMgc2tpcHBlZCByYXRoZXIgdGhhblxuXHQvLyBtb3JwaGVkIGludG8gbm9uc2Vuc2Ug4oCUIGl0IHNpbXBseSBzdGF5cyBhdCBpdHMgYXV0aG9yZWQgc2hhcGUuXG5cdGNvbnN0IHN0cm9rZXMgPSBbLi4uYnRuLnF1ZXJ5U2VsZWN0b3JBbGw8U1ZHUGF0aEVsZW1lbnQ+KFwiLnNsaWRlLXRvLWNvbmZpcm1fX3N0cm9rZVwiKV0ubWFwKChlbCkgPT4ge1xuXHRcdGNvbnN0IGZyb20gPSBwb2ludHMoZWwuZGF0YXNldC5tb3JwaEZyb20gPz8gXCJcIik7XG5cdFx0Y29uc3QgdG8gPSBwb2ludHMoZWwuZGF0YXNldC5tb3JwaFRvID8/IFwiXCIpO1xuXHRcdHJldHVybiBmcm9tLmxlbmd0aCAmJiBmcm9tLmxlbmd0aCA9PT0gdG8ubGVuZ3RoID8ge1xuXHRcdFx0ZWwsXG5cdFx0XHRmcm9tLFxuXHRcdFx0dG9cblx0XHR9IDogbnVsbDtcblx0fSkuZmlsdGVyKChzKTogcyBpcyB7XG5cdFx0ZWw6IFNWR1BhdGhFbGVtZW50O1xuXHRcdGZyb206IG51bWJlcltdW107XG5cdFx0dG86IG51bWJlcltdW107XG5cdH0gPT4gcyAhPT0gbnVsbCk7XG5cdC8vIFRoZSB3aG9sZSBtb3JwaDogZXZlcnkgcG9pbnQgb2YgZXZlcnkgc3Ryb2tlIG1vdmVkIHRvIGl0cyBpbnRlcnBvbGF0ZWRcblx0Ly8gcG9zaXRpb24sIHdyaXR0ZW4gc3RyYWlnaHQgdG8gdGhlIGBkYCBhdHRyaWJ1dGUgKENTUyBgZGAgaXMgQ2hyb21pdW0tb25seVxuXHQvLyDigJQgc2VlIHRoZSBub3RlIGluIHRoZSBzdHlsZXNoZWV0KS4gVGhpcyBpcyB0aGUgXCJsaW5lIGNoYW5naW5nIGludG8gYSBuZXdcblx0Ly8gb25lXCI6IGF0IG0gPSAwLjUgZWFjaCBwYXRoIGlzIGEgcmVhbCBpbnRlcm1lZGlhdGUgc2hhcGUsIG5vdCBhIGJsZW5kIG9mXG5cdC8vIHR3byBvdmVybGFpZCBnbHlwaHMuIEJvdGggc3Ryb2tlcyBhcmUgbGl2ZSBnZW9tZXRyeSB0aGUgd2hvbGUgd2F5IOKAlCBvbmVcblx0Ly8gYmVjb21lcyB0aGUgY2hlY2sncyBzaG9ydCBhcm0sIHRoZSBvdGhlciBpdHMgbG9uZyBhcm0g4oCUIHNvIHRoZXJlIGlzIG5vXG5cdC8vIG9wYWNpdHkgYW55d2hlcmUgaW4gdGhlIG1vcnBoLlxuXHRjb25zdCBzZXRNb3JwaCA9IChtOiBudW1iZXIpID0+IHtcblx0XHRmb3IgKGNvbnN0IHsgZWwsIGZyb20sIHRvIH0gb2Ygc3Ryb2tlcykge1xuXHRcdFx0ZWwuc2V0QXR0cmlidXRlKFwiZFwiLCB0b1BhdGgoZnJvbS5tYXAoKFt4LCB5XSwgaSkgPT4gW3ghICsgKHRvW2ldIVswXSEgLSB4ISkgKiBtLCB5ISArICh0b1tpXSFbMV0hIC0geSEpICogbV0pKSk7XG5cdFx0fVxuXHR9O1xuXHRjb25zdCByZWR1Y2VkTW90aW9uID0gd2luZG93Lm1hdGNoTWVkaWEoXCIocHJlZmVycy1yZWR1Y2VkLW1vdGlvbjogcmVkdWNlKVwiKS5tYXRjaGVzO1xuXHRsZXQgY29uZmlybWVkID0gYnRuLmRpc2FibGVkIHx8IGJ0bi5jbGFzc0xpc3QuY29udGFpbnMoXCJzbGlkZS10by1jb25maXJtLS1jb25maXJtZWRcIik7XG5cdGlmIChjb25maXJtZWQpIHtcblx0XHRidG4uY2xhc3NMaXN0LmFkZChcInNsaWRlLXRvLWNvbmZpcm0tLWNvbmZpcm1lZFwiKTtcblx0fVxuXHQvLyBUaGUgZGlzdGFuY2UgdGhlIGhhbmRsZSBjYW4gdHJhdmVsOiB0aGUgcGlsbCdzIGlubmVyIHdpZHRoIG1pbnVzIHRoZVxuXHQvLyBoYW5kbGUgYW5kIGl0cyAoc3ltbWV0cmljKSBpbnNldHMsIHJlYWQgb2ZmIHRoZSBsYXlvdXQgc28gdGhlIENTUyBvd25zXG5cdC8vIGV2ZXJ5IG51bWJlci4gTWVhc3VyZWQgbGF6aWx5IG9uIHRoZSBmaXJzdCBwb2ludGVyZG93biAodGhlIHBpbGwgbWF5IGJlXG5cdC8vIGluc2lkZSBhbiB1bmxhaWQtb3V0IGNvbnRhaW5lciBhdCBjb25uZWN0IHRpbWUpIGFuZCByZS1tZWFzdXJlZCBvblxuXHQvLyByZXNpemUgc28gcm90YXRpb24vdmlld3BvcnQgY2hhbmdlcyBzdGF5IGhvbmVzdC5cblx0bGV0IHJhbmdlID0gMDtcblx0Ly8gVGhlIGNvbmZpcm1lZCBmaWxsJ3MgZ2VvbWV0cnksIGluIHRoZSBzYW1lIG1lYXN1cmVkIHVuaXRzOiB0aGUgY2lyY2xlXG5cdC8vIGlzIHNlZWRlZCBhdCB0aGUgUEFSS0VEIGhhbmRsZSdzIGNlbnRlciAodGhlIGdlc3R1cmUncyBlbmRwb2ludCwgd2hpY2hcblx0Ly8gaXMgd2hlcmUgdGhlIG5ldyBzdGF0ZSBjb21lcyBmcm9tKSBhbmQgaGFzIHRvIHJlYWNoIHRoZSBmYXIgY29ybmVyIG9mXG5cdC8vIHRoZSBwaWxsIHRvIGNvdmVyIGl0IOKAlCB0aGF0IGNvcm5lciBpcyB0aGUgb3Bwb3NpdGUgZW5kLCBzbyB0aGUgcmFkaXVzXG5cdC8vIGlzIHRoZSBkaXN0YW5jZSBmcm9tIHRoZSBoYW5kbGUncyBjZW50ZXIgdG8gdGhlIHBpbGwncyBmYXIgZWRnZS5cblx0bGV0IGZpbGxPcmlnaW4gPSAwO1xuXHRsZXQgZmlsbFJhZGl1cyA9IDA7XG5cdGNvbnN0IG1lYXN1cmUgPSAoKSA9PiB7XG5cdFx0cmFuZ2UgPSBNYXRoLm1heCgwLCBidG4uY2xpZW50V2lkdGggLSBoYW5kbGUub2Zmc2V0V2lkdGggLSBoYW5kbGUub2Zmc2V0TGVmdCAqIDIpO1xuXHRcdC8vIFRoaXMgb2Zmc2V0IGJlbG9uZ3MgdG8gdGhlIGVudHJhbmNlIG9ubHksIG5vdCB0aGUgdXNlcidzIHNsaWRlIHguXG5cdFx0Ly8gU2V0IGl0IG9uIHRoZSBoYW5kbGUgaXRzZWxmOyBpdHMgdHJhbnNsYXRlZCBwb3NpdGlvbiBuZXZlciBhZmZlY3RzIHJhbmdlLlxuXHRcdGhhbmRsZS5zdHlsZS5zZXRQcm9wZXJ0eShcIi0tc2xpZGUtdG8tY29uZmlybS1lbnRyYW5jZS14XCIsIGAke3JhbmdlIC8gMn1weGApO1xuXHRcdGZpbGxPcmlnaW4gPSBoYW5kbGUub2Zmc2V0TGVmdCArIHJhbmdlICsgaGFuZGxlLm9mZnNldFdpZHRoIC8gMjtcblx0XHRjb25zdCB3ID0gYnRuLm9mZnNldFdpZHRoO1xuXHRcdGNvbnN0IGggPSBidG4ub2Zmc2V0SGVpZ2h0O1xuXHRcdGZpbGxSYWRpdXMgPSBNYXRoLmh5cG90KE1hdGgubWF4KGZpbGxPcmlnaW4sIHcgLSBmaWxsT3JpZ2luKSwgaCAvIDIpICsgMjtcblx0XHRidG4uc3R5bGUuc2V0UHJvcGVydHkoXCItLXNsaWRlLXRvLWNvbmZpcm0tZmlsbC14XCIsIGAke2ZpbGxPcmlnaW59cHhgKTtcblx0XHRpZiAoY29uZmlybWVkKSB7XG5cdFx0XHRidG4uc3R5bGUuc2V0UHJvcGVydHkoXCItLXNsaWRlLXRvLWNvbmZpcm0tZmlsbC1yXCIsIGAke2ZpbGxSYWRpdXN9cHhgKTtcblx0XHRcdGhhbmRsZS5zdHlsZS5zZXRQcm9wZXJ0eShcIi0tc2xpZGUtdG8tY29uZmlybS14XCIsIGAke3JhbmdlfXB4YCk7XG5cdFx0XHRzZXRNb3JwaCgxKTtcblx0XHR9XG5cdH07XG5cdG1lYXN1cmUoKTtcblx0aWYgKHR5cGVvZiBSZXNpemVPYnNlcnZlciAhPT0gXCJ1bmRlZmluZWRcIikge1xuXHRcdG5ldyBSZXNpemVPYnNlcnZlcihtZWFzdXJlKS5vYnNlcnZlKGJ0bik7XG5cdH0gZWxzZSB7XG5cdFx0d2luZG93LmFkZEV2ZW50TGlzdGVuZXIoXCJyZXNpemVcIiwgbWVhc3VyZSk7XG5cdH1cblx0Y29uc3QgZmluaXNoRW50cmFuY2UgPSBzZXR1cEVudHJhbmNlKGJ0biwgbGFiZWwpO1xuXHQvLyBTZXQgYnkgYSB0aHJlc2hvbGQtY3Jvc3NpbmcgcmVsZWFzZSBzbyB0aGF0IGdlc3R1cmUncyBvd24gY2xpY2sgaXNcblx0Ly8gYWxsb3dlZCB0aHJvdWdoIHRvIHRoZSBzdWJtaXQgKHNlZSB0aGUgY2xpY2sgbGlzdGVuZXIpLlxuXHRsZXQgYXJtZWRWaWFEcmFnID0gZmFsc2U7XG5cdGxldCB4ID0gMDtcblx0Ly8gVGhlIHNldHRsZS9jb25maXJtIHNwcmluZywga2VwdCBzbyBhIG5ldyBnZXN0dXJlIGNhbiBzdG9wIGl0IOKAlCBtb3Rpb24nc1xuXHQvLyBkZWZhdWx0IHdoZW4gb3ZlcmxhcHBpbmcgYW5pbWF0aW9ucyBvbiBvbmUgdmFsdWUgcmFjZSAoc3RvcCB3aW5zKS5cblx0bGV0IHJpZGU6IHtcblx0XHRzdG9wOiAoKSA9PiB2b2lkO1xuXHR9IHwgbnVsbCA9IG51bGw7XG5cdC8vIFRoZSBjb25maXJtZWQgY2hvcmVvZ3JhcGh5J3MgY2FuY2VsbGFibGUgdGFpbC4gVGhlIGNlbGVicmF0aW9uIHN0YXJ0c1xuXHQvLyB0aGUgbW9tZW50IHRoZSBzbGlkZSBhcm1zIOKAlCBiZWZvcmUgdGhlIGhvc3QgcGFnZSdzIHN1Ym1pdCBoYW5kbGVyIGhhc1xuXHQvLyBldmVuIHNlbnQgaXRzIGZldGNoIOKAlCBzbyBhIHNhdmUgdGhhdCBGQUlMUyBjYW4gcmVzb2x2ZSB3aGlsZSB0aGUgYmxhY2tcblx0Ly8gZmxvb2QsIHRoZSBsYWJlbCdzIHJldHVybiBhbmQgdGhlIHZvbGxleSdzIHN0YWdnZXJlZCBzaG90cyBhcmUgc3RpbGxcblx0Ly8gaW4gZmxpZ2h0LiBUaGVzZSBoYW5kbGVzIChhbmQgYGxhdGVyYCwgdGhlIG9uZSBzY2hlZHVsZXIgZXZlcnkgYmVhdCBvZlxuXHQvLyB0aGUgY2VsZWJyYXRpb24gZ29lcyB0aHJvdWdoKSBhcmUgd2hhdCBgc2xpZGUtdG8tY29uZmlybTpyZXNldGAgc3RvcHMuXG5cdGxldCBmaWxsQW5pbWF0aW9uOiB7XG5cdFx0c3RvcDogKCkgPT4gdm9pZDtcblx0fSB8IG51bGwgPSBudWxsO1xuXHQvLyBUaGUgc2V0dGxlLXBvcCwgc2FtZSB0cmVhdG1lbnQ6IGEgcmVzZXQgYXJyaXZpbmcgbWlkLXBvcCB3b3VsZCBsZWF2ZVxuXHQvLyBpdHMgY29tbWl0dGVkIHRyYW5zZm9ybSBvbiB0aGUgcGlsbC5cblx0bGV0IHBvcEFuaW1hdGlvbjoge1xuXHRcdHN0b3A6ICgpID0+IHZvaWQ7XG5cdH0gfCBudWxsID0gbnVsbDtcblx0Y29uc3QgcGVuZGluZ1RpbWVyczogbnVtYmVyW10gPSBbXTtcblx0Y29uc3QgbGF0ZXIgPSAoZm46ICgpID0+IHZvaWQsIG1zOiBudW1iZXIpID0+IHtcblx0XHRwZW5kaW5nVGltZXJzLnB1c2god2luZG93LnNldFRpbWVvdXQoZm4sIG1zKSk7XG5cdH07XG5cdGxldCBkcmFnZ2luZyA9IGZhbHNlO1xuXHRsZXQgcG9pbnRlcklkOiBudW1iZXIgfCBudWxsID0gbnVsbDtcblx0bGV0IHN0YXJ0Q2xpZW50WCA9IDA7XG5cdGxldCBzdGFydFggPSAwO1xuXHRjb25zdCBzZXRYID0gKG5leHQ6IG51bWJlcikgPT4ge1xuXHRcdHggPSBNYXRoLm1pbihNYXRoLm1heChuZXh0LCAwKSwgcmFuZ2UpO1xuXHRcdGhhbmRsZS5zdHlsZS5zZXRQcm9wZXJ0eShcIi0tc2xpZGUtdG8tY29uZmlybS14XCIsIGAke3h9cHhgKTtcblx0XHQvLyBCb3RoIHRoZSBsYWJlbCBmYWRlIGFuZCB0aGUgaWNvbiBtb3JwaCBhcmUgdGhlIFNBTUUgc2xpZGUgcHJvZ3Jlc3MsXG5cdFx0Ly8gdGFrZW4gdG8gY29tcGxldGlvbiBvdmVyIHRoZSBmaXJzdCA3MCUgb2YgdGhlIHRyYXZlbCAodGhlIHJlZmVyZW5jZSdzXG5cdFx0Ly8gbGFiZWwgY3VydmUpOiB0aGUgd29yZHMgYXJlIGdvbmUgYW5kIHRoZSBnbHlwaCBoYXMgYmVjb21lIGEgY2hlY2tcblx0XHQvLyB3aGlsZSB0aGVyZSBpcyBzdGlsbCB0cmFjayBsZWZ0LCBzbyB0aGUgbGFzdCBzdHJldGNoIGlzIHB1cmUgY29tbWl0LlxuXHRcdGNvbnN0IHByb2dyZXNzID0gcmFuZ2UgPiAwID8geCAvIHJhbmdlIDogMDtcblx0XHRjb25zdCBlYXNlZCA9IE1hdGgubWluKHByb2dyZXNzIC8gLjcsIDEpO1xuXHRcdGxhYmVsLnN0eWxlLnNldFByb3BlcnR5KFwiLS1zbGlkZS10by1jb25maXJtLWxhYmVsLW9wYWNpdHlcIiwgU3RyaW5nKDEgLSBlYXNlZCkpO1xuXHRcdC8vIFJlZHJhd3MgdGhlIGdseXBoIHVuZGVyIHRoZSB1c2VyJ3MgdGh1bWIsIGFuZCByZXZlcnNlcyBmcmFtZS1mb3ItZnJhbWVcblx0XHQvLyBpZiB0aGV5IGRyYWcgYmFjayDigJQgdGhlIHN0cm9rZXMgdHJhdmVsIHdpdGggdGhlIGdlc3R1cmUgaW5zdGVhZCBvZlxuXHRcdC8vIGFubm91bmNpbmcgaXRzIHJlc3VsdC5cblx0XHRzZXRNb3JwaChlYXNlZCk7XG5cdH07XG5cdC8vIFRoZSByZWZlcmVuY2UncyBzZXR0bGUgc3ByaW5nIChzdGlmZm5lc3MgNTAwIC8gZGFtcGluZyAzOCkuIE1vdGlvblxuXHQvLyBhbmltYXRlcyBhIHBsYWluIG51bWJlcjsgZWFjaCB0aWNrIHJlLXJlbmRlcnMgb2Zmc2V0ICsgbGFiZWwgZmFkZS5cblx0Ly8gb25Db21wbGV0ZSBwaW5zIHRoZSBleGFjdCBlbmRwb2ludCwgc28gYSByZWxlYXNlIGEgaGFpciBzaG9ydCBvZiB0aGVcblx0Ly8gZW5kIGNhbiBuZXZlciBmcmVlemUgd2hlcmUgaXQgbGV0IGdvIOKAlCB0aGUgcGFya2VkIHBvc2l0aW9uIElTIHRoZSBmYXJcblx0Ly8gZW5kIChhbmQgb25seSB0aGUgZmFyIGVuZCBhcm1zKS5cblx0Y29uc3QgcmlkZVRvID0gKHRvOiBudW1iZXIpID0+IHtcblx0XHRyaWRlPy5zdG9wKCk7XG5cdFx0aWYgKHJlZHVjZWRNb3Rpb24pIHtcblx0XHRcdHNldFgodG8pO1xuXHRcdFx0cmV0dXJuO1xuXHRcdH1cblx0XHRyaWRlID0gYW5pbWF0ZSh4LCB0bywge1xuXHRcdFx0dHlwZTogXCJzcHJpbmdcIixcblx0XHRcdHN0aWZmbmVzczogNTAwLFxuXHRcdFx0ZGFtcGluZzogMzgsXG5cdFx0XHRvblVwZGF0ZTogKHYpID0+IHNldFgodiksXG5cdFx0XHRvbkNvbXBsZXRlOiAoKSA9PiBzZXRYKHRvKVxuXHRcdH0pO1xuXHR9O1xuXHQvLyBUaGUgY29uZmlybWVkIGZpbGwncyBncm93dGg6IHRoZSBibGFjayBjaXJjbGUgc3dlbGxzIG91dCBvZiB0aGUgcGFya2VkXG5cdC8vIGhhbmRsZSB1bnRpbCBpdCBoYXMgY292ZXJlZCB0aGUgcGlsbC4gT25seSBpdHMgUkFESVVTIGFuaW1hdGVzICh0aGVcblx0Ly8gY2VudGVyIHdhcyB3cml0dGVuIGJ5IG1lYXN1cmUoKSksIHNvIHRoZSB3aG9sZSBmbG9vZCBpcyBvbmUgY2xpcC1wYXRoXG5cdC8vIG9uIGEgcHNldWRvLWVsZW1lbnQg4oCUIG5vIGxheW91dCwgbm8gc2Vjb25kIHBhaW50ZWQgZWxlbWVudC5cblx0Ly9cblx0Ly8gYG1vdGlvbmAgY2Fubm90IHRhcmdldCBhIHBzZXVkby1lbGVtZW50LCBzbyB0aGUgcmFkaXVzIHJpZGVzIGEgY3VzdG9tXG5cdC8vIHByb3BlcnR5IG9uIHRoZSBidXR0b24gYW5kIGlzIHdyaXR0ZW4gcGVyIHRpY2sgbGlrZSB0aGUgaGFuZGxlJ3Mgb2Zmc2V0LlxuXHQvLyBTYW1lIHNoYXBlIGFzIFRpbWVsaW5lU2Nyb2xsJ3MgZmluYWxlIChjaXJjbGUoMC4wMDFweCkg4oaSIGZ1bGwgY292ZXIpLFxuXHQvLyBzY2FsZWQgZnJvbSB0aGUgdmlld3BvcnQgdG8gYSA1OHB4IHBpbGwuXG5cdC8vXG5cdC8vIFRoZSBjdXJ2ZSBpcyB0aGUgZmlsZSdzIGNsaXAtcGF0aCBjdXJ2ZSAodGhlIGVudHJhbmNlJ3Ncblx0Ly8gLS1lYXNlLWluLW91dC1zdHJvbmcpLCBub3QgdGhlIGV4cG8gdXNlZCBmb3IgZmFkZXMsIGFuZCBmb3IgYSByZWFzb25cblx0Ly8gc3BlY2lmaWMgdG8gY2lyY2xlczogcGFpbnRlZCBBUkVBIGdvZXMgYXMgcsKyLCBzbyBhbiBlYXNlLW91dCByYWRpdXNcblx0Ly8gZHVtcHMgbW9zdCBvZiB0aGUgYmxhY2sgaW4gdGhlIGZpcnN0IGZldyBmcmFtZXMgYW5kIHJlYWRzIGFzIGEgZmxhc2hcblx0Ly8gcmF0aGVyIHRoYW4gYSBzd2VlcC4gU3RhcnRpbmcgZnJvbSByZXN0IGtlZXBzIHRoZSBlZGdlIGxlZ2libGUgYXMgaXRcblx0Ly8gY3Jvc3NlcyB0aGUgcGlsbCDigJQgdGhlIGV4cGFuc2lvbiBpcyB0aGUgdGhpbmcgYmVpbmcgd2F0Y2hlZCBoZXJlLlxuXHRjb25zdCBzZXRGaWxsID0gKHI6IG51bWJlcikgPT4ge1xuXHRcdGJ0bi5zdHlsZS5zZXRQcm9wZXJ0eShcIi0tc2xpZGUtdG8tY29uZmlybS1maWxsLXJcIiwgYCR7TWF0aC5tYXgoMCwgcil9cHhgKTtcblx0fTtcblx0Ly8gYG9uQ292ZXJlZGAgcnVucyB0aGUgaW5zdGFudCB0aGUgY2lyY2xlIGhhcyBzd2FsbG93ZWQgdGhlIHdob2xlIHBpbGwsXG5cdC8vIHdoaWNoIGlzIHdoYXQgdGhlIGNvbmZldHRpIHdhaXRzIGZvciAoc2VlIGNvbmZpcm0pLlxuXHRjb25zdCBncm93RmlsbCA9IChvbkNvdmVyZWQ/OiAoKSA9PiB2b2lkKSA9PiB7XG5cdFx0aWYgKHJlZHVjZWRNb3Rpb24pIHtcblx0XHRcdC8vIE5vIGpvdXJuZXk6IHRoZSBmaWxsIGlzIHNpbXBseSBhbHJlYWR5IHRoZXJlLCB3aGljaCBpcyB3aGF0IHRoZVxuXHRcdFx0Ly8gY29uZmlybWVkIGJhY2tncm91bmQtY29sb3Igd291bGQgaGF2ZSBwYWludGVkIGFueXdheS5cblx0XHRcdHNldEZpbGwoZmlsbFJhZGl1cyk7XG5cdFx0XHRvbkNvdmVyZWQ/LigpO1xuXHRcdFx0cmV0dXJuO1xuXHRcdH1cblx0XHRmaWxsQW5pbWF0aW9uID0gYW5pbWF0ZSgwLCBmaWxsUmFkaXVzLCB7XG5cdFx0XHRkdXJhdGlvbjogRklMTF9NUyAvIDFlMyxcblx0XHRcdGVhc2U6IEVBU0VfSU5fT1VUX1NUUk9ORyxcblx0XHRcdG9uVXBkYXRlOiBzZXRGaWxsLFxuXHRcdFx0b25Db21wbGV0ZTogKCkgPT4ge1xuXHRcdFx0XHRzZXRGaWxsKGZpbGxSYWRpdXMpO1xuXHRcdFx0XHRvbkNvdmVyZWQ/LigpO1xuXHRcdFx0fVxuXHRcdH0pO1xuXHR9O1xuXHQvLyBUaGUgTWFnaWNVSSBDb25mZXR0aUJ1dHRvbiBvcmlnaW4gbWF0aDogYnVyc3QgZnJvbSB0aGUgYnV0dG9uJ3MgY2VudGVyLFxuXHQvLyBleHByZXNzZWQgYXMgYSBmcmFjdGlvbiBvZiB0aGUgdmlld3BvcnQuIFRoZSBwYWxldHRlIGZsaXBzIHdpdGggdGhlXG5cdC8vIGRldmljZSB0aGVtZSDigJQgaHVlcyBzdGF5LCBsaWdodG5lc3MgaW52ZXJ0cyDigJQgc28gdGhlIHZvbGxleSByZWFkc1xuXHQvLyBhZ2FpbnN0IHRoZSBwYWdlIGl0IGxhbmRzIG9uLCBzYW1lIG1pcnJvcmVkLWJ5LWNvbnN0cnVjdGlvbiBjb250cmFjdCBhc1xuXHQvLyB0aGUgcGlsbC4gVm9sbGV5IHNoYXBlIGlzIHRoZSBtYWdpY3VpIHN0YXJzIGRlbW86IHRocmVlIHN0YWdnZXJlZCBzaG90c1xuXHQvLyBvZiBhIGxhcmdlIHNoYXBlIHBsdXMgYSBmZXcgc21hbGwgY2lyY2xlcy5cblx0Ly9cblx0Ly8gRmlyZWQgb25jZSB0aGUgZmlsbCBoYXMgY292ZXJlZCB0aGUgcGlsbCwgc28gdGhlIHJlY3QgaXQgbWVhc3VyZXMgaXNcblx0Ly8gdGhlIHNldHRsZWQgb25lICh0aGUgc2V0dGxlLXBvcCBpcyBvdmVyIGJ5IHRoZW4pIGFuZCB0aGUgb3JpZ2luIGlzIHRoZVxuXHQvLyBmaW5pc2hlZCBibGFjayBwaWxsIHJhdGhlciB0aGFuIGEgbWlkLXNjYWxlIGZyYW1lIG9mIGl0LlxuXHRjb25zdCBmaXJlQ29uZmV0dGkgPSAoKSA9PiB7XG5cdFx0Y29uc3QgcmVjdCA9IGJ0bi5nZXRCb3VuZGluZ0NsaWVudFJlY3QoKTtcblx0XHRjb25zdCBvcmlnaW4gPSB7XG5cdFx0XHR4OiAocmVjdC5sZWZ0ICsgcmVjdC53aWR0aCAvIDIpIC8gd2luZG93LmlubmVyV2lkdGgsXG5cdFx0XHR5OiAocmVjdC50b3AgKyByZWN0LmhlaWdodCAvIDIpIC8gd2luZG93LmlubmVySGVpZ2h0XG5cdFx0fTtcblx0XHRjb25zdCBsaWdodCA9IHdpbmRvdy5tYXRjaE1lZGlhKFwiKHByZWZlcnMtY29sb3Itc2NoZW1lOiBsaWdodClcIikubWF0Y2hlcztcblx0XHRjb25zdCBjb2xvcnMgPSBsaWdodCA/IFtcblx0XHRcdFwiI2I0NTMwOVwiLFxuXHRcdFx0XCIjYmUxMjNjXCIsXG5cdFx0XHRcIiMxZDRlZDhcIixcblx0XHRcdFwiIzA0Nzg1N1wiLFxuXHRcdFx0XCIjMTExMTExXCJcblx0XHRdIDogW1xuXHRcdFx0XCIjZmNkMzRkXCIsXG5cdFx0XHRcIiNmZGE0YWZcIixcblx0XHRcdFwiIzkzYzVmZFwiLFxuXHRcdFx0XCIjNmVlN2I3XCIsXG5cdFx0XHRcIiNmYWZhZmFcIlxuXHRcdF07XG5cdFx0Y29uc3QgZGVmYXVsdHMgPSB7XG5cdFx0XHRvcmlnaW4sXG5cdFx0XHRjb2xvcnMsXG5cdFx0XHRzcHJlYWQ6IDcwLFxuXHRcdFx0dGlja3M6IDIwMCxcblx0XHRcdGdyYXZpdHk6IDEsXG5cdFx0XHRkZWNheTogLjk0LFxuXHRcdFx0c3RhcnRWZWxvY2l0eTogMzgsXG5cdFx0XHR6SW5kZXg6IDk5OTlcblx0XHR9O1xuXHRcdGlmIChyZWR1Y2VkTW90aW9uKSB7XG5cdFx0XHQvLyBObyB2b2xsZXkgYXQgYWxsLiBGb3J0eSBiYWxsaXN0aWMgcGFydGljbGVzIHdhcyB0aGUgbGFyZ2VzdCBtb3ZlbWVudFxuXHRcdFx0Ly8gb24gdGhlIHBhZ2UsIGhhbmRlZCB0byB0aGUgZ3Vlc3RzIHdobyBhc2tlZCBmb3IgbGVzcyBvZiBpdDsgXCJxdWlldFwiXG5cdFx0XHQvLyBpcyBhIHNtYWxsZXIgYnVyc3QsIG5vdCBhIGRpZmZlcmVudCBraW5kIG9mIHRoaW5nLiBUaGUgY2VsZWJyYXRpb25cblx0XHRcdC8vIHN1cnZpdmVzIGluIHRoZSBjaGFubmVscyByZWR1Y2VkIG1vdGlvbiBrZWVwczogdGhlIHBpbGwgZ29lcyBibGFjayxcblx0XHRcdC8vIHRoZSBnbHlwaCBpcyBhIGNoZWNrLCBhbmQgdGhlIGxhYmVsIHN3YXBzIHRvIFwiUmVzZXJ2YXRpb24gQ29uZmlybWVkXCIuXG5cdFx0XHRyZXR1cm47XG5cdFx0fVxuXHRcdGNvbnN0IHNob290ID0gKCkgPT4ge1xuXHRcdFx0dm9pZCBjb25mZXR0aSh7XG5cdFx0XHRcdC4uLmRlZmF1bHRzLFxuXHRcdFx0XHRwYXJ0aWNsZUNvdW50OiA1MCxcblx0XHRcdFx0c2NhbGFyOiAxLjEsXG5cdFx0XHRcdHNoYXBlczogW1wic3RhclwiXVxuXHRcdFx0fSk7XG5cdFx0XHR2b2lkIGNvbmZldHRpKHtcblx0XHRcdFx0Li4uZGVmYXVsdHMsXG5cdFx0XHRcdHBhcnRpY2xlQ291bnQ6IDE0LFxuXHRcdFx0XHRzY2FsYXI6IC43LFxuXHRcdFx0XHRzaGFwZXM6IFtcImNpcmNsZVwiXVxuXHRcdFx0fSk7XG5cdFx0fTtcblx0XHRzaG9vdCgpO1xuXHRcdGxhdGVyKHNob290LCAxMjApO1xuXHRcdGxhdGVyKHNob290LCAyNDApO1xuXHR9O1xuXHQvLyBGdWxseSBzbGlkLCBpbiBvcmRlcjogYSBibGFjayBjaXJjbGUgZ3Jvd3Mgb3V0IG9mIHRoZSBwYXJrZWQgaGFuZGxlXG5cdC8vIHVudGlsIGl0IGhhcyBzd2FsbG93ZWQgdGhlIHRyYWNrLCB0aGUgaGFuZGxlIGpvaW5zIHRoYXQgYmxhY2sgYW5kIHRoZVxuXHQvLyBsYWJlbCByaWRlcyBiYWNrIGluIGJlaGluZCBpdCDigJQgYW5kIG9ubHkgb25jZSB0aGUgcGlsbCBpcyBjb21wbGV0ZWx5XG5cdC8vIGNvdmVyZWQgZG9lcyB0aGUgdm9sbGV5IGZpcmUuIFRoZSBjb25mZXR0aSBpcyB0aGUgcGF5b2ZmIGZvciBhIGZpbmlzaGVkXG5cdC8vIHN0YXRlLCBzbyBpdCB3YWl0cyBmb3IgdGhhdCBzdGF0ZSB0byBhY3R1YWxseSBiZSBmaW5pc2hlZDsgb3ZlcmxhcHBpbmdcblx0Ly8gaXQgd2l0aCB0aGUgZXhwYW5zaW9uIG1hZGUgdHdvIGV2ZW50cyBjb21wZXRlIGZvciB0aGUgc2FtZSBtb21lbnQgYW5kXG5cdC8vIGhpZCB0aGUgc3dlZXAgYmVoaW5kIHRoZSBwYXJ0aWNsZXMuXG5cdC8vXG5cdC8vIFJzdnBTZWN0aW9uIGNhdGNoZXMgdGhlIHNhbWUgZ2VzdHVyZSdzIHN1Ym1pdCBldmVudCwgc28gdGhlIGZldGNoLCB0aGVcblx0Ly8gZGlzYWJsZSAoRDEyKSBhbmQgdGhlIGZvY3VzIG1vdmUgc3RheSBleGFjdGx5IHdoZXJlIHRoZXkgd2VyZSDigJQgbm9uZSBvZlxuXHQvLyB0aGVtIHdhaXQgb24gdGhpcyBjaG9yZW9ncmFwaHkuXG5cdGNvbnN0IGNvbmZpcm0gPSAoKSA9PiB7XG5cdFx0aWYgKGNvbmZpcm1lZCkgcmV0dXJuO1xuXHRcdGZpbmlzaEVudHJhbmNlKCk7XG5cdFx0Y29uZmlybWVkID0gdHJ1ZTtcblx0XHQvLyBUaGUgZmlsbCdzIG9yaWdpbiBkZXBlbmRzIG9uIHRoZSBoYW5kbGUncyBwYXJrZWQgY2VudGVyLCBzbyB0aGVcblx0XHQvLyBnZW9tZXRyeSBoYXMgdG8gYmUgY3VycmVudCBiZWZvcmUgdGhlIGNpcmNsZSBpcyBzZWVkZWQgKGEga2V5Ym9hcmRcblx0XHQvLyBjb25maXJtIG1heSBuZXZlciBoYXZlIGdvbmUgdGhyb3VnaCBwb2ludGVyZG93bidzIG1lYXN1cmUoKSkuXG5cdFx0bWVhc3VyZSgpO1xuXHRcdGJ0bi5jbGFzc0xpc3QuYWRkKFwic2xpZGUtdG8tY29uZmlybS0tY29uZmlybWVkXCIpO1xuXHRcdGJ0bi5jbGFzc0xpc3QucmVtb3ZlKFwic2xpZGUtdG8tY29uZmlybS0tZHJhZ2dpbmdcIik7XG5cdFx0Ly8gVGhlIGxhYmVsIHdhcyBmYWRlZCBieSB0aGUgc2xpZGU7IHRoZSBjb25maXJtZWQgd29yZHMgcmlzZSBiYWNrIGluXG5cdFx0Ly8gKGNvbG9yIGZsaXBzIHZpYSB0aGUgY2xhc3MgdHJhbnNpdGlvbikuIFJzdnBTZWN0aW9uIGhhcyBhbHJlYWR5XG5cdFx0Ly8gc3dhcHBlZCB0aGUgdGV4dCBieSBub3cg4oCUIGl0IHJ1bnMgb24gc3VibWl0LCB3aGljaCBmaXJlcyBmaXJzdC5cblx0XHRjb25zdCBsYWJlbEluID0gKCkgPT4ge1xuXHRcdFx0bGFiZWwuc3R5bGUuc2V0UHJvcGVydHkoXCItLXNsaWRlLXRvLWNvbmZpcm0tbGFiZWwtb3BhY2l0eVwiLCBcIjFcIik7XG5cdFx0XHRpZiAocmVkdWNlZE1vdGlvbikgcmV0dXJuO1xuXHRcdFx0YW5pbWF0ZShsYWJlbCwge1xuXHRcdFx0XHRvcGFjaXR5OiBbMCwgMV0sXG5cdFx0XHRcdHRyYW5zZm9ybTogW1widHJhbnNsYXRlWSg2cHgpXCIsIFwidHJhbnNsYXRlWSgwcHgpXCJdXG5cdFx0XHR9LCB7XG5cdFx0XHRcdGR1cmF0aW9uOiAuMjUsXG5cdFx0XHRcdGVhc2U6IEVBU0VfT1VUX0VYUE9cblx0XHRcdH0pO1xuXHRcdH07XG5cdFx0aWYgKHJlZHVjZWRNb3Rpb24pIHtcblx0XHRcdHNldFgocmFuZ2UpO1xuXHRcdFx0Ly8gVGhlIGZpbGwgaXMgc2ltcGx5IGFscmVhZHkgdGhlcmU7IG5vIHZvbGxleSBmb2xsb3dzIGl0IHVuZGVyIHJlZHVjZWRcblx0XHRcdC8vIG1vdGlvbiwgc28gbm90aGluZyB3YWl0cyBvbiBjb3ZlcmFnZS5cblx0XHRcdGdyb3dGaWxsKCk7XG5cdFx0XHRsYWJlbEluKCk7XG5cdFx0fSBlbHNlIHtcblx0XHRcdC8vIFRoZSBoYW5kbGUgc3ByaW5ncyB0aGUgcmVzdCBvZiB0aGUgd2F5IGhvbWUgYW5kIFNUQVlTIHRoZXJlIOKAlCB0aGVcblx0XHRcdC8vIGNoZWNrIHBhcmtlZCBhdCB0aGUgZmFyIGVuZCBpcyBwYXJ0IG9mIHRoZSBjb25maXJtZWQgY29tcG9zaXRpb24uXG5cdFx0XHQvLyBUaGUgc3ByaW5nJ3Mgb25VcGRhdGUga2VlcHMgd3JpdGluZyB0aGUgbW9ycGgsIHNvIGEga2V5Ym9hcmRcblx0XHRcdC8vIGFjdGl2YXRpb24gKHdoaWNoIHN0YXJ0cyBhdCB4ID0gMCkgc3RpbGwgZ2V0cyB0aGUgZ2x5cGggY2hhbmdlIGFzXG5cdFx0XHQvLyB0cmF2ZWwgcmF0aGVyIHRoYW4gYSBqdW1wLlxuXHRcdFx0cmlkZVRvKHJhbmdlKTtcblx0XHRcdC8vIFRoZSBibGFjayBjb21lcyBPVVQgb2YgdGhhdCBwYXJrZWQgaGFuZGxlOiB0aGUgY2lyY2xlIGlzIHNlZWRlZCBhdFxuXHRcdFx0Ly8gaXRzIGNlbnRlciBhbmQgZ3Jvd3MgcGFzdCBib3RoIGVuZHMgb2YgdGhlIHBpbGwuIFRoZSBoYW5kbGUgcmlkZXNcblx0XHRcdC8vIGFib3ZlIGl0ICh6LWluZGV4KSBhbmQgb25seSB0dXJucyBibGFjayBvbmNlIHRoZSBjaXJjbGUgaXMgd2VsbFxuXHRcdFx0Ly8gY2xlYXIgb2YgaXQg4oCUIHRoZSBDU1MgZGVsYXlzIHRoYXQgZmxpcCDigJQgc28gdGhlIGZpbGwgcmVhZHMgYXNcblx0XHRcdC8vIGhhdmluZyBiZWVuIHJlbGVhc2VkIGJ5IHRoZSBnZXN0dXJlJ3MgZW5kcG9pbnQuIFRoZSB2b2xsZXkgaXMgdGhpc1xuXHRcdFx0Ly8gc3dlZXAncyBjb21wbGV0aW9uIGNhbGxiYWNrLCBub3QgYSBwYXJhbGxlbCB0cmFjay5cblx0XHRcdGdyb3dGaWxsKGZpcmVDb25mZXR0aSk7XG5cdFx0XHQvLyBUaGUgd29yZHMgY29tZSBiYWNrIG9uY2UgdGhlIGNpcmNsZSBoYXMgcGFzc2VkIHRoZSBwaWxsJ3MgY2VudGVyLFxuXHRcdFx0Ly8gaS5lLiBvbmNlIHRoZXJlIGlzIGJsYWNrIGJlaGluZCB0aGVtIHRvIHJlYWQgYWdhaW5zdCDigJQgdGhlIHNhbWVcblx0XHRcdC8vIGluc3RhbnQgdGhlIGhhbmRsZSBzdGFydHMgam9pbmluZyB0aGF0IGJsYWNrLlxuXHRcdFx0bGF0ZXIobGFiZWxJbiwgRklMTF9IQU5ET0ZGX01TKTtcblx0XHRcdC8vIEdlbnRsZSBzZXR0bGUtcG9wIG9uIHRoZSBwaWxsIChhIHNldHRsZSwgbm90IGEgYm91bmNlKS5cblx0XHRcdHBvcEFuaW1hdGlvbiA9IGFuaW1hdGUoYnRuLCB7IHNjYWxlOiBbXG5cdFx0XHRcdDEsXG5cdFx0XHRcdDEuMDQsXG5cdFx0XHRcdDFcblx0XHRcdF0gfSwge1xuXHRcdFx0XHRkdXJhdGlvbjogLjM1LFxuXHRcdFx0XHRlYXNlOiBFQVNFX09VVF9FWFBPXG5cdFx0XHR9KTtcblx0XHR9XG5cdH07XG5cdGJ0bi5hZGRFdmVudExpc3RlbmVyKFwicG9pbnRlcmRvd25cIiwgKGV2ZW50KSA9PiB7XG5cdFx0aWYgKGNvbmZpcm1lZCB8fCBidG4uZGlzYWJsZWQpIHJldHVybjtcblx0XHQvLyBMZWZ0IGJ1dHRvbiAvIHRvdWNoIC8gcGVuIG9ubHkuXG5cdFx0aWYgKGV2ZW50LnBvaW50ZXJUeXBlID09PSBcIm1vdXNlXCIgJiYgZXZlbnQuYnV0dG9uICE9PSAwKSByZXR1cm47XG5cdFx0ZmluaXNoRW50cmFuY2UoKTtcblx0XHQvLyBBIHJpZGUgbWF5IHN0aWxsIGJlIHNwcmluZ2luZyB3aGVuIHRoZSBndWVzdCBncmFicyB0aGUgaGFuZGxlOiBhXG5cdFx0Ly8gc2hvcnQgZHJhZydzIHJlbGVhc2UsIG9yIGEgcmVzZXQncyByb2xsYmFjay4gSXRzIHBlci1mcmFtZSBzZXRYXG5cdFx0Ly8gd3JpdGVzIHdvdWxkIGZpZ2h0IHRoaXMgZ2VzdHVyZSBmb3IgdGhlIGhhbmRsZSAodGhlIGRyYWcncyBvd25cblx0XHQvLyB3cml0ZXMgZ2V0IG92ZXJ3cml0dGVuIGV2ZXJ5IHRpY2sg4oCUIHRoZSBoYW5kbGUgYXBwZWFycyBwaW5uZWQgYXRcblx0XHQvLyBob21lIHVudGlsIHRoZSBzcHJpbmcgZGllcykuIE1vdGlvbidzIG92ZXJsYXAgcnVsZSBpcyBzdG9wLXdpbnMsXG5cdFx0Ly8gc28gc3RvcCBpdCBoZXJlIGFuZCBsZXQgdGhlIGRyYWcgb3duIHggb3V0cmlnaHQuXG5cdFx0cmlkZT8uc3RvcCgpO1xuXHRcdG1lYXN1cmUoKTtcblx0XHRkcmFnZ2luZyA9IHRydWU7XG5cdFx0cG9pbnRlcklkID0gZXZlbnQucG9pbnRlcklkO1xuXHRcdHN0YXJ0Q2xpZW50WCA9IGV2ZW50LmNsaWVudFg7XG5cdFx0c3RhcnRYID0geDtcblx0XHRidG4uY2xhc3NMaXN0LmFkZChcInNsaWRlLXRvLWNvbmZpcm0tLWRyYWdnaW5nXCIpO1xuXHRcdC8vIFN5bnRoZXRpYyBwb2ludGVyIGV2ZW50cyAodGVzdHMpIGhhdmUgbm8gYWN0aXZlIHBvaW50ZXIgdG8gY2FwdHVyZTtcblx0XHQvLyByZWFsIG9uZXMgYWx3YXlzIGRvLiBXaXRob3V0IGNhcHR1cmUgYSBwb2ludGVydXAgb2ZmLXBpbGwgd291bGRcblx0XHQvLyBzdHJhbmQgdGhlIGRyYWcsIGhlbmNlIGNhcHR1cmUtb3Itbm90aGluZywgbm90IGNhcHR1cmUtb3ItY3Jhc2guXG5cdFx0dHJ5IHtcblx0XHRcdGJ0bi5zZXRQb2ludGVyQ2FwdHVyZShwb2ludGVySWQpO1xuXHRcdH0gY2F0Y2gge31cblx0XHRldmVudC5wcmV2ZW50RGVmYXVsdCgpO1xuXHR9KTtcblx0YnRuLmFkZEV2ZW50TGlzdGVuZXIoXCJwb2ludGVybW92ZVwiLCAoZXZlbnQpID0+IHtcblx0XHRpZiAoIWRyYWdnaW5nIHx8IGV2ZW50LnBvaW50ZXJJZCAhPT0gcG9pbnRlcklkKSByZXR1cm47XG5cdFx0c2V0WChzdGFydFggKyAoZXZlbnQuY2xpZW50WCAtIHN0YXJ0Q2xpZW50WCkpO1xuXHR9KTtcblx0Ly8gQSByZWxlYXNlIGlzIHRoZSBvbmx5IHdheSBhIGRyYWcgY29uZmlybXMsIGFuZCBvbmx5IGEgRlVMTCBzbGlkZSBhcm1zOlxuXHQvLyB0aGUgdGhyZXNob2xkIGNvbXBhcmVzIGFnYWluc3Qgd2hlcmUgdGhlIGhhbmRsZSBBQ1RVQUxMWSBpcywgc28gYSB0YXAsXG5cdC8vIGEgbnVkZ2UsIG9yIGEgMzDigJM0MCUgcHVsbCBhbGwgc3ByaW5nIGhvbWUg4oCUIG9ubHkgdGhlIGhhbmRsZSBwYXJrZWQgYXRcblx0Ly8gdGhlIGZhciBlbmQgY29uZmlybXMgb24gcmVsZWFzZS5cblx0Y29uc3QgcmVsZWFzZSA9IChldmVudDogUG9pbnRlckV2ZW50KSA9PiB7XG5cdFx0aWYgKCFkcmFnZ2luZyB8fCBldmVudC5wb2ludGVySWQgIT09IHBvaW50ZXJJZCkgcmV0dXJuO1xuXHRcdGRyYWdnaW5nID0gZmFsc2U7XG5cdFx0cG9pbnRlcklkID0gbnVsbDtcblx0XHRidG4uY2xhc3NMaXN0LnJlbW92ZShcInNsaWRlLXRvLWNvbmZpcm0tLWRyYWdnaW5nXCIpO1xuXHRcdGlmIChyYW5nZSA+IDAgJiYgeCA+PSByYW5nZSAqIEFSTV9USFJFU0hPTEQpIHtcblx0XHRcdC8vIFRoZSBwb2ludGVydXAncyBvd24gY2xpY2sgZm9sbG93cyBpbW1lZGlhdGVseTsgbWFyayBpdCBhcyB0aGlzXG5cdFx0XHQvLyBnZXN0dXJlJ3Mgc28gdGhlIGNsaWNrIGxpc3RlbmVyIGxldHMgaXQgdGhyb3VnaCB0byB0aGUgc3VibWl0LlxuXHRcdFx0YXJtZWRWaWFEcmFnID0gdHJ1ZTtcblx0XHRcdGNvbmZpcm0oKTtcblx0XHR9IGVsc2Uge1xuXHRcdFx0cmlkZVRvKDApO1xuXHRcdH1cblx0fTtcblx0YnRuLmFkZEV2ZW50TGlzdGVuZXIoXCJwb2ludGVydXBcIiwgcmVsZWFzZSk7XG5cdC8vIEEgY2FuY2VsIChzY3JvbGwgdGFrZW92ZXIsIGJyb3dzZXIgZ2VzdHVyZSkgaXMgTk9UIGEgcmVsZWFzZTogdGhlIG9ubHlcblx0Ly8gaG9uZXN0IG91dGNvbWUgaXMgdGhlIHNwcmluZyBob21lLiBDb25maXJtaW5nIGhlcmUgaXMgaG93IGEgaGFsZi1zbGlkZVxuXHQvLyB3b3VsZCBcImltbWVkaWF0ZWx5IGNvbmZpcm1cIi5cblx0YnRuLmFkZEV2ZW50TGlzdGVuZXIoXCJwb2ludGVyY2FuY2VsXCIsIChldmVudCkgPT4ge1xuXHRcdGlmICghZHJhZ2dpbmcgfHwgZXZlbnQucG9pbnRlcklkICE9PSBwb2ludGVySWQpIHJldHVybjtcblx0XHRkcmFnZ2luZyA9IGZhbHNlO1xuXHRcdHBvaW50ZXJJZCA9IG51bGw7XG5cdFx0YnRuLmNsYXNzTGlzdC5yZW1vdmUoXCJzbGlkZS10by1jb25maXJtLS1kcmFnZ2luZ1wiKTtcblx0XHRyaWRlVG8oMCk7XG5cdH0pO1xuXHQvLyBQb2ludGVyIGFjdGl2YXRpb24gaXMgc2xpZGUtb25seSDigJQgYSB0YXAgaXMgTkVWRVIgYW4gYWN0aXZhdGlvbjogdGhpc1xuXHQvLyBpcyBhIHNsaWRlciwgbm90IGEgYnV0dG9uLiBUaGUgb25seSBwb2ludGVyIHBhdGggdGhyb3VnaCBpcyBhbiBhcm1lZFxuXHQvLyBmdWxsIHNsaWRlLCB3aG9zZSByZWxlYXNlIChhIGZyYW1lIGFnbykgZmxhZ2dlZCBpdHMgb3duIHRyYWlsaW5nIGNsaWNrLlxuXHQvLyBLZXlib2FyZCBhbmQgQVQgYWN0aXZhdGlvbiDigJQgRW50ZXIvU3BhY2Uvc2NyZWVuLXJlYWRlciBwcmVzcywgYSBjbGlja1xuXHQvLyB3aXRoIG5vIHBvaW50ZXIsIHNvIGBkZXRhaWwgPT09IDBgIOKAlCBjb3VudHMgYXMgYSBmdWxsIHNsaWRlLCBiZWNhdXNlIGFcblx0Ly8ga2V5Ym9hcmQgY2FuJ3QgZHJhZy4gRXZlcnkgb3RoZXIgY2xpY2sgaXMgc3dhbGxvd2VkOiBhIHRhcCwgYSBzaG9ydFxuXHQvLyBkcmFnJ3MgdHJhaWxpbmcgY2xpY2ssIG9yIGEgcHJlc3Mgd2hpbGUgdGhlIGhhbmRsZSBpcyBhd2F5IGZyb20gaG9tZVxuXHQvLyBtaWQtZ2VzdHVyZS5cblx0YnRuLmFkZEV2ZW50TGlzdGVuZXIoXCJjbGlja1wiLCAoZXZlbnQpID0+IHtcblx0XHRpZiAoY29uZmlybWVkKSB7XG5cdFx0XHRpZiAoIWFybWVkVmlhRHJhZykgZXZlbnQucHJldmVudERlZmF1bHQoKTtcblx0XHRcdGFybWVkVmlhRHJhZyA9IGZhbHNlO1xuXHRcdFx0cmV0dXJuO1xuXHRcdH1cblx0XHRpZiAoYnRuLmRpc2FibGVkIHx8IGV2ZW50LmRldGFpbCAhPT0gMCB8fCB4ID4gMCkge1xuXHRcdFx0ZXZlbnQucHJldmVudERlZmF1bHQoKTtcblx0XHRcdHJldHVybjtcblx0XHR9XG5cdFx0Y29uZmlybSgpO1xuXHRcdC8vIE5vIHByZXZlbnREZWZhdWx0IG9uIHRoZSBhcm1pbmcgcGF0aHM6IGEgc3VibWl0IGJ1dHRvbidzIGNsaWNrXG5cdFx0Ly8gZGlzcGF0Y2hlcyB0aGUgZm9ybSdzIHN1Ym1pdCBldmVudCwgd2hpY2ggUnN2cFNlY3Rpb24gdHVybnMgaW50byB0aGVcblx0XHQvLyBSU1ZQIFBPU1QuXG5cdH0pO1xuXHQvLyBUaGUgaG9zdCBwYWdlIG93bnMgdGhlIHRydXRoLiBUaGlzIGNvbnRyb2wgYXJtcyBpdHMgY2VsZWJyYXRpb24gb24gdGhlXG5cdC8vIEdFU1RVUkUg4oCUIHRoZSBwaWxsIGdvZXMgYmxhY2sgYW5kIHRoZSB2b2xsZXkgZmlyZXMgd2hpbGUgdGhlIHN1Ym1pdFxuXHQvLyBoYW5kbGVyJ3MgZmV0Y2ggaXMgc3RpbGwgaW4gZmxpZ2h0IOKAlCBhbmQgb25seSB0aGF0IGhhbmRsZXIgbGVhcm5zXG5cdC8vIHdoZXRoZXIgdGhlIGFjdGlvbiBhY3R1YWxseSBsYW5kZWQuIFdoZW4gaXQgZGlkbid0LCBpdCBkaXNwYXRjaGVzXG5cdC8vIGBzbGlkZS10by1jb25maXJtOnJlc2V0YCBvbiB0aGUgYnV0dG9uIGFuZCB0aGlzIHJvbGxzIHRoZSBwcmVzZW50YXRpb25cblx0Ly8gYmFjayB0byB0aGUgZnJlc2ggaWRsZSBzdGF0ZS4gV2l0aG91dCBpdCBhIGZhaWxlZCBzYXZlIHdvdWxkIGxlYXZlIGFcblx0Ly8gYmxhY2sgcGlsbCB3aXRoIGEgcGFya2VkIGNoZWNrIHRoYXQgbm8gZ2VzdHVyZSBjYW4gbW92ZSBhZ2FpbiDigJQgbHlpbmdcblx0Ly8gYWJvdXQgYSBzdGF0ZSB0aGF0IG5ldmVyIGhhcHBlbmVkLCByZWNvdmVyYWJsZSBvbmx5IGJ5IGEgcmVmcmVzaC5cblx0Ly9cblx0Ly8gVGhlIHJvbGxiYWNrIGlzIGEgY3V0LCBub3QgYSBzZWNvbmQgbW9ycGg6IHRoZSBjb25maXJtZWQgY2xhc3MncyBvd25cblx0Ly8gdHJhbnNpdGlvbnMgd2VyZSBkZWNsYXJlZCBvbiB0aGUgY2xhc3MsIHNvIHJlbW92aW5nIGl0IHNuYXBzIHRoZSBwYWludFxuXHQvLyBiYWNrIHdoaWxlIHRoZSBoYW5kbGUgc3ByaW5ncyBob21lIHVuZGVyIHRoZSByZXZlcnNpbmcgbW9ycGgg4oCUIHRoZSBzYW1lXG5cdC8vIHNldHRsZS1iYWNrIGEgc2hvcnQgZHJhZyBnZXRzLiBFdmVyeXRoaW5nIHN0aWxsIHNjaGVkdWxlZCAodGhlIGNpcmNsZSdzXG5cdC8vIHJlbWFpbmluZyBncm93dGgsIHRoZSBsYWJlbCdzIHRpbWVkIHJldHVybiwgdGhlIHZvbGxleSdzIHN0YWdnZXJlZFxuXHQvLyBzaG90cykgaXMgc3RvcHBlZCBmaXJzdCBzbyBub3RoaW5nIGxhbmRzIG9uIGEgcGlsbCB0aGF0IGlzIG5vIGxvbmdlclxuXHQvLyBjb25maXJtZWQuXG5cdGJ0bi5hZGRFdmVudExpc3RlbmVyKFwic2xpZGUtdG8tY29uZmlybTpyZXNldFwiLCAoKSA9PiB7XG5cdFx0aWYgKCFjb25maXJtZWQpIHJldHVybjtcblx0XHRjb25maXJtZWQgPSBmYWxzZTtcblx0XHRhcm1lZFZpYURyYWcgPSBmYWxzZTtcblx0XHRmaWxsQW5pbWF0aW9uPy5zdG9wKCk7XG5cdFx0ZmlsbEFuaW1hdGlvbiA9IG51bGw7XG5cdFx0cG9wQW5pbWF0aW9uPy5zdG9wKCk7XG5cdFx0cG9wQW5pbWF0aW9uID0gbnVsbDtcblx0XHRmb3IgKGNvbnN0IHRpbWVyIG9mIHBlbmRpbmdUaW1lcnMuc3BsaWNlKDApKSB3aW5kb3cuY2xlYXJUaW1lb3V0KHRpbWVyKTtcblx0XHRidG4uY2xhc3NMaXN0LnJlbW92ZShcInNsaWRlLXRvLWNvbmZpcm0tLWNvbmZpcm1lZFwiKTtcblx0XHRidG4uY2xhc3NMaXN0LnJlbW92ZShcInNsaWRlLXRvLWNvbmZpcm0tLWRyYWdnaW5nXCIpO1xuXHRcdC8vIE1vdGlvbiBjb21taXRzIHRoZSBjZWxlYnJhdGlvbidzIGZpbmFsIGtleWZyYW1lcyBhcyBpbmxpbmUgc3R5bGVzXG5cdFx0Ly8gKHRoZSBsYWJlbCdzIHJldHVybiwgdGhlIHNldHRsZS1wb3ApLiBJbmxpbmUgYmVhdHMgdGhlIHN0eWxlc2hlZXQsXG5cdFx0Ly8gc28gYSByb2xsZWQtYmFjayBjb250cm9sIHdvdWxkIGluaGVyaXQgdGhlbTogYSBsYWJlbCB0aGF0IGNhbiBub1xuXHRcdC8vIGxvbmdlciBmYWRlIHVuZGVyIHRoZSBoYW5kbGUgb24gdGhlIHJldHJ5IGRyYWcsIGEgcHJlc3MgdGhhdCBjYW4gbm9cblx0XHQvLyBsb25nZXIgc2NhbGUuIFRha2UgdGhlbSBvZmYg4oCUIHRoZSBpZGxlIHJ1bGVzIG93biB0aGVzZSBhZ2Fpbi5cblx0XHRsYWJlbC5zdHlsZS5yZW1vdmVQcm9wZXJ0eShcIm9wYWNpdHlcIik7XG5cdFx0bGFiZWwuc3R5bGUucmVtb3ZlUHJvcGVydHkoXCJ0cmFuc2Zvcm1cIik7XG5cdFx0YnRuLnN0eWxlLnJlbW92ZVByb3BlcnR5KFwidHJhbnNmb3JtXCIpO1xuXHRcdHNldEZpbGwoMCk7XG5cdFx0cmlkZVRvKDApO1xuXHR9KTtcblx0Ly8gVGhlIHNlcnZlciBjYW4gcmVuZGVyIHRoZSBjb250cm9sIGFscmVhZHkgY29uZmlybWVkIChyZXR1cm5pbmcgZ3Vlc3QpOlxuXHQvLyBwYXJrIHRoZSBoYW5kbGUgYXQgdGhlIGZhciBlbmQgd2l0aCBubyBtb3Rpb24gYW5kIG5vIHZvbGxleSDigJQgdGhlIHN0YXRlXG5cdC8vIGlzIG9sZCBuZXdzLCBub3QgYSBmcmVzaCBjZWxlYnJhdGlvbi4gVGhlIG1vcnBoIHRyYW5zaXRpb25zIG9ubHkgZXhpc3Rcblx0Ly8gb24gdGhlIGNvbmZpcm1lZCBjbGFzcywgc28gYWRkaW5nIHRoZSBjbGFzcyB3b3VsZCBmYWRlIHRoZSBmaWxsIGluIGZyb21cblx0Ly8gaXRzIGlkbGUgdmFsdWVzIChhIHBhZ2UtbG9hZCBhcnRpZmFjdCBvbiBhIHN0YXRlIHRoYXQgaXNuJ3QgZnJlc2gpOlxuXHQvLyBzdXBwcmVzcyB0aGVtIGZvciB0aGUgb25lIGZyYW1lIHRoZSBjbGFzcyBsYW5kcyBpbi5cblx0aWYgKGNvbmZpcm1lZCAmJiByZWR1Y2VkTW90aW9uKSB7XG5cdFx0c2V0RmlsbChmaWxsUmFkaXVzKTtcblx0XHRzZXRYKHJhbmdlKTtcblx0XHRsYWJlbC5zdHlsZS5zZXRQcm9wZXJ0eShcIi0tc2xpZGUtdG8tY29uZmlybS1sYWJlbC1vcGFjaXR5XCIsIFwiMVwiKTtcblx0fVxufTtcbmZvciAoY29uc3QgYnRuIG9mIGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3JBbGw8SFRNTEJ1dHRvbkVsZW1lbnQ+KFwiW2RhdGEtc2xpZGUtdG8tY29uZmlybV1cIikpIHtcblx0c2V0dXBTbGlkZXIoYnRuKTtcbn0iXX0=
-</script><button class="slide-to-confirm" type="button" disabled aria-disabled="true" data-slide-to-confirm id="slide-confirmed" data-astro-cid-kj3nfrvf><span class="slide-to-confirm__label" data-slide-to-confirm-text data-astro-cid-kj3nfrvf>Reservation Confirmed</span><span class="slide-to-confirm__handle" data-slide-to-confirm-handle aria-hidden="true" data-astro-cid-kj3nfrvf><svg class="slide-to-confirm__icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" data-astro-cid-kj3nfrvf><path class="slide-to-confirm__stroke" d="M6 17 11 12 6 7" data-morph-from="M6 17 11 12 6 7" data-morph-to="M9 17 6.5 14.5 4 12" data-astro-cid-kj3nfrvf></path><path class="slide-to-confirm__stroke" d="M13 17 18 12 13 7" data-morph-from="M13 17 18 12 13 7" data-morph-to="M9 17 14.5 11.5 20 6" data-astro-cid-kj3nfrvf></path></svg></span></button></body></html>
+      //# sourceMappingURL=data:application/json;base64,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QUFJLGlCQUFpQixnQ0FBZ0M7RUFDcEQsSUFBSSxDQUFDLFdBQVc7RUFDaEIsWUFBWTtFQUNaLGVBQWU7RUFDZixlQUFlLEtBQUs7RUFDcEIsZ0JBQWdCO0VBQ2hCLGNBQWMsS0FBSztFQUNuQixlQUFlO0VBQ2YsS0FBSyxNQUFNLFNBQVMsY0FBYyxPQUFPLENBQUMsR0FBRyxPQUFPLGFBQWEsS0FBSztFQUN0RSxJQUFJLFVBQVUsT0FBTyw2QkFBNkI7RUFDbEQsSUFBSSxVQUFVLE9BQU8sNEJBQTRCOzs7Ozs7RUFNakQsTUFBTSxNQUFNLGVBQWUsU0FBUztFQUNwQyxNQUFNLE1BQU0sZUFBZSxXQUFXO0VBQ3RDLElBQUksTUFBTSxlQUFlLFdBQVc7RUFDcEMsUUFBUSxDQUFDO0VBQ1QsT0FBTyxDQUFDO0NBQ1QsQ0FBQzs7Ozs7OztDQU9ELElBQUksYUFBYSxlQUFlO0VBQy9CLFFBQVEsVUFBVTtFQUNsQixLQUFLLEtBQUs7RUFDVixNQUFNLE1BQU0sWUFBWSxvQ0FBb0MsR0FBRztDQUNoRTtBQUNEO0FBQ0EsS0FBSyxNQUFNLE9BQU8sU0FBUyxpQkFBb0MseUJBQXlCLEdBQUc7Q0FDMUYsWUFBWSxHQUFHO0FBQ2hCIiwibmFtZXMiOltdLCJzb3VyY2VzIjpbIlNsaWRlVG9Db25maXJtLmFzdHJvP2FzdHJvJnR5cGU9c2NyaXB0JmluZGV4PTAmbGFuZy50cyJdLCJ2ZXJzaW9uIjozLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgeyBhbmltYXRlIH0gZnJvbSBcIm1vdGlvblwiO1xuaW1wb3J0IGNvbmZldHRpIGZyb20gXCJjYW52YXMtY29uZmV0dGlcIjtcbi8vIEpTIHR3aW5zIG9mIHRoZSBDU1MgZWFzaW5nIHRva2Vuczsga2VlcCBpbiBzeW5jLlxuY29uc3QgRUFTRV9PVVRfRVhQTyA9IFtcblx0LjE2LFxuXHQxLFxuXHQuMyxcblx0MVxuXSBhcyBjb25zdDtcbi8vIC0tZWFzZS1pbi1vdXQtc3Ryb25nOiB0aGUgZmlsZSdzIGNsaXAtcGF0aCBjdXJ2ZSAodGhlIGVudHJhbmNlIHVzZXMgaXRcbi8vIHRvbyksIGFuZCB0aGUgY29uZmlybWVkIGZpbGwncyDigJQgc2VlIGdyb3dGaWxsIG9uIHdoeSBhIGNpcmNsZSdzIHJhZGl1c1xuLy8gd2FudHMgYSBjdXJ2ZSB0aGF0IHN0YXJ0cyBmcm9tIHJlc3QuXG5jb25zdCBFQVNFX0lOX09VVF9TVFJPTkcgPSBbXG5cdC43Nyxcblx0MCxcblx0LjE3NSxcblx0MVxuXSBhcyBjb25zdDtcbi8vIEpTIHR3aW5zIG9mIHRoZSBjb25maXJtZWQgZmlsbCdzIENTUyB0aW1pbmdzICgtLXNsaWRlLXRvLWNvbmZpcm0tZHVyYXRpb24tZmlsbFxuLy8gYW5kIC0tc2xpZGUtdG8tY29uZmlybS1kZWxheS1oYW5kbGUpLiBUaGUgY2lyY2xlJ3MgZ3Jvd3RoIGlzIHNjcmlwdGVkIGFuZFxuLy8gdGhlIGhhbmRsZS9sYWJlbC9yaW0gY2hhbmdlcyBhcmUgQ1NTIHRyYW5zaXRpb25zIG9mZiB0aGUgc2FtZSBjbG9jaywgc29cbi8vIHRoZXNlIHR3byBudW1iZXJzIGFyZSB0aGUgc2VhbSBiZXR3ZWVuIHRoZW06IHRoZSBoYW5kbGUgZmxpcHMgYW5kIHRoZVxuLy8gd29yZHMgcmV0dXJuIGF0IHRoZSBkZWxheSwgb25jZSB0aGUgYmxhY2sgaXMgcGFzdCB0aGVtLCBhbmQgdGhlIHRyYWNrJ3Ncbi8vIG93biBiYWNrZ3JvdW5kIGxhbmRzIGF0IHRoZSBmdWxsIGR1cmF0aW9uLCB1bmRlciBhIGNpcmNsZSB0aGF0IGFscmVhZHlcbi8vIGNvdmVycyBpdC5cbmNvbnN0IEZJTExfTVMgPSA1MjA7XG5jb25zdCBGSUxMX0hBTkRPRkZfTVMgPSAyNjA7XG4vLyBUaGUgU2xpZGVUb0RldG9uYXRlIGdlb21ldHJ5LCB0YWtlbiBsaXRlcmFsbHk6IHRoZSBoYW5kbGUgbXVzdCBiZSBwYXJrZWRcbi8vIGF0IHRoZSBGQVIgRU5EIHRvIGFybSAoc2V0WCBjbGFtcHMgdGhlIGRyYWcgdG8gdGhlIHRyYWNrLCBzbyBhIGRyYWcgdG8gb3Jcbi8vIHBhc3QgdGhlIGVuZCByZWFjaGVzIGV4YWN0bHkgcmFuZ2UpLCBhbmQgYSBzcHJpbmd5IHJldHVybiB3aGVuIGxldCBnb1xuLy8gYW55d2hlcmUgc2hvcnQgb2YgaXQuIEEgdGFwIG9yIGEgcGFydGlhbCBzbGlkZSBuZXZlciBjb25maXJtcy5cbmNvbnN0IEFSTV9USFJFU0hPTEQgPSAxO1xuLy8gUGFyc2VzIFwiTTEzIDE3IDE4IDEyIDEzIDdcIiBpbnRvIFtbMTMsMTddLFsxOCwxMl0sWzEzLDddXS4gVGhlIGdseXBoIHBhdGhzXG4vLyBhcmUgYXV0aG9yZWQgYXMgcGxhaW4gcG9seWxpbmVzIChhbiBNIGZvbGxvd2VkIGJ5IGltcGxpY2l0LWxpbmV0byBwYWlycylcbi8vIHByZWNpc2VseSBzbyB0aGUgbW9ycGggY2FuIGJlIHB1cmUgbnVtYmVyIGludGVycG9sYXRpb246IGV2ZXJ5IG51bWJlciBpblxuLy8gdGhlIHN0cmluZyBpcyBhIGNvb3JkaW5hdGUsIGluIG9yZGVyLlxuY29uc3QgcG9pbnRzID0gKGQ6IHN0cmluZyk6IG51bWJlcltdW10gPT4ge1xuXHRjb25zdCBudW1zID0gKGQubWF0Y2goLy0/W1xcZC5dKy9nKSA/PyBbXSkubWFwKE51bWJlcik7XG5cdGNvbnN0IG91dDogbnVtYmVyW11bXSA9IFtdO1xuXHRmb3IgKGxldCBpID0gMDsgaSArIDEgPCBudW1zLmxlbmd0aDsgaSArPSAyKSBvdXQucHVzaChbbnVtc1tpXSEsIG51bXNbaSArIDFdIV0pO1xuXHRyZXR1cm4gb3V0O1xufTtcbi8vIFJvdW5kZWQgdG8gMC4wMTogZW5vdWdoIHByZWNpc2lvbiB0aGF0IHRoZSBtb3Rpb24gaXMgc21vb3RoIGF0IDIwcHgsIHNob3J0XG4vLyBlbm91Z2ggdGhhdCB0aGUgcGVyLWZyYW1lIGF0dHJpYnV0ZSB3cml0ZSBzdGF5cyBjaGVhcC5cbmNvbnN0IHRvUGF0aCA9IChwdHM6IG51bWJlcltdW10pID0+IGBNJHtwdHMubWFwKChbeCwgeV0pID0+IGAke01hdGgucm91bmQoeCEgKiAxMDApIC8gMTAwfSAke01hdGgucm91bmQoeSEgKiAxMDApIC8gMTAwfWApLmpvaW4oXCIgXCIpfWA7XG5jb25zdCBzZXR1cEVudHJhbmNlID0gKGJ0bjogSFRNTEJ1dHRvbkVsZW1lbnQpID0+IHtcblx0Y29uc3QgbW90aW9uUHJlZmVyZW5jZSA9IHdpbmRvdy5tYXRjaE1lZGlhKFwiKHByZWZlcnMtcmVkdWNlZC1tb3Rpb246IHJlZHVjZSlcIik7XG5cdGlmIChtb3Rpb25QcmVmZXJlbmNlLm1hdGNoZXMgfHwgYnRuLm1hdGNoZXMoXCI6Zm9jdXNcIikgfHwgdHlwZW9mIEludGVyc2VjdGlvbk9ic2VydmVyID09PSBcInVuZGVmaW5lZFwiKSByZXR1cm4gKCkgPT4ge307XG5cdGxldCBvYnNlcnZlcjogSW50ZXJzZWN0aW9uT2JzZXJ2ZXIgfCB1bmRlZmluZWQ7XG5cdGxldCBmcmFtZSA9IDA7XG5cdGxldCBkaXNwb3NlZCA9IGZhbHNlO1xuXHRjb25zdCB0YXJnZXQgPSBidG4ucGFyZW50RWxlbWVudCA/PyBidG47XG5cdGNvbnN0IGZpbmlzaCA9ICgpID0+IHtcblx0XHRpZiAoZGlzcG9zZWQpIHJldHVybjtcblx0XHRkaXNwb3NlZCA9IHRydWU7XG5cdFx0b2JzZXJ2ZXI/LmRpc2Nvbm5lY3QoKTtcblx0XHRjYW5jZWxBbmltYXRpb25GcmFtZShmcmFtZSk7XG5cdFx0YnRuLnJlbW92ZUF0dHJpYnV0ZShcImRhdGEtc2xpZGUtZW50cmFuY2VcIik7XG5cdFx0YnRuLmdldEFuaW1hdGlvbnMoeyBzdWJ0cmVlOiB0cnVlIH0pLmZvckVhY2goKGFuaW1hdGlvbikgPT4gYW5pbWF0aW9uLmNhbmNlbCgpKTtcblx0XHRidG4ucmVtb3ZlRXZlbnRMaXN0ZW5lcihcImZvY3VzXCIsIGZpbmlzaCk7XG5cdFx0bW90aW9uUHJlZmVyZW5jZS5yZW1vdmVFdmVudExpc3RlbmVyKFwiY2hhbmdlXCIsIG9uTW90aW9uQ2hhbmdlKTtcblx0XHR3aW5kb3cucmVtb3ZlRXZlbnRMaXN0ZW5lcihcInBhZ2VoaWRlXCIsIGZpbmlzaCk7XG5cdFx0d2luZG93LnJlbW92ZUV2ZW50TGlzdGVuZXIoXCJzY3JvbGxcIiwgcmV2ZWFsKTtcblx0XHR3aW5kb3cucmVtb3ZlRXZlbnRMaXN0ZW5lcihcInJlc2l6ZVwiLCByZXZlYWwpO1xuXHR9O1xuXHRjb25zdCBvbk1vdGlvbkNoYW5nZSA9ICgpID0+IHtcblx0XHRpZiAobW90aW9uUHJlZmVyZW5jZS5tYXRjaGVzKSBmaW5pc2goKTtcblx0fTtcblx0YnRuLnNldEF0dHJpYnV0ZShcImRhdGEtc2xpZGUtZW50cmFuY2VcIiwgXCJwZW5kaW5nXCIpO1xuXHRidG4uYWRkRXZlbnRMaXN0ZW5lcihcImZvY3VzXCIsIGZpbmlzaCk7XG5cdG1vdGlvblByZWZlcmVuY2UuYWRkRXZlbnRMaXN0ZW5lcihcImNoYW5nZVwiLCBvbk1vdGlvbkNoYW5nZSk7XG5cdHdpbmRvdy5hZGRFdmVudExpc3RlbmVyKFwicGFnZWhpZGVcIiwgZmluaXNoKTtcblx0bGV0IGhhc1JldmVhbGVkID0gZmFsc2U7XG5cdGNvbnN0IHJldmVhbCA9ICgpID0+IHtcblx0XHRpZiAoZGlzcG9zZWQgfHwgZnJhbWUpIHJldHVybjtcblx0XHRmcmFtZSA9IHJlcXVlc3RBbmltYXRpb25GcmFtZSgoKSA9PiB7XG5cdFx0XHRmcmFtZSA9IHJlcXVlc3RBbmltYXRpb25GcmFtZSgoKSA9PiB7XG5cdFx0XHRcdGZyYW1lID0gMDtcblx0XHRcdFx0aWYgKGRpc3Bvc2VkKSByZXR1cm47XG5cdFx0XHRcdC8vIEdvaW5nIGJhY2sgYWJvdmUgdGhlIGJ1dHRvbidzIG5hdHVyYWwgbG9jYXRpb24gcmV2ZXJzZXMgaXRzIGVudHJhbmNlLlxuXHRcdFx0XHQvLyBHb2luZyBwYXN0IGl0IGtlZXBzIHRoZSBwaWxsIGV4cGFuZGVkIGFuZCBwYXJrZWQgaW5zaWRlIHRoZSBzZWN0aW9uLlxuXHRcdFx0XHQvLyBNYXRjaGVzIEFkZEltYWdlQnV0dG9uIGluIHBob3RvLXRyYWlsLnRzLlxuXHRcdFx0XHRjb25zdCBpblZpZXcgPSB0YXJnZXQuZ2V0Qm91bmRpbmdDbGllbnRSZWN0KCkudG9wIDwgd2luZG93LmlubmVySGVpZ2h0O1xuXHRcdFx0XHRpZiAoaW5WaWV3KSB7XG5cdFx0XHRcdFx0aGFzUmV2ZWFsZWQgPSB0cnVlO1xuXHRcdFx0XHRcdGJ0bi5zZXRBdHRyaWJ1dGUoXCJkYXRhLXNsaWRlLWVudHJhbmNlXCIsIFwicmV2ZWFsaW5nXCIpO1xuXHRcdFx0XHR9IGVsc2UgaWYgKGhhc1JldmVhbGVkKSB7XG5cdFx0XHRcdFx0YnRuLnNldEF0dHJpYnV0ZShcImRhdGEtc2xpZGUtZW50cmFuY2VcIiwgXCJjb2xsYXBzZWRcIik7XG5cdFx0XHRcdH1cblx0XHRcdH0pO1xuXHRcdH0pO1xuXHR9O1xuXHRvYnNlcnZlciA9IG5ldyBJbnRlcnNlY3Rpb25PYnNlcnZlcihyZXZlYWwpO1xuXHRvYnNlcnZlci5vYnNlcnZlKHRhcmdldCk7XG5cdHdpbmRvdy5hZGRFdmVudExpc3RlbmVyKFwic2Nyb2xsXCIsIHJldmVhbCwgeyBwYXNzaXZlOiB0cnVlIH0pO1xuXHR3aW5kb3cuYWRkRXZlbnRMaXN0ZW5lcihcInJlc2l6ZVwiLCByZXZlYWwpO1xuXHRyZXZlYWwoKTtcblx0cmV0dXJuIGZpbmlzaDtcbn07XG5jb25zdCBzZXR1cFNsaWRlciA9IChidG46IEhUTUxCdXR0b25FbGVtZW50KSA9PiB7XG5cdGNvbnN0IGhhbmRsZSA9IGJ0bi5xdWVyeVNlbGVjdG9yPEhUTUxFbGVtZW50PihcIltkYXRhLXNsaWRlLXRvLWNvbmZpcm0taGFuZGxlXVwiKTtcblx0Y29uc3QgbGFiZWwgPSBidG4ucXVlcnlTZWxlY3RvcjxIVE1MRWxlbWVudD4oXCJbZGF0YS1zbGlkZS10by1jb25maXJtLXRleHRdXCIpO1xuXHRpZiAoIWhhbmRsZSB8fCAhbGFiZWwpIHJldHVybjtcblx0Ly8gRWFjaCBzdHJva2UgY2FycmllcyBpdHMgb3duIGZyb20vdG8gc2hhcGUsIHByZS1wYXJzZWQgb25jZS4gQSBzdHJva2Vcblx0Ly8gd2hvc2UgZW5kcG9pbnRzIGRvbid0IGhhdmUgbWF0Y2hpbmcgcG9pbnQgY291bnRzIGlzIHNraXBwZWQgcmF0aGVyIHRoYW5cblx0Ly8gbW9ycGhlZCBpbnRvIG5vbnNlbnNlIOKAlCBpdCBzaW1wbHkgc3RheXMgYXQgaXRzIGF1dGhvcmVkIHNoYXBlLlxuXHRjb25zdCBzdHJva2VzID0gWy4uLmJ0bi5xdWVyeVNlbGVjdG9yQWxsPFNWR1BhdGhFbGVtZW50PihcIi5zbGlkZS10by1jb25maXJtX19zdHJva2VcIildLm1hcCgoZWwpID0+IHtcblx0XHRjb25zdCBmcm9tID0gcG9pbnRzKGVsLmRhdGFzZXQubW9ycGhGcm9tID8/IFwiXCIpO1xuXHRcdGNvbnN0IHRvID0gcG9pbnRzKGVsLmRhdGFzZXQubW9ycGhUbyA/PyBcIlwiKTtcblx0XHRyZXR1cm4gZnJvbS5sZW5ndGggJiYgZnJvbS5sZW5ndGggPT09IHRvLmxlbmd0aCA/IHtcblx0XHRcdGVsLFxuXHRcdFx0ZnJvbSxcblx0XHRcdHRvXG5cdFx0fSA6IG51bGw7XG5cdH0pLmZpbHRlcigocyk6IHMgaXMge1xuXHRcdGVsOiBTVkdQYXRoRWxlbWVudDtcblx0XHRmcm9tOiBudW1iZXJbXVtdO1xuXHRcdHRvOiBudW1iZXJbXVtdO1xuXHR9ID0+IHMgIT09IG51bGwpO1xuXHQvLyBUaGUgd2hvbGUgbW9ycGg6IGV2ZXJ5IHBvaW50IG9mIGV2ZXJ5IHN0cm9rZSBtb3ZlZCB0byBpdHMgaW50ZXJwb2xhdGVkXG5cdC8vIHBvc2l0aW9uLCB3cml0dGVuIHN0cmFpZ2h0IHRvIHRoZSBgZGAgYXR0cmlidXRlIChDU1MgYGRgIGlzIENocm9taXVtLW9ubHlcblx0Ly8g4oCUIHNlZSB0aGUgbm90ZSBpbiB0aGUgc3R5bGVzaGVldCkuIFRoaXMgaXMgdGhlIFwibGluZSBjaGFuZ2luZyBpbnRvIGEgbmV3XG5cdC8vIG9uZVwiOiBhdCBtID0gMC41IGVhY2ggcGF0aCBpcyBhIHJlYWwgaW50ZXJtZWRpYXRlIHNoYXBlLCBub3QgYSBibGVuZCBvZlxuXHQvLyB0d28gb3ZlcmxhaWQgZ2x5cGhzLiBCb3RoIHN0cm9rZXMgYXJlIGxpdmUgZ2VvbWV0cnkgdGhlIHdob2xlIHdheSDigJQgb25lXG5cdC8vIGJlY29tZXMgdGhlIGNoZWNrJ3Mgc2hvcnQgYXJtLCB0aGUgb3RoZXIgaXRzIGxvbmcgYXJtIOKAlCBzbyB0aGVyZSBpcyBub1xuXHQvLyBvcGFjaXR5IGFueXdoZXJlIGluIHRoZSBtb3JwaC5cblx0Y29uc3Qgc2V0TW9ycGggPSAobTogbnVtYmVyKSA9PiB7XG5cdFx0Zm9yIChjb25zdCB7IGVsLCBmcm9tLCB0byB9IG9mIHN0cm9rZXMpIHtcblx0XHRcdGVsLnNldEF0dHJpYnV0ZShcImRcIiwgdG9QYXRoKGZyb20ubWFwKChbeCwgeV0sIGkpID0+IFt4ISArICh0b1tpXSFbMF0hIC0geCEpICogbSwgeSEgKyAodG9baV0hWzFdISAtIHkhKSAqIG1dKSkpO1xuXHRcdH1cblx0fTtcblx0Y29uc3QgcmVkdWNlZE1vdGlvbiA9IHdpbmRvdy5tYXRjaE1lZGlhKFwiKHByZWZlcnMtcmVkdWNlZC1tb3Rpb246IHJlZHVjZSlcIikubWF0Y2hlcztcblx0bGV0IGNvbmZpcm1lZCA9IGJ0bi5kaXNhYmxlZCB8fCBidG4uY2xhc3NMaXN0LmNvbnRhaW5zKFwic2xpZGUtdG8tY29uZmlybS0tY29uZmlybWVkXCIpO1xuXHRpZiAoY29uZmlybWVkKSB7XG5cdFx0YnRuLmNsYXNzTGlzdC5hZGQoXCJzbGlkZS10by1jb25maXJtLS1jb25maXJtZWRcIik7XG5cdH1cblx0Ly8gVGhlIGRpc3RhbmNlIHRoZSBoYW5kbGUgY2FuIHRyYXZlbDogdGhlIHBpbGwncyBpbm5lciB3aWR0aCBtaW51cyB0aGVcblx0Ly8gaGFuZGxlIGFuZCBpdHMgKHN5bW1ldHJpYykgaW5zZXRzLCByZWFkIG9mZiB0aGUgbGF5b3V0IHNvIHRoZSBDU1Mgb3duc1xuXHQvLyBldmVyeSBudW1iZXIuIE1lYXN1cmVkIGxhemlseSBvbiB0aGUgZmlyc3QgcG9pbnRlcmRvd24gKHRoZSBwaWxsIG1heSBiZVxuXHQvLyBpbnNpZGUgYW4gdW5sYWlkLW91dCBjb250YWluZXIgYXQgY29ubmVjdCB0aW1lKSBhbmQgcmUtbWVhc3VyZWQgb25cblx0Ly8gcmVzaXplIHNvIHJvdGF0aW9uL3ZpZXdwb3J0IGNoYW5nZXMgc3RheSBob25lc3QuXG5cdGxldCByYW5nZSA9IDA7XG5cdC8vIFRoZSBjb25maXJtZWQgZmlsbCdzIGdlb21ldHJ5LCBpbiB0aGUgc2FtZSBtZWFzdXJlZCB1bml0czogdGhlIGNpcmNsZVxuXHQvLyBpcyBzZWVkZWQgYXQgdGhlIFBBUktFRCBoYW5kbGUncyBjZW50ZXIgKHRoZSBnZXN0dXJlJ3MgZW5kcG9pbnQsIHdoaWNoXG5cdC8vIGlzIHdoZXJlIHRoZSBuZXcgc3RhdGUgY29tZXMgZnJvbSkgYW5kIGhhcyB0byByZWFjaCB0aGUgZmFyIGNvcm5lciBvZlxuXHQvLyB0aGUgcGlsbCB0byBjb3ZlciBpdCDigJQgdGhhdCBjb3JuZXIgaXMgdGhlIG9wcG9zaXRlIGVuZCwgc28gdGhlIHJhZGl1c1xuXHQvLyBpcyB0aGUgZGlzdGFuY2UgZnJvbSB0aGUgaGFuZGxlJ3MgY2VudGVyIHRvIHRoZSBwaWxsJ3MgZmFyIGVkZ2UuXG5cdGxldCBmaWxsT3JpZ2luID0gMDtcblx0bGV0IGZpbGxSYWRpdXMgPSAwO1xuXHRjb25zdCBtZWFzdXJlID0gKCkgPT4ge1xuXHRcdHJhbmdlID0gTWF0aC5tYXgoMCwgYnRuLmNsaWVudFdpZHRoIC0gaGFuZGxlLm9mZnNldFdpZHRoIC0gaGFuZGxlLm9mZnNldExlZnQgKiAyKTtcblx0XHQvLyBUaGlzIG9mZnNldCBiZWxvbmdzIHRvIHRoZSBlbnRyYW5jZSBvbmx5LCBub3QgdGhlIHVzZXIncyBzbGlkZSB4LlxuXHRcdC8vIFNldCBpdCBvbiB0aGUgaGFuZGxlIGl0c2VsZjsgaXRzIHRyYW5zbGF0ZWQgcG9zaXRpb24gbmV2ZXIgYWZmZWN0cyByYW5nZS5cblx0XHRoYW5kbGUuc3R5bGUuc2V0UHJvcGVydHkoXCItLXNsaWRlLXRvLWNvbmZpcm0tZW50cmFuY2UteFwiLCBgJHtyYW5nZSAvIDJ9cHhgKTtcblx0XHRmaWxsT3JpZ2luID0gaGFuZGxlLm9mZnNldExlZnQgKyByYW5nZSArIGhhbmRsZS5vZmZzZXRXaWR0aCAvIDI7XG5cdFx0Y29uc3QgdyA9IGJ0bi5vZmZzZXRXaWR0aDtcblx0XHRjb25zdCBoID0gYnRuLm9mZnNldEhlaWdodDtcblx0XHRmaWxsUmFkaXVzID0gTWF0aC5oeXBvdChNYXRoLm1heChmaWxsT3JpZ2luLCB3IC0gZmlsbE9yaWdpbiksIGggLyAyKSArIDI7XG5cdFx0YnRuLnN0eWxlLnNldFByb3BlcnR5KFwiLS1zbGlkZS10by1jb25maXJtLWZpbGwteFwiLCBgJHtmaWxsT3JpZ2lufXB4YCk7XG5cdFx0aWYgKGNvbmZpcm1lZCkge1xuXHRcdFx0YnRuLnN0eWxlLnNldFByb3BlcnR5KFwiLS1zbGlkZS10by1jb25maXJtLWZpbGwtclwiLCBgJHtmaWxsUmFkaXVzfXB4YCk7XG5cdFx0XHRoYW5kbGUuc3R5bGUuc2V0UHJvcGVydHkoXCItLXNsaWRlLXRvLWNvbmZpcm0teFwiLCBgJHtyYW5nZX1weGApO1xuXHRcdFx0c2V0TW9ycGgoMSk7XG5cdFx0fVxuXHR9O1xuXHRtZWFzdXJlKCk7XG5cdGlmICh0eXBlb2YgUmVzaXplT2JzZXJ2ZXIgIT09IFwidW5kZWZpbmVkXCIpIHtcblx0XHRuZXcgUmVzaXplT2JzZXJ2ZXIobWVhc3VyZSkub2JzZXJ2ZShidG4pO1xuXHR9IGVsc2Uge1xuXHRcdHdpbmRvdy5hZGRFdmVudExpc3RlbmVyKFwicmVzaXplXCIsIG1lYXN1cmUpO1xuXHR9XG5cdGNvbnN0IGZpbmlzaEVudHJhbmNlID0gc2V0dXBFbnRyYW5jZShidG4pO1xuXHQvLyBTZXQgYnkgYSB0aHJlc2hvbGQtY3Jvc3NpbmcgcmVsZWFzZSBzbyB0aGF0IGdlc3R1cmUncyBvd24gY2xpY2sgaXNcblx0Ly8gYWxsb3dlZCB0aHJvdWdoIHRvIHRoZSBzdWJtaXQgKHNlZSB0aGUgY2xpY2sgbGlzdGVuZXIpLlxuXHRsZXQgYXJtZWRWaWFEcmFnID0gZmFsc2U7XG5cdGxldCB4ID0gMDtcblx0Ly8gVGhlIHNldHRsZS9jb25maXJtIHNwcmluZywga2VwdCBzbyBhIG5ldyBnZXN0dXJlIGNhbiBzdG9wIGl0IOKAlCBtb3Rpb24nc1xuXHQvLyBkZWZhdWx0IHdoZW4gb3ZlcmxhcHBpbmcgYW5pbWF0aW9ucyBvbiBvbmUgdmFsdWUgcmFjZSAoc3RvcCB3aW5zKS5cblx0bGV0IHJpZGU6IHtcblx0XHRzdG9wOiAoKSA9PiB2b2lkO1xuXHR9IHwgbnVsbCA9IG51bGw7XG5cdC8vIFRoZSBjb25maXJtZWQgY2hvcmVvZ3JhcGh5J3MgY2FuY2VsbGFibGUgdGFpbC4gVGhlIGNlbGVicmF0aW9uIHN0YXJ0c1xuXHQvLyB0aGUgbW9tZW50IHRoZSBzbGlkZSBhcm1zIOKAlCBiZWZvcmUgdGhlIGhvc3QgcGFnZSdzIHN1Ym1pdCBoYW5kbGVyIGhhc1xuXHQvLyBldmVuIHNlbnQgaXRzIGZldGNoIOKAlCBzbyBhIHNhdmUgdGhhdCBGQUlMUyBjYW4gcmVzb2x2ZSB3aGlsZSB0aGUgYmxhY2tcblx0Ly8gZmxvb2QsIHRoZSBsYWJlbCdzIHJldHVybiBhbmQgdGhlIHZvbGxleSdzIHN0YWdnZXJlZCBzaG90cyBhcmUgc3RpbGxcblx0Ly8gaW4gZmxpZ2h0LiBUaGVzZSBoYW5kbGVzIChhbmQgYGxhdGVyYCwgdGhlIG9uZSBzY2hlZHVsZXIgZXZlcnkgYmVhdCBvZlxuXHQvLyB0aGUgY2VsZWJyYXRpb24gZ29lcyB0aHJvdWdoKSBhcmUgd2hhdCBgc2xpZGUtdG8tY29uZmlybTpyZXNldGAgc3RvcHMuXG5cdGxldCBmaWxsQW5pbWF0aW9uOiB7XG5cdFx0c3RvcDogKCkgPT4gdm9pZDtcblx0fSB8IG51bGwgPSBudWxsO1xuXHQvLyBUaGUgc2V0dGxlLXBvcCwgc2FtZSB0cmVhdG1lbnQ6IGEgcmVzZXQgYXJyaXZpbmcgbWlkLXBvcCB3b3VsZCBsZWF2ZVxuXHQvLyBpdHMgY29tbWl0dGVkIHRyYW5zZm9ybSBvbiB0aGUgcGlsbC5cblx0bGV0IHBvcEFuaW1hdGlvbjoge1xuXHRcdHN0b3A6ICgpID0+IHZvaWQ7XG5cdH0gfCBudWxsID0gbnVsbDtcblx0Y29uc3QgcGVuZGluZ1RpbWVyczogbnVtYmVyW10gPSBbXTtcblx0Y29uc3QgbGF0ZXIgPSAoZm46ICgpID0+IHZvaWQsIG1zOiBudW1iZXIpID0+IHtcblx0XHRwZW5kaW5nVGltZXJzLnB1c2god2luZG93LnNldFRpbWVvdXQoZm4sIG1zKSk7XG5cdH07XG5cdGxldCBkcmFnZ2luZyA9IGZhbHNlO1xuXHRsZXQgcG9pbnRlcklkOiBudW1iZXIgfCBudWxsID0gbnVsbDtcblx0bGV0IHN0YXJ0Q2xpZW50WCA9IDA7XG5cdGxldCBzdGFydFggPSAwO1xuXHRjb25zdCBzZXRYID0gKG5leHQ6IG51bWJlcikgPT4ge1xuXHRcdHggPSBNYXRoLm1pbihNYXRoLm1heChuZXh0LCAwKSwgcmFuZ2UpO1xuXHRcdGhhbmRsZS5zdHlsZS5zZXRQcm9wZXJ0eShcIi0tc2xpZGUtdG8tY29uZmlybS14XCIsIGAke3h9cHhgKTtcblx0XHQvLyBCb3RoIHRoZSBsYWJlbCBmYWRlIGFuZCB0aGUgaWNvbiBtb3JwaCBhcmUgdGhlIFNBTUUgc2xpZGUgcHJvZ3Jlc3MsXG5cdFx0Ly8gdGFrZW4gdG8gY29tcGxldGlvbiBvdmVyIHRoZSBmaXJzdCA3MCUgb2YgdGhlIHRyYXZlbCAodGhlIHJlZmVyZW5jZSdzXG5cdFx0Ly8gbGFiZWwgY3VydmUpOiB0aGUgd29yZHMgYXJlIGdvbmUgYW5kIHRoZSBnbHlwaCBoYXMgYmVjb21lIGEgY2hlY2tcblx0XHQvLyB3aGlsZSB0aGVyZSBpcyBzdGlsbCB0cmFjayBsZWZ0LCBzbyB0aGUgbGFzdCBzdHJldGNoIGlzIHB1cmUgY29tbWl0LlxuXHRcdGNvbnN0IHByb2dyZXNzID0gcmFuZ2UgPiAwID8geCAvIHJhbmdlIDogMDtcblx0XHRjb25zdCBlYXNlZCA9IE1hdGgubWluKHByb2dyZXNzIC8gLjcsIDEpO1xuXHRcdGxhYmVsLnN0eWxlLnNldFByb3BlcnR5KFwiLS1zbGlkZS10by1jb25maXJtLWxhYmVsLW9wYWNpdHlcIiwgU3RyaW5nKDEgLSBlYXNlZCkpO1xuXHRcdC8vIFJlZHJhd3MgdGhlIGdseXBoIHVuZGVyIHRoZSB1c2VyJ3MgdGh1bWIsIGFuZCByZXZlcnNlcyBmcmFtZS1mb3ItZnJhbWVcblx0XHQvLyBpZiB0aGV5IGRyYWcgYmFjayDigJQgdGhlIHN0cm9rZXMgdHJhdmVsIHdpdGggdGhlIGdlc3R1cmUgaW5zdGVhZCBvZlxuXHRcdC8vIGFubm91bmNpbmcgaXRzIHJlc3VsdC5cblx0XHRzZXRNb3JwaChlYXNlZCk7XG5cdH07XG5cdC8vIFRoZSByZWZlcmVuY2UncyBzZXR0bGUgc3ByaW5nIChzdGlmZm5lc3MgNTAwIC8gZGFtcGluZyAzOCkuIE1vdGlvblxuXHQvLyBhbmltYXRlcyBhIHBsYWluIG51bWJlcjsgZWFjaCB0aWNrIHJlLXJlbmRlcnMgb2Zmc2V0ICsgbGFiZWwgZmFkZS5cblx0Ly8gb25Db21wbGV0ZSBwaW5zIHRoZSBleGFjdCBlbmRwb2ludCwgc28gYSByZWxlYXNlIGEgaGFpciBzaG9ydCBvZiB0aGVcblx0Ly8gZW5kIGNhbiBuZXZlciBmcmVlemUgd2hlcmUgaXQgbGV0IGdvIOKAlCB0aGUgcGFya2VkIHBvc2l0aW9uIElTIHRoZSBmYXJcblx0Ly8gZW5kIChhbmQgb25seSB0aGUgZmFyIGVuZCBhcm1zKS5cblx0Y29uc3QgcmlkZVRvID0gKHRvOiBudW1iZXIpID0+IHtcblx0XHRyaWRlPy5zdG9wKCk7XG5cdFx0aWYgKHJlZHVjZWRNb3Rpb24pIHtcblx0XHRcdHNldFgodG8pO1xuXHRcdFx0cmV0dXJuO1xuXHRcdH1cblx0XHRyaWRlID0gYW5pbWF0ZSh4LCB0bywge1xuXHRcdFx0dHlwZTogXCJzcHJpbmdcIixcblx0XHRcdHN0aWZmbmVzczogNTAwLFxuXHRcdFx0ZGFtcGluZzogMzgsXG5cdFx0XHRvblVwZGF0ZTogKHYpID0+IHNldFgodiksXG5cdFx0XHRvbkNvbXBsZXRlOiAoKSA9PiBzZXRYKHRvKVxuXHRcdH0pO1xuXHR9O1xuXHQvLyBUaGUgY29uZmlybWVkIGZpbGwncyBncm93dGg6IHRoZSBibGFjayBjaXJjbGUgc3dlbGxzIG91dCBvZiB0aGUgcGFya2VkXG5cdC8vIGhhbmRsZSB1bnRpbCBpdCBoYXMgY292ZXJlZCB0aGUgcGlsbC4gT25seSBpdHMgUkFESVVTIGFuaW1hdGVzICh0aGVcblx0Ly8gY2VudGVyIHdhcyB3cml0dGVuIGJ5IG1lYXN1cmUoKSksIHNvIHRoZSB3aG9sZSBmbG9vZCBpcyBvbmUgY2xpcC1wYXRoXG5cdC8vIG9uIGEgcHNldWRvLWVsZW1lbnQg4oCUIG5vIGxheW91dCwgbm8gc2Vjb25kIHBhaW50ZWQgZWxlbWVudC5cblx0Ly9cblx0Ly8gYG1vdGlvbmAgY2Fubm90IHRhcmdldCBhIHBzZXVkby1lbGVtZW50LCBzbyB0aGUgcmFkaXVzIHJpZGVzIGEgY3VzdG9tXG5cdC8vIHByb3BlcnR5IG9uIHRoZSBidXR0b24gYW5kIGlzIHdyaXR0ZW4gcGVyIHRpY2sgbGlrZSB0aGUgaGFuZGxlJ3Mgb2Zmc2V0LlxuXHQvLyBTYW1lIHNoYXBlIGFzIFRpbWVsaW5lU2Nyb2xsJ3MgZmluYWxlIChjaXJjbGUoMC4wMDFweCkg4oaSIGZ1bGwgY292ZXIpLFxuXHQvLyBzY2FsZWQgZnJvbSB0aGUgdmlld3BvcnQgdG8gYSA1OHB4IHBpbGwuXG5cdC8vXG5cdC8vIFRoZSBjdXJ2ZSBpcyB0aGUgZmlsZSdzIGNsaXAtcGF0aCBjdXJ2ZSAodGhlIGVudHJhbmNlJ3Ncblx0Ly8gLS1lYXNlLWluLW91dC1zdHJvbmcpLCBub3QgdGhlIGV4cG8gdXNlZCBmb3IgZmFkZXMsIGFuZCBmb3IgYSByZWFzb25cblx0Ly8gc3BlY2lmaWMgdG8gY2lyY2xlczogcGFpbnRlZCBBUkVBIGdvZXMgYXMgcsKyLCBzbyBhbiBlYXNlLW91dCByYWRpdXNcblx0Ly8gZHVtcHMgbW9zdCBvZiB0aGUgYmxhY2sgaW4gdGhlIGZpcnN0IGZldyBmcmFtZXMgYW5kIHJlYWRzIGFzIGEgZmxhc2hcblx0Ly8gcmF0aGVyIHRoYW4gYSBzd2VlcC4gU3RhcnRpbmcgZnJvbSByZXN0IGtlZXBzIHRoZSBlZGdlIGxlZ2libGUgYXMgaXRcblx0Ly8gY3Jvc3NlcyB0aGUgcGlsbCDigJQgdGhlIGV4cGFuc2lvbiBpcyB0aGUgdGhpbmcgYmVpbmcgd2F0Y2hlZCBoZXJlLlxuXHRjb25zdCBzZXRGaWxsID0gKHI6IG51bWJlcikgPT4ge1xuXHRcdGJ0bi5zdHlsZS5zZXRQcm9wZXJ0eShcIi0tc2xpZGUtdG8tY29uZmlybS1maWxsLXJcIiwgYCR7TWF0aC5tYXgoMCwgcil9cHhgKTtcblx0fTtcblx0Ly8gYG9uQ292ZXJlZGAgcnVucyB0aGUgaW5zdGFudCB0aGUgY2lyY2xlIGhhcyBzd2FsbG93ZWQgdGhlIHdob2xlIHBpbGwsXG5cdC8vIHdoaWNoIGlzIHdoYXQgdGhlIGNvbmZldHRpIHdhaXRzIGZvciAoc2VlIGNvbmZpcm0pLlxuXHRjb25zdCBncm93RmlsbCA9IChvbkNvdmVyZWQ/OiAoKSA9PiB2b2lkKSA9PiB7XG5cdFx0aWYgKHJlZHVjZWRNb3Rpb24pIHtcblx0XHRcdC8vIE5vIGpvdXJuZXk6IHRoZSBmaWxsIGlzIHNpbXBseSBhbHJlYWR5IHRoZXJlLCB3aGljaCBpcyB3aGF0IHRoZVxuXHRcdFx0Ly8gY29uZmlybWVkIGJhY2tncm91bmQtY29sb3Igd291bGQgaGF2ZSBwYWludGVkIGFueXdheS5cblx0XHRcdHNldEZpbGwoZmlsbFJhZGl1cyk7XG5cdFx0XHRvbkNvdmVyZWQ/LigpO1xuXHRcdFx0cmV0dXJuO1xuXHRcdH1cblx0XHRmaWxsQW5pbWF0aW9uID0gYW5pbWF0ZSgwLCBmaWxsUmFkaXVzLCB7XG5cdFx0XHRkdXJhdGlvbjogRklMTF9NUyAvIDFlMyxcblx0XHRcdGVhc2U6IEVBU0VfSU5fT1VUX1NUUk9ORyxcblx0XHRcdG9uVXBkYXRlOiBzZXRGaWxsLFxuXHRcdFx0b25Db21wbGV0ZTogKCkgPT4ge1xuXHRcdFx0XHRzZXRGaWxsKGZpbGxSYWRpdXMpO1xuXHRcdFx0XHRvbkNvdmVyZWQ/LigpO1xuXHRcdFx0fVxuXHRcdH0pO1xuXHR9O1xuXHQvLyBUaGUgTWFnaWNVSSBDb25mZXR0aUJ1dHRvbiBvcmlnaW4gbWF0aDogYnVyc3QgZnJvbSB0aGUgYnV0dG9uJ3MgY2VudGVyLFxuXHQvLyBleHByZXNzZWQgYXMgYSBmcmFjdGlvbiBvZiB0aGUgdmlld3BvcnQuIFRoZSBwYWxldHRlIGZsaXBzIHdpdGggdGhlXG5cdC8vIGRldmljZSB0aGVtZSDigJQgaHVlcyBzdGF5LCBsaWdodG5lc3MgaW52ZXJ0cyDigJQgc28gdGhlIHZvbGxleSByZWFkc1xuXHQvLyBhZ2FpbnN0IHRoZSBwYWdlIGl0IGxhbmRzIG9uLCBzYW1lIG1pcnJvcmVkLWJ5LWNvbnN0cnVjdGlvbiBjb250cmFjdCBhc1xuXHQvLyB0aGUgcGlsbC4gVm9sbGV5IHNoYXBlIGlzIHRoZSBtYWdpY3VpIHN0YXJzIGRlbW86IHRocmVlIHN0YWdnZXJlZCBzaG90c1xuXHQvLyBvZiBhIGxhcmdlIHNoYXBlIHBsdXMgYSBmZXcgc21hbGwgY2lyY2xlcy5cblx0Ly9cblx0Ly8gRmlyZWQgb25jZSB0aGUgZmlsbCBoYXMgY292ZXJlZCB0aGUgcGlsbCwgc28gdGhlIHJlY3QgaXQgbWVhc3VyZXMgaXNcblx0Ly8gdGhlIHNldHRsZWQgb25lICh0aGUgc2V0dGxlLXBvcCBpcyBvdmVyIGJ5IHRoZW4pIGFuZCB0aGUgb3JpZ2luIGlzIHRoZVxuXHQvLyBmaW5pc2hlZCBibGFjayBwaWxsIHJhdGhlciB0aGFuIGEgbWlkLXNjYWxlIGZyYW1lIG9mIGl0LlxuXHRjb25zdCBmaXJlQ29uZmV0dGkgPSAoKSA9PiB7XG5cdFx0Y29uc3QgcmVjdCA9IGJ0bi5nZXRCb3VuZGluZ0NsaWVudFJlY3QoKTtcblx0XHRjb25zdCBvcmlnaW4gPSB7XG5cdFx0XHR4OiAocmVjdC5sZWZ0ICsgcmVjdC53aWR0aCAvIDIpIC8gd2luZG93LmlubmVyV2lkdGgsXG5cdFx0XHR5OiAocmVjdC50b3AgKyByZWN0LmhlaWdodCAvIDIpIC8gd2luZG93LmlubmVySGVpZ2h0XG5cdFx0fTtcblx0XHRjb25zdCBsaWdodCA9IHdpbmRvdy5tYXRjaE1lZGlhKFwiKHByZWZlcnMtY29sb3Itc2NoZW1lOiBsaWdodClcIikubWF0Y2hlcztcblx0XHRjb25zdCBjb2xvcnMgPSBsaWdodCA/IFtcblx0XHRcdFwiI2I0NTMwOVwiLFxuXHRcdFx0XCIjYmUxMjNjXCIsXG5cdFx0XHRcIiMxZDRlZDhcIixcblx0XHRcdFwiIzA0Nzg1N1wiLFxuXHRcdFx0XCIjMTExMTExXCJcblx0XHRdIDogW1xuXHRcdFx0XCIjZmNkMzRkXCIsXG5cdFx0XHRcIiNmZGE0YWZcIixcblx0XHRcdFwiIzkzYzVmZFwiLFxuXHRcdFx0XCIjNmVlN2I3XCIsXG5cdFx0XHRcIiNmYWZhZmFcIlxuXHRcdF07XG5cdFx0Y29uc3QgZGVmYXVsdHMgPSB7XG5cdFx0XHRvcmlnaW4sXG5cdFx0XHRjb2xvcnMsXG5cdFx0XHRzcHJlYWQ6IDcwLFxuXHRcdFx0dGlja3M6IDIwMCxcblx0XHRcdGdyYXZpdHk6IDEsXG5cdFx0XHRkZWNheTogLjk0LFxuXHRcdFx0c3RhcnRWZWxvY2l0eTogMzgsXG5cdFx0XHR6SW5kZXg6IDk5OTlcblx0XHR9O1xuXHRcdGlmIChyZWR1Y2VkTW90aW9uKSB7XG5cdFx0XHQvLyBObyB2b2xsZXkgYXQgYWxsLiBGb3J0eSBiYWxsaXN0aWMgcGFydGljbGVzIHdhcyB0aGUgbGFyZ2VzdCBtb3ZlbWVudFxuXHRcdFx0Ly8gb24gdGhlIHBhZ2UsIGhhbmRlZCB0byB0aGUgZ3Vlc3RzIHdobyBhc2tlZCBmb3IgbGVzcyBvZiBpdDsgXCJxdWlldFwiXG5cdFx0XHQvLyBpcyBhIHNtYWxsZXIgYnVyc3QsIG5vdCBhIGRpZmZlcmVudCBraW5kIG9mIHRoaW5nLiBUaGUgY2VsZWJyYXRpb25cblx0XHRcdC8vIHN1cnZpdmVzIGluIHRoZSBjaGFubmVscyByZWR1Y2VkIG1vdGlvbiBrZWVwczogdGhlIHBpbGwgZ29lcyBibGFjayxcblx0XHRcdC8vIHRoZSBnbHlwaCBpcyBhIGNoZWNrLCBhbmQgdGhlIGxhYmVsIHN3YXBzIHRvIFwiUmVzZXJ2YXRpb24gQ29uZmlybWVkXCIuXG5cdFx0XHRyZXR1cm47XG5cdFx0fVxuXHRcdGNvbnN0IHNob290ID0gKCkgPT4ge1xuXHRcdFx0dm9pZCBjb25mZXR0aSh7XG5cdFx0XHRcdC4uLmRlZmF1bHRzLFxuXHRcdFx0XHRwYXJ0aWNsZUNvdW50OiA1MCxcblx0XHRcdFx0c2NhbGFyOiAxLjEsXG5cdFx0XHRcdHNoYXBlczogW1wic3RhclwiXVxuXHRcdFx0fSk7XG5cdFx0XHR2b2lkIGNvbmZldHRpKHtcblx0XHRcdFx0Li4uZGVmYXVsdHMsXG5cdFx0XHRcdHBhcnRpY2xlQ291bnQ6IDE0LFxuXHRcdFx0XHRzY2FsYXI6IC43LFxuXHRcdFx0XHRzaGFwZXM6IFtcImNpcmNsZVwiXVxuXHRcdFx0fSk7XG5cdFx0fTtcblx0XHRzaG9vdCgpO1xuXHRcdGxhdGVyKHNob290LCAxMjApO1xuXHRcdGxhdGVyKHNob290LCAyNDApO1xuXHR9O1xuXHQvLyBGdWxseSBzbGlkLCBpbiBvcmRlcjogYSBibGFjayBjaXJjbGUgZ3Jvd3Mgb3V0IG9mIHRoZSBwYXJrZWQgaGFuZGxlXG5cdC8vIHVudGlsIGl0IGhhcyBzd2FsbG93ZWQgdGhlIHRyYWNrLCB0aGUgaGFuZGxlIGpvaW5zIHRoYXQgYmxhY2sgYW5kIHRoZVxuXHQvLyBsYWJlbCByaWRlcyBiYWNrIGluIGJlaGluZCBpdCDigJQgYW5kIG9ubHkgb25jZSB0aGUgcGlsbCBpcyBjb21wbGV0ZWx5XG5cdC8vIGNvdmVyZWQgZG9lcyB0aGUgdm9sbGV5IGZpcmUuIFRoZSBjb25mZXR0aSBpcyB0aGUgcGF5b2ZmIGZvciBhIGZpbmlzaGVkXG5cdC8vIHN0YXRlLCBzbyBpdCB3YWl0cyBmb3IgdGhhdCBzdGF0ZSB0byBhY3R1YWxseSBiZSBmaW5pc2hlZDsgb3ZlcmxhcHBpbmdcblx0Ly8gaXQgd2l0aCB0aGUgZXhwYW5zaW9uIG1hZGUgdHdvIGV2ZW50cyBjb21wZXRlIGZvciB0aGUgc2FtZSBtb21lbnQgYW5kXG5cdC8vIGhpZCB0aGUgc3dlZXAgYmVoaW5kIHRoZSBwYXJ0aWNsZXMuXG5cdC8vXG5cdC8vIFJzdnBTZWN0aW9uIGNhdGNoZXMgdGhlIHNhbWUgZ2VzdHVyZSdzIHN1Ym1pdCBldmVudCwgc28gdGhlIGZldGNoLCB0aGVcblx0Ly8gZGlzYWJsZSAoRDEyKSBhbmQgdGhlIGZvY3VzIG1vdmUgc3RheSBleGFjdGx5IHdoZXJlIHRoZXkgd2VyZSDigJQgbm9uZSBvZlxuXHQvLyB0aGVtIHdhaXQgb24gdGhpcyBjaG9yZW9ncmFwaHkuXG5cdGNvbnN0IGNvbmZpcm0gPSAoKSA9PiB7XG5cdFx0aWYgKGNvbmZpcm1lZCkgcmV0dXJuO1xuXHRcdGZpbmlzaEVudHJhbmNlKCk7XG5cdFx0Y29uZmlybWVkID0gdHJ1ZTtcblx0XHQvLyBUaGUgZmlsbCdzIG9yaWdpbiBkZXBlbmRzIG9uIHRoZSBoYW5kbGUncyBwYXJrZWQgY2VudGVyLCBzbyB0aGVcblx0XHQvLyBnZW9tZXRyeSBoYXMgdG8gYmUgY3VycmVudCBiZWZvcmUgdGhlIGNpcmNsZSBpcyBzZWVkZWQgKGEga2V5Ym9hcmRcblx0XHQvLyBjb25maXJtIG1heSBuZXZlciBoYXZlIGdvbmUgdGhyb3VnaCBwb2ludGVyZG93bidzIG1lYXN1cmUoKSkuXG5cdFx0bWVhc3VyZSgpO1xuXHRcdGJ0bi5jbGFzc0xpc3QuYWRkKFwic2xpZGUtdG8tY29uZmlybS0tY29uZmlybWVkXCIpO1xuXHRcdGJ0bi5jbGFzc0xpc3QucmVtb3ZlKFwic2xpZGUtdG8tY29uZmlybS0tZHJhZ2dpbmdcIik7XG5cdFx0Ly8gVGhlIGxhYmVsIHdhcyBmYWRlZCBieSB0aGUgc2xpZGU7IHRoZSBjb25maXJtZWQgd29yZHMgcmlzZSBiYWNrIGluXG5cdFx0Ly8gKGNvbG9yIGZsaXBzIHZpYSB0aGUgY2xhc3MgdHJhbnNpdGlvbikuIFJzdnBTZWN0aW9uIGhhcyBhbHJlYWR5XG5cdFx0Ly8gc3dhcHBlZCB0aGUgdGV4dCBieSBub3cg4oCUIGl0IHJ1bnMgb24gc3VibWl0LCB3aGljaCBmaXJlcyBmaXJzdC5cblx0XHRjb25zdCBsYWJlbEluID0gKCkgPT4ge1xuXHRcdFx0bGFiZWwuc3R5bGUuc2V0UHJvcGVydHkoXCItLXNsaWRlLXRvLWNvbmZpcm0tbGFiZWwtb3BhY2l0eVwiLCBcIjFcIik7XG5cdFx0XHRpZiAocmVkdWNlZE1vdGlvbikgcmV0dXJuO1xuXHRcdFx0YW5pbWF0ZShsYWJlbCwge1xuXHRcdFx0XHRvcGFjaXR5OiBbMCwgMV0sXG5cdFx0XHRcdHRyYW5zZm9ybTogW1widHJhbnNsYXRlWSg2cHgpXCIsIFwidHJhbnNsYXRlWSgwcHgpXCJdXG5cdFx0XHR9LCB7XG5cdFx0XHRcdGR1cmF0aW9uOiAuMjUsXG5cdFx0XHRcdGVhc2U6IEVBU0VfT1VUX0VYUE9cblx0XHRcdH0pO1xuXHRcdH07XG5cdFx0aWYgKHJlZHVjZWRNb3Rpb24pIHtcblx0XHRcdHNldFgocmFuZ2UpO1xuXHRcdFx0Ly8gVGhlIGZpbGwgaXMgc2ltcGx5IGFscmVhZHkgdGhlcmU7IG5vIHZvbGxleSBmb2xsb3dzIGl0IHVuZGVyIHJlZHVjZWRcblx0XHRcdC8vIG1vdGlvbiwgc28gbm90aGluZyB3YWl0cyBvbiBjb3ZlcmFnZS5cblx0XHRcdGdyb3dGaWxsKCk7XG5cdFx0XHRsYWJlbEluKCk7XG5cdFx0fSBlbHNlIHtcblx0XHRcdC8vIFRoZSBoYW5kbGUgc3ByaW5ncyB0aGUgcmVzdCBvZiB0aGUgd2F5IGhvbWUgYW5kIFNUQVlTIHRoZXJlIOKAlCB0aGVcblx0XHRcdC8vIGNoZWNrIHBhcmtlZCBhdCB0aGUgZmFyIGVuZCBpcyBwYXJ0IG9mIHRoZSBjb25maXJtZWQgY29tcG9zaXRpb24uXG5cdFx0XHQvLyBUaGUgc3ByaW5nJ3Mgb25VcGRhdGUga2VlcHMgd3JpdGluZyB0aGUgbW9ycGgsIHNvIGEga2V5Ym9hcmRcblx0XHRcdC8vIGFjdGl2YXRpb24gKHdoaWNoIHN0YXJ0cyBhdCB4ID0gMCkgc3RpbGwgZ2V0cyB0aGUgZ2x5cGggY2hhbmdlIGFzXG5cdFx0XHQvLyB0cmF2ZWwgcmF0aGVyIHRoYW4gYSBqdW1wLlxuXHRcdFx0cmlkZVRvKHJhbmdlKTtcblx0XHRcdC8vIFRoZSBibGFjayBjb21lcyBPVVQgb2YgdGhhdCBwYXJrZWQgaGFuZGxlOiB0aGUgY2lyY2xlIGlzIHNlZWRlZCBhdFxuXHRcdFx0Ly8gaXRzIGNlbnRlciBhbmQgZ3Jvd3MgcGFzdCBib3RoIGVuZHMgb2YgdGhlIHBpbGwuIFRoZSBoYW5kbGUgcmlkZXNcblx0XHRcdC8vIGFib3ZlIGl0ICh6LWluZGV4KSBhbmQgb25seSB0dXJucyBibGFjayBvbmNlIHRoZSBjaXJjbGUgaXMgd2VsbFxuXHRcdFx0Ly8gY2xlYXIgb2YgaXQg4oCUIHRoZSBDU1MgZGVsYXlzIHRoYXQgZmxpcCDigJQgc28gdGhlIGZpbGwgcmVhZHMgYXNcblx0XHRcdC8vIGhhdmluZyBiZWVuIHJlbGVhc2VkIGJ5IHRoZSBnZXN0dXJlJ3MgZW5kcG9pbnQuIFRoZSB2b2xsZXkgaXMgdGhpc1xuXHRcdFx0Ly8gc3dlZXAncyBjb21wbGV0aW9uIGNhbGxiYWNrLCBub3QgYSBwYXJhbGxlbCB0cmFjay5cblx0XHRcdGdyb3dGaWxsKGZpcmVDb25mZXR0aSk7XG5cdFx0XHQvLyBUaGUgd29yZHMgY29tZSBiYWNrIG9uY2UgdGhlIGNpcmNsZSBoYXMgcGFzc2VkIHRoZSBwaWxsJ3MgY2VudGVyLFxuXHRcdFx0Ly8gaS5lLiBvbmNlIHRoZXJlIGlzIGJsYWNrIGJlaGluZCB0aGVtIHRvIHJlYWQgYWdhaW5zdCDigJQgdGhlIHNhbWVcblx0XHRcdC8vIGluc3RhbnQgdGhlIGhhbmRsZSBzdGFydHMgam9pbmluZyB0aGF0IGJsYWNrLlxuXHRcdFx0bGF0ZXIobGFiZWxJbiwgRklMTF9IQU5ET0ZGX01TKTtcblx0XHRcdC8vIEdlbnRsZSBzZXR0bGUtcG9wIG9uIHRoZSBwaWxsIChhIHNldHRsZSwgbm90IGEgYm91bmNlKS5cblx0XHRcdHBvcEFuaW1hdGlvbiA9IGFuaW1hdGUoYnRuLCB7IHNjYWxlOiBbXG5cdFx0XHRcdDEsXG5cdFx0XHRcdDEuMDQsXG5cdFx0XHRcdDFcblx0XHRcdF0gfSwge1xuXHRcdFx0XHRkdXJhdGlvbjogLjM1LFxuXHRcdFx0XHRlYXNlOiBFQVNFX09VVF9FWFBPXG5cdFx0XHR9KTtcblx0XHR9XG5cdH07XG5cdGJ0bi5hZGRFdmVudExpc3RlbmVyKFwicG9pbnRlcmRvd25cIiwgKGV2ZW50KSA9PiB7XG5cdFx0aWYgKGNvbmZpcm1lZCB8fCBidG4uZGlzYWJsZWQpIHJldHVybjtcblx0XHQvLyBMZWZ0IGJ1dHRvbiAvIHRvdWNoIC8gcGVuIG9ubHkuXG5cdFx0aWYgKGV2ZW50LnBvaW50ZXJUeXBlID09PSBcIm1vdXNlXCIgJiYgZXZlbnQuYnV0dG9uICE9PSAwKSByZXR1cm47XG5cdFx0ZmluaXNoRW50cmFuY2UoKTtcblx0XHQvLyBBIHJpZGUgbWF5IHN0aWxsIGJlIHNwcmluZ2luZyB3aGVuIHRoZSBndWVzdCBncmFicyB0aGUgaGFuZGxlOiBhXG5cdFx0Ly8gc2hvcnQgZHJhZydzIHJlbGVhc2UsIG9yIGEgcmVzZXQncyByb2xsYmFjay4gSXRzIHBlci1mcmFtZSBzZXRYXG5cdFx0Ly8gd3JpdGVzIHdvdWxkIGZpZ2h0IHRoaXMgZ2VzdHVyZSBmb3IgdGhlIGhhbmRsZSAodGhlIGRyYWcncyBvd25cblx0XHQvLyB3cml0ZXMgZ2V0IG92ZXJ3cml0dGVuIGV2ZXJ5IHRpY2sg4oCUIHRoZSBoYW5kbGUgYXBwZWFycyBwaW5uZWQgYXRcblx0XHQvLyBob21lIHVudGlsIHRoZSBzcHJpbmcgZGllcykuIE1vdGlvbidzIG92ZXJsYXAgcnVsZSBpcyBzdG9wLXdpbnMsXG5cdFx0Ly8gc28gc3RvcCBpdCBoZXJlIGFuZCBsZXQgdGhlIGRyYWcgb3duIHggb3V0cmlnaHQuXG5cdFx0cmlkZT8uc3RvcCgpO1xuXHRcdG1lYXN1cmUoKTtcblx0XHRkcmFnZ2luZyA9IHRydWU7XG5cdFx0cG9pbnRlcklkID0gZXZlbnQucG9pbnRlcklkO1xuXHRcdHN0YXJ0Q2xpZW50WCA9IGV2ZW50LmNsaWVudFg7XG5cdFx0c3RhcnRYID0geDtcblx0XHRidG4uY2xhc3NMaXN0LmFkZChcInNsaWRlLXRvLWNvbmZpcm0tLWRyYWdnaW5nXCIpO1xuXHRcdC8vIFN5bnRoZXRpYyBwb2ludGVyIGV2ZW50cyAodGVzdHMpIGhhdmUgbm8gYWN0aXZlIHBvaW50ZXIgdG8gY2FwdHVyZTtcblx0XHQvLyByZWFsIG9uZXMgYWx3YXlzIGRvLiBXaXRob3V0IGNhcHR1cmUgYSBwb2ludGVydXAgb2ZmLXBpbGwgd291bGRcblx0XHQvLyBzdHJhbmQgdGhlIGRyYWcsIGhlbmNlIGNhcHR1cmUtb3Itbm90aGluZywgbm90IGNhcHR1cmUtb3ItY3Jhc2guXG5cdFx0dHJ5IHtcblx0XHRcdGJ0bi5zZXRQb2ludGVyQ2FwdHVyZShwb2ludGVySWQpO1xuXHRcdH0gY2F0Y2gge31cblx0XHRldmVudC5wcmV2ZW50RGVmYXVsdCgpO1xuXHR9KTtcblx0YnRuLmFkZEV2ZW50TGlzdGVuZXIoXCJwb2ludGVybW92ZVwiLCAoZXZlbnQpID0+IHtcblx0XHRpZiAoIWRyYWdnaW5nIHx8IGV2ZW50LnBvaW50ZXJJZCAhPT0gcG9pbnRlcklkKSByZXR1cm47XG5cdFx0c2V0WChzdGFydFggKyAoZXZlbnQuY2xpZW50WCAtIHN0YXJ0Q2xpZW50WCkpO1xuXHR9KTtcblx0Ly8gQSByZWxlYXNlIGlzIHRoZSBvbmx5IHdheSBhIGRyYWcgY29uZmlybXMsIGFuZCBvbmx5IGEgRlVMTCBzbGlkZSBhcm1zOlxuXHQvLyB0aGUgdGhyZXNob2xkIGNvbXBhcmVzIGFnYWluc3Qgd2hlcmUgdGhlIGhhbmRsZSBBQ1RVQUxMWSBpcywgc28gYSB0YXAsXG5cdC8vIGEgbnVkZ2UsIG9yIGEgMzDigJM0MCUgcHVsbCBhbGwgc3ByaW5nIGhvbWUg4oCUIG9ubHkgdGhlIGhhbmRsZSBwYXJrZWQgYXRcblx0Ly8gdGhlIGZhciBlbmQgY29uZmlybXMgb24gcmVsZWFzZS5cblx0Y29uc3QgcmVsZWFzZSA9IChldmVudDogUG9pbnRlckV2ZW50KSA9PiB7XG5cdFx0aWYgKCFkcmFnZ2luZyB8fCBldmVudC5wb2ludGVySWQgIT09IHBvaW50ZXJJZCkgcmV0dXJuO1xuXHRcdGRyYWdnaW5nID0gZmFsc2U7XG5cdFx0cG9pbnRlcklkID0gbnVsbDtcblx0XHRidG4uY2xhc3NMaXN0LnJlbW92ZShcInNsaWRlLXRvLWNvbmZpcm0tLWRyYWdnaW5nXCIpO1xuXHRcdGlmIChyYW5nZSA+IDAgJiYgeCA+PSByYW5nZSAqIEFSTV9USFJFU0hPTEQpIHtcblx0XHRcdC8vIFRoZSBwb2ludGVydXAncyBvd24gY2xpY2sgZm9sbG93cyBpbW1lZGlhdGVseTsgbWFyayBpdCBhcyB0aGlzXG5cdFx0XHQvLyBnZXN0dXJlJ3Mgc28gdGhlIGNsaWNrIGxpc3RlbmVyIGxldHMgaXQgdGhyb3VnaCB0byB0aGUgc3VibWl0LlxuXHRcdFx0YXJtZWRWaWFEcmFnID0gdHJ1ZTtcblx0XHRcdGNvbmZpcm0oKTtcblx0XHR9IGVsc2Uge1xuXHRcdFx0cmlkZVRvKDApO1xuXHRcdH1cblx0fTtcblx0YnRuLmFkZEV2ZW50TGlzdGVuZXIoXCJwb2ludGVydXBcIiwgcmVsZWFzZSk7XG5cdC8vIEEgY2FuY2VsIChzY3JvbGwgdGFrZW92ZXIsIGJyb3dzZXIgZ2VzdHVyZSkgaXMgTk9UIGEgcmVsZWFzZTogdGhlIG9ubHlcblx0Ly8gaG9uZXN0IG91dGNvbWUgaXMgdGhlIHNwcmluZyBob21lLiBDb25maXJtaW5nIGhlcmUgaXMgaG93IGEgaGFsZi1zbGlkZVxuXHQvLyB3b3VsZCBcImltbWVkaWF0ZWx5IGNvbmZpcm1cIi5cblx0YnRuLmFkZEV2ZW50TGlzdGVuZXIoXCJwb2ludGVyY2FuY2VsXCIsIChldmVudCkgPT4ge1xuXHRcdGlmICghZHJhZ2dpbmcgfHwgZXZlbnQucG9pbnRlcklkICE9PSBwb2ludGVySWQpIHJldHVybjtcblx0XHRkcmFnZ2luZyA9IGZhbHNlO1xuXHRcdHBvaW50ZXJJZCA9IG51bGw7XG5cdFx0YnRuLmNsYXNzTGlzdC5yZW1vdmUoXCJzbGlkZS10by1jb25maXJtLS1kcmFnZ2luZ1wiKTtcblx0XHRyaWRlVG8oMCk7XG5cdH0pO1xuXHQvLyBQb2ludGVyIGFjdGl2YXRpb24gaXMgc2xpZGUtb25seSDigJQgYSB0YXAgaXMgTkVWRVIgYW4gYWN0aXZhdGlvbjogdGhpc1xuXHQvLyBpcyBhIHNsaWRlciwgbm90IGEgYnV0dG9uLiBUaGUgb25seSBwb2ludGVyIHBhdGggdGhyb3VnaCBpcyBhbiBhcm1lZFxuXHQvLyBmdWxsIHNsaWRlLCB3aG9zZSByZWxlYXNlIChhIGZyYW1lIGFnbykgZmxhZ2dlZCBpdHMgb3duIHRyYWlsaW5nIGNsaWNrLlxuXHQvLyBLZXlib2FyZCBhbmQgQVQgYWN0aXZhdGlvbiDigJQgRW50ZXIvU3BhY2Uvc2NyZWVuLXJlYWRlciBwcmVzcywgYSBjbGlja1xuXHQvLyB3aXRoIG5vIHBvaW50ZXIsIHNvIGBkZXRhaWwgPT09IDBgIOKAlCBjb3VudHMgYXMgYSBmdWxsIHNsaWRlLCBiZWNhdXNlIGFcblx0Ly8ga2V5Ym9hcmQgY2FuJ3QgZHJhZy4gRXZlcnkgb3RoZXIgY2xpY2sgaXMgc3dhbGxvd2VkOiBhIHRhcCwgYSBzaG9ydFxuXHQvLyBkcmFnJ3MgdHJhaWxpbmcgY2xpY2ssIG9yIGEgcHJlc3Mgd2hpbGUgdGhlIGhhbmRsZSBpcyBhd2F5IGZyb20gaG9tZVxuXHQvLyBtaWQtZ2VzdHVyZS5cblx0YnRuLmFkZEV2ZW50TGlzdGVuZXIoXCJjbGlja1wiLCAoZXZlbnQpID0+IHtcblx0XHRpZiAoY29uZmlybWVkKSB7XG5cdFx0XHRpZiAoIWFybWVkVmlhRHJhZykgZXZlbnQucHJldmVudERlZmF1bHQoKTtcblx0XHRcdGFybWVkVmlhRHJhZyA9IGZhbHNlO1xuXHRcdFx0cmV0dXJuO1xuXHRcdH1cblx0XHRpZiAoYnRuLmRpc2FibGVkIHx8IGV2ZW50LmRldGFpbCAhPT0gMCB8fCB4ID4gMCkge1xuXHRcdFx0ZXZlbnQucHJldmVudERlZmF1bHQoKTtcblx0XHRcdHJldHVybjtcblx0XHR9XG5cdFx0Y29uZmlybSgpO1xuXHRcdC8vIE5vIHByZXZlbnREZWZhdWx0IG9uIHRoZSBhcm1pbmcgcGF0aHM6IGEgc3VibWl0IGJ1dHRvbidzIGNsaWNrXG5cdFx0Ly8gZGlzcGF0Y2hlcyB0aGUgZm9ybSdzIHN1Ym1pdCBldmVudCwgd2hpY2ggUnN2cFNlY3Rpb24gdHVybnMgaW50byB0aGVcblx0XHQvLyBSU1ZQIFBPU1QuXG5cdH0pO1xuXHQvLyBUaGUgaG9zdCBwYWdlIG93bnMgdGhlIHRydXRoLiBUaGlzIGNvbnRyb2wgYXJtcyBpdHMgY2VsZWJyYXRpb24gb24gdGhlXG5cdC8vIEdFU1RVUkUg4oCUIHRoZSBwaWxsIGdvZXMgYmxhY2sgYW5kIHRoZSB2b2xsZXkgZmlyZXMgd2hpbGUgdGhlIHN1Ym1pdFxuXHQvLyBoYW5kbGVyJ3MgZmV0Y2ggaXMgc3RpbGwgaW4gZmxpZ2h0IOKAlCBhbmQgb25seSB0aGF0IGhhbmRsZXIgbGVhcm5zXG5cdC8vIHdoZXRoZXIgdGhlIGFjdGlvbiBhY3R1YWxseSBsYW5kZWQuIFdoZW4gaXQgZGlkbid0LCBpdCBkaXNwYXRjaGVzXG5cdC8vIGBzbGlkZS10by1jb25maXJtOnJlc2V0YCBvbiB0aGUgYnV0dG9uIGFuZCB0aGlzIHJvbGxzIHRoZSBwcmVzZW50YXRpb25cblx0Ly8gYmFjayB0byB0aGUgZnJlc2ggaWRsZSBzdGF0ZS4gV2l0aG91dCBpdCBhIGZhaWxlZCBzYXZlIHdvdWxkIGxlYXZlIGFcblx0Ly8gYmxhY2sgcGlsbCB3aXRoIGEgcGFya2VkIGNoZWNrIHRoYXQgbm8gZ2VzdHVyZSBjYW4gbW92ZSBhZ2FpbiDigJQgbHlpbmdcblx0Ly8gYWJvdXQgYSBzdGF0ZSB0aGF0IG5ldmVyIGhhcHBlbmVkLCByZWNvdmVyYWJsZSBvbmx5IGJ5IGEgcmVmcmVzaC5cblx0Ly9cblx0Ly8gVGhlIHJvbGxiYWNrIGlzIGEgY3V0LCBub3QgYSBzZWNvbmQgbW9ycGg6IHRoZSBjb25maXJtZWQgY2xhc3MncyBvd25cblx0Ly8gdHJhbnNpdGlvbnMgd2VyZSBkZWNsYXJlZCBvbiB0aGUgY2xhc3MsIHNvIHJlbW92aW5nIGl0IHNuYXBzIHRoZSBwYWludFxuXHQvLyBiYWNrIHdoaWxlIHRoZSBoYW5kbGUgc3ByaW5ncyBob21lIHVuZGVyIHRoZSByZXZlcnNpbmcgbW9ycGgg4oCUIHRoZSBzYW1lXG5cdC8vIHNldHRsZS1iYWNrIGEgc2hvcnQgZHJhZyBnZXRzLiBFdmVyeXRoaW5nIHN0aWxsIHNjaGVkdWxlZCAodGhlIGNpcmNsZSdzXG5cdC8vIHJlbWFpbmluZyBncm93dGgsIHRoZSBsYWJlbCdzIHRpbWVkIHJldHVybiwgdGhlIHZvbGxleSdzIHN0YWdnZXJlZFxuXHQvLyBzaG90cykgaXMgc3RvcHBlZCBmaXJzdCBzbyBub3RoaW5nIGxhbmRzIG9uIGEgcGlsbCB0aGF0IGlzIG5vIGxvbmdlclxuXHQvLyBjb25maXJtZWQuXG5cdGJ0bi5hZGRFdmVudExpc3RlbmVyKFwic2xpZGUtdG8tY29uZmlybTpyZXNldFwiLCAoKSA9PiB7XG5cdFx0aWYgKCFjb25maXJtZWQpIHJldHVybjtcblx0XHRjb25maXJtZWQgPSBmYWxzZTtcblx0XHRhcm1lZFZpYURyYWcgPSBmYWxzZTtcblx0XHRmaWxsQW5pbWF0aW9uPy5zdG9wKCk7XG5cdFx0ZmlsbEFuaW1hdGlvbiA9IG51bGw7XG5cdFx0cG9wQW5pbWF0aW9uPy5zdG9wKCk7XG5cdFx0cG9wQW5pbWF0aW9uID0gbnVsbDtcblx0XHRmb3IgKGNvbnN0IHRpbWVyIG9mIHBlbmRpbmdUaW1lcnMuc3BsaWNlKDApKSB3aW5kb3cuY2xlYXJUaW1lb3V0KHRpbWVyKTtcblx0XHRidG4uY2xhc3NMaXN0LnJlbW92ZShcInNsaWRlLXRvLWNvbmZpcm0tLWNvbmZpcm1lZFwiKTtcblx0XHRidG4uY2xhc3NMaXN0LnJlbW92ZShcInNsaWRlLXRvLWNvbmZpcm0tLWRyYWdnaW5nXCIpO1xuXHRcdC8vIE1vdGlvbiBjb21taXRzIHRoZSBjZWxlYnJhdGlvbidzIGZpbmFsIGtleWZyYW1lcyBhcyBpbmxpbmUgc3R5bGVzXG5cdFx0Ly8gKHRoZSBsYWJlbCdzIHJldHVybiwgdGhlIHNldHRsZS1wb3ApLiBJbmxpbmUgYmVhdHMgdGhlIHN0eWxlc2hlZXQsXG5cdFx0Ly8gc28gYSByb2xsZWQtYmFjayBjb250cm9sIHdvdWxkIGluaGVyaXQgdGhlbTogYSBsYWJlbCB0aGF0IGNhbiBub1xuXHRcdC8vIGxvbmdlciBmYWRlIHVuZGVyIHRoZSBoYW5kbGUgb24gdGhlIHJldHJ5IGRyYWcsIGEgcHJlc3MgdGhhdCBjYW4gbm9cblx0XHQvLyBsb25nZXIgc2NhbGUuIFRha2UgdGhlbSBvZmYg4oCUIHRoZSBpZGxlIHJ1bGVzIG93biB0aGVzZSBhZ2Fpbi5cblx0XHRsYWJlbC5zdHlsZS5yZW1vdmVQcm9wZXJ0eShcIm9wYWNpdHlcIik7XG5cdFx0bGFiZWwuc3R5bGUucmVtb3ZlUHJvcGVydHkoXCJ0cmFuc2Zvcm1cIik7XG5cdFx0YnRuLnN0eWxlLnJlbW92ZVByb3BlcnR5KFwidHJhbnNmb3JtXCIpO1xuXHRcdHNldEZpbGwoMCk7XG5cdFx0cmlkZVRvKDApO1xuXHR9KTtcblx0Ly8gVGhlIHNlcnZlciBjYW4gcmVuZGVyIHRoZSBjb250cm9sIGFscmVhZHkgY29uZmlybWVkIChyZXR1cm5pbmcgZ3Vlc3QpOlxuXHQvLyBwYXJrIHRoZSBoYW5kbGUgYXQgdGhlIGZhciBlbmQgd2l0aCBubyBtb3Rpb24gYW5kIG5vIHZvbGxleSDigJQgdGhlIHN0YXRlXG5cdC8vIGlzIG9sZCBuZXdzLCBub3QgYSBmcmVzaCBjZWxlYnJhdGlvbi4gVGhlIG1vcnBoIHRyYW5zaXRpb25zIG9ubHkgZXhpc3Rcblx0Ly8gb24gdGhlIGNvbmZpcm1lZCBjbGFzcywgc28gYWRkaW5nIHRoZSBjbGFzcyB3b3VsZCBmYWRlIHRoZSBmaWxsIGluIGZyb21cblx0Ly8gaXRzIGlkbGUgdmFsdWVzIChhIHBhZ2UtbG9hZCBhcnRpZmFjdCBvbiBhIHN0YXRlIHRoYXQgaXNuJ3QgZnJlc2gpOlxuXHQvLyBzdXBwcmVzcyB0aGVtIGZvciB0aGUgb25lIGZyYW1lIHRoZSBjbGFzcyBsYW5kcyBpbi5cblx0aWYgKGNvbmZpcm1lZCAmJiByZWR1Y2VkTW90aW9uKSB7XG5cdFx0c2V0RmlsbChmaWxsUmFkaXVzKTtcblx0XHRzZXRYKHJhbmdlKTtcblx0XHRsYWJlbC5zdHlsZS5zZXRQcm9wZXJ0eShcIi0tc2xpZGUtdG8tY29uZmlybS1sYWJlbC1vcGFjaXR5XCIsIFwiMVwiKTtcblx0fVxufTtcbmZvciAoY29uc3QgYnRuIG9mIGRvY3VtZW50LnF1ZXJ5U2VsZWN0b3JBbGw8SFRNTEJ1dHRvbkVsZW1lbnQ+KFwiW2RhdGEtc2xpZGUtdG8tY29uZmlybV1cIikpIHtcblx0c2V0dXBTbGlkZXIoYnRuKTtcbn0iXX0=
+    </script>
+    <button
+      class="slide-to-confirm"
+      type="button"
+      disabled
+      aria-disabled="true"
+      data-slide-to-confirm
+      id="slide-confirmed"
+      data-astro-cid-kj3nfrvf
+    >
+      <span class="slide-to-confirm__label" data-slide-to-confirm-text data-astro-cid-kj3nfrvf>
+        Reservation Confirmed </span
+      ><span
+        class="slide-to-confirm__handle"
+        data-slide-to-confirm-handle
+        aria-hidden="true"
+        data-astro-cid-kj3nfrvf
+        ><svg
+          class="slide-to-confirm__icon"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.25"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          data-astro-cid-kj3nfrvf
+        >
+          <path
+            class="slide-to-confirm__stroke"
+            d="M6 17 11 12 6 7"
+            data-morph-from="M6 17 11 12 6 7"
+            data-morph-to="M9 17 6.5 14.5 4 12"
+            data-astro-cid-kj3nfrvf
+          ></path>
+          <path
+            class="slide-to-confirm__stroke"
+            d="M13 17 18 12 13 7"
+            data-morph-from="M13 17 18 12 13 7"
+            data-morph-to="M9 17 14.5 11.5 20 6"
+            data-astro-cid-kj3nfrvf
+          ></path></svg
+      ></span>
+    </button>
+  </body>
+</html>

@@ -25,10 +25,8 @@ import { createTestServer } from "./support/server";
  *     the extensions Astro treats as routes. It does NOT see Astro Actions, which
  *     live in `src/actions.ts` and are served at `/_actions/*`; this project
  *     defines none, and adopting them requires extending the inventory below first.
- *   - It covers NON-SAFE methods only. `GET /{id}?fresh=1` mutates state and is
- *     deliberately out of scope: a cross-site top-level navigation carries no
- *     `Origin` header at all, so it is guarded by the Sec-Fetch and capacity checks
- *     in `pages/[id].ts` instead.
+ *   - It covers NON-SAFE methods only. All state-changing endpoints in this
+ *     project use POST/PUT/PATCH/DELETE methods.
  */
 
 const PAGES_DIR = join(WEB_ROOT, "src/pages");

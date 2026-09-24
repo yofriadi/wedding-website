@@ -4,20 +4,22 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "prebuild": "node scripts/generate-media-variants.mjs",
+    "media:variants": "node scripts/generate-media-variants.mjs",
     "build": "astro build",
     "check-types": "astro check",
     "preview": "astro preview",
     "astro": "astro",
     "dev": "astro dev --host",
     "dev:bare": "astro dev",
-    "dev:stop": "astro dev stop"
+    "dev:stop": "astro dev stop",
+    "test:tier-harness": "node scripts/tier-verdict-harness.mjs"
   },
   "dependencies": {
     "@alerix/m3-loading-indicator": "1.0.5",
     "@astrojs/node": "^11.1.6",
     "@fontsource-variable/fraunces": "^5.3.0",
     "@fontsource-variable/geist": "^5.3.0",
-    "@fontsource/geist-sans": "^5.3.0",
     "@libsql/client": "catalog:",
     "@wedding-website/db": "workspace:*",
     "@wedding-website/env": "workspace:*",

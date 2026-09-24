@@ -1,5 +1,8 @@
 ---
 import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import sharp from "sharp";
+import { VARIANT_WIDTHS } from "../lib/media-candidates";
 import TextShimmer from "./TextShimmer.astro";
 import DotPattern from "./DotPattern.astro";
 
@@ -9,25 +12,180 @@ interface Props {
 
 const { displayName = null } = Astro.props;
 
-// Couple-supplied gate background slot. AVIF is preferred in the markup,
-// with WebP retained as the compatibility fallback. The existence check uses
-// the AVIF variant so the gate only renders when the local asset is deployed.
+// Couple-supplied gate background slot. AVIF is preferred in the markup, with
+// WebP retained as the compatibility fallback. Each format is probed
+// independently, so supplying only one still renders — and the `<img>` names a
+// format that actually exists rather than 404ing.
+//
+// This <img> carries NO `fetchpriority="high"` (responsive-media: "Priority is
+// not spread across the page" — exactly one image may, and it is the hero at
+// HeroZoom.astro). The attribute used to be here. It looked harmless only
+// because `public/gate/gate-bg.avif` does not exist, so `gateBg` is null and
+// the element never renders; the moment the couple supplies the asset the site
+// would have two high-priority images competing on a throttled link.
 const GATE_BG_SRC = "/gate/gate-bg";
 const GATE_BG_AVIF = `${GATE_BG_SRC}.avif`;
 const GATE_BG_WEBP = `${GATE_BG_SRC}.webp`;
 
-function gateBgAssetExists(src: string) {
-  // Dev: this component lives under src/components (public/ is ../../public).
-  // Build: compiled modules sit two levels under dist/ and public assets are
-  // bundled into dist/client — presence there reflects what the adapter serves.
+/** The on-disk URL of a public asset, or null when it is absent.
+ *
+ *  Dev: this component lives under src/components (public/ is ../../public).
+ *  Build: compiled modules sit two levels under dist/ and public assets are
+ *  bundled into dist/client — presence there reflects what the adapter serves. */
+function gateBgAssetUrl(src: string): URL | null {
   const candidates = [
     new URL(`../../public${src}`, import.meta.url),
     new URL(`../../client${src}`, import.meta.url),
   ];
-  return candidates.some((url) => existsSync(url));
+  return candidates.find((url) => existsSync(url)) ?? null;
 }
 
-const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
+function gateBgAssetExists(src: string) {
+  return gateBgAssetUrl(src) !== null;
+}
+
+// The gate covers the viewport, so its presentation width is the viewport width.
+const GATE_BG_SIZES = "100vw";
+
+/** Width ladder — IMPORTED, not re-declared. A third literal copy of
+ *  `[390, 768, 1280]` (besides `media-candidates.ts` and the generator) is the one
+ *  copy the build-time fingerprint does not cover, and `VARIANT_WIDTHS` is
+ *  exported from the very module this file already imports. Drift here degrades
+ *  gracefully — `gateBgSrcset` stat-tests each candidate — but it degrades to
+ *  silently fewer candidates. */
+const GATE_BG_VARIANT_WIDTHS = VARIANT_WIDTHS;
+
+/**
+ * Candidate set for one format, built ONLY from variants present on disk.
+ *
+ * The variant generator deliberately does not walk subdirectories (design D1),
+ * and `gate/` is one, so nothing emits `/gate/gate-bg-w*.<ext>` today. Deriving
+ * the list from the filesystem rather than from the naming convention means this
+ * branch degrades to the single master — exactly what it shipped before — instead
+ * of naming files that 404. If the couple supplies the asset and generates
+ * variants beside it, they are picked up with no further change here.
+ *
+ * Returns null when there is nothing to offer beyond the master, which the
+ * markup reads as "omit srcset" rather than "emit a one-candidate srcset".
+ */
+function gateBgSrcset(format: "avif" | "webp", intrinsicWidth: number): string | null {
+  const candidates: string[] = [];
+  for (const width of GATE_BG_VARIANT_WIDTHS) {
+    // Same no-upscale rule the generator applies: never name a width above the
+    // master, and never re-emit one the master already fills (that would declare
+    // the same `w` descriptor twice).
+    if (width >= intrinsicWidth) break;
+    const src = `${GATE_BG_SRC}-w${width}.${format}`;
+    if (!gateBgAssetExists(src)) continue;
+    candidates.push(`${src} ${width}w`);
+  }
+  if (candidates.length === 0) return null;
+  candidates.push(`${GATE_BG_SRC}.${format} ${intrinsicWidth}w`);
+  return candidates.join(", ");
+}
+
+/** Resolved gate background, or null when the couple has not supplied one. */
+interface GateBg {
+  /** True intrinsic size, or null when the file could not be probed. */
+  width: number | null;
+  height: number | null;
+  /** Which formats were actually delivered — the couple may supply only one. */
+  hasAvif: boolean;
+  hasWebp: boolean;
+  avifSrcset: string | null;
+  webpSrcset: string | null;
+  /** What the `<img>` must name: a format that exists (see `resolveGateBg`). */
+  fallbackSrc: string;
+  fallbackSrcset: string | null;
+}
+
+/**
+ * The gate background, MEMOIZED at module scope in production.
+ *
+ * This is an `output: "server"` page, so component frontmatter re-runs on every
+ * pageview. What the uncached version costs depends on which branch is reachable,
+ * and the honest figure is smaller than an earlier version of this comment
+ * claimed: with no gate asset — the only state this repository can produce, since
+ * `restore-private-media.sh` cannot create `public/gate/` — `readGateBg()` returns
+ * after two `gateBgAssetUrl()` probes, which is **4 `existsSync` stats and no
+ * `sharp` read at all**. The expensive branch (up to 16 stats plus one `sharp`
+ * header read) needs the couple to have supplied the asset, and then it is work on
+ * the render path of the first thing a guest sees, in a change whose design rejects
+ * request-time image processing for exactly that reason.
+ *
+ * NOT memoized under `astro dev`: Vite does not invalidate this module when an
+ * unwatched `public/` asset appears, so a cached `null` would survive until the
+ * dev server restarted and the couple could not see a background they had just
+ * dropped in. `import.meta.hot.dispose` does not help — it fires on module
+ * invalidation, which is precisely what does not happen.
+ *
+ * `undefined` distinguishes "not resolved yet" from "resolved to null", and a
+ * throw leaves the cache unset so the next request retries rather than caching the
+ * failure.
+ */
+let gateBgCache: GateBg | null | undefined;
+
+async function resolveGateBg(): Promise<GateBg | null> {
+  if (import.meta.env.DEV) return readGateBg();
+  if (gateBgCache !== undefined) return gateBgCache;
+  gateBgCache = await readGateBg();
+  return gateBgCache;
+}
+
+/**
+ * Resolve everything the markup needs about the gate background, or null when the
+ * couple has not supplied one.
+ *
+ * Intrinsic dimensions are PROBED rather than declared: `responsive-media`
+ * requires `width`/`height` to state the true intrinsic size even where layout
+ * does not depend on them (this layer is absolutely positioned and full-bleed, so
+ * the rationale is truthfulness, not reflow), and the truth is only knowable from
+ * the file. Only ever called once per process, through `resolveGateBg()`.
+ */
+async function readGateBg(): Promise<GateBg | null> {
+  const avifUrl = gateBgAssetUrl(GATE_BG_AVIF);
+  const webpUrl = gateBgAssetUrl(GATE_BG_WEBP);
+  if (!avifUrl && !webpUrl) return null;
+
+  const hasAvif = avifUrl !== null;
+  const hasWebp = webpUrl !== null;
+
+  // Probe whichever format is present, preferring AVIF. Both are encoded from
+  // the same source at the same dimensions, so either one states the truth.
+  let width: number | null = null;
+  let height: number | null = null;
+  try {
+    const meta = await sharp(fileURLToPath(avifUrl ?? webpUrl!)).metadata();
+    if (!meta.width || !meta.height) throw new Error("no dimensions");
+    width = meta.width;
+    height = meta.height;
+  } catch (error) {
+    // Undecodable but present: still render the layer, without dimensions and
+    // without a candidate set. A missing intrinsic declaration is cosmetic
+    // here; suppressing the couple's background would not be.
+    console.warn("[welcome-gate] could not read gate background dimensions:", error);
+  }
+
+  const avifSrcset = hasAvif && width ? gateBgSrcset("avif", width) : null;
+  const webpSrcset = hasWebp && width ? gateBgSrcset("webp", width) : null;
+
+  // The <img> is the fallback for engines that ignore <picture>, so it must name
+  // a format that exists. WebP is the safer choice when both were supplied;
+  // with AVIF only, pointing it at an undelivered WebP would 404 on exactly the
+  // engines that need the fallback.
+  return {
+    width,
+    height,
+    hasAvif,
+    hasWebp,
+    avifSrcset,
+    webpSrcset,
+    fallbackSrc: hasWebp ? GATE_BG_WEBP : GATE_BG_AVIF,
+    fallbackSrcset: hasWebp ? webpSrcset : avifSrcset,
+  };
+}
+
+const gateBg = await resolveGateBg();
 ---
 
 <!--
@@ -38,15 +196,36 @@ const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
 <div id="welcome-gate" class="gate-surface fixed inset-0 z-40">
   <div class="absolute inset-0" aria-hidden="true">
     {
-      hasGateBg && (
+      gateBg && (
         <picture>
-          <source src={GATE_BG_AVIF} type="image/avif" />
-          <source src={GATE_BG_WEBP} type="image/webp" />
+          {
+            gateBg.hasAvif && (
+              <source
+                src={gateBg.avifSrcset ? null : GATE_BG_AVIF}
+                srcset={gateBg.avifSrcset}
+                sizes={gateBg.avifSrcset ? GATE_BG_SIZES : null}
+                type="image/avif"
+              />
+            )
+          }
+          {
+            gateBg.hasWebp && (
+              <source
+                src={gateBg.webpSrcset ? null : GATE_BG_WEBP}
+                srcset={gateBg.webpSrcset}
+                sizes={gateBg.webpSrcset ? GATE_BG_SIZES : null}
+                type="image/webp"
+              />
+            )
+          }
           <img
-            src={GATE_BG_WEBP}
+            src={gateBg.fallbackSrc}
+            srcset={gateBg.fallbackSrcset}
+            sizes={gateBg.fallbackSrcset ? GATE_BG_SIZES : null}
+            width={gateBg.width}
+            height={gateBg.height}
             alt=""
             class="block h-full w-full object-cover"
-            fetchpriority="high"
             decoding="async"
           />
         </picture>
@@ -55,7 +234,7 @@ const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
   </div>
 
   {
-    !hasGateBg && (
+    !gateBg && (
       <DotPattern class="h-full w-full text-neutral-400/40" />
     )
   }
@@ -271,6 +450,22 @@ const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
     var gate = document.getElementById('welcome-gate');
     if (!gate) return;
 
+    // Lock scroll on first run, not at arm time. The gate arms only after
+    // the loader is removed, but the loader gates on the hero fetch and can
+    // outlive DOMContentLoaded on a slow network — between the two, nothing
+    // locks scroll and a guest could scroll the raw page behind the loader.
+    // Arming (gesture binding, inert, failsafe cancel) still waits for the
+    // loader's removal.
+    lockScroll();
+
+    // The failsafe is a dismissal path too: release the lock it exits under, or a
+    // gate that never arms leaves the page permanently unscrollable.
+    gate.addEventListener('animationend', function (e) {
+      if (e.target !== gate || e.animationName !== 'gate-failsafe') return;
+      setMainInert(false);
+      unlockScroll();
+      gate.remove();
+    });
     var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     var armed = false;
@@ -827,12 +1022,15 @@ const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
       armed = true;
 
       // The gesture is live: cancel the CSS failsafe auto-dismiss.
+      gate.style.animation = 'none';
       if (typeof gate.getAnimations === 'function') {
         gate.getAnimations().forEach(function (anim) {
           anim.cancel();
         });
       }
 
+      window.scrollTo(0, 0);
+      gate.removeAttribute('aria-hidden');
       lockScroll();
       applyInert();
 
@@ -865,23 +1063,69 @@ const hasGateBg = gateBgAssetExists(GATE_BG_AVIF);
     }
     window.scrollTo(0, 0);
 
-    // Arm only after the loading screen has faded and been removed. Do not
-    // poll with queueMicrotask here: a self-rescheduling microtask starves the
-    // event loop, so the loader's timer/module code can never run and the
-    // browser remains permanently stuck before DOMContentLoaded.
-    const loader = document.getElementById('loading-screen');
-    if (!loader) {
-      arm();
-    } else {
-      const loaderParent = loader.parentNode;
-      const observer = new MutationObserver(function () {
-        if (loader.isConnected) return;
-        observer.disconnect();
+    var claimGateDismissed = false;
+
+    function isClaimGateActive() {
+      if (claimGateDismissed) return false;
+      var cg = document.getElementById('claim-gate');
+      if (!cg || !cg.isConnected) return false;
+      if (cg.hidden) return false;
+      var cs = window.getComputedStyle(cg);
+      if (cs.display === 'none' || cs.visibility === 'hidden' || cs.opacity === '0') return false;
+      return true;
+    }
+
+    function tryArm() {
+      if (armed) return;
+      var loader = document.getElementById('loading-screen');
+      if (loader && loader.isConnected) return;
+      if (isClaimGateActive()) return;
+
+      gate.removeAttribute('aria-hidden');
+      try {
         arm();
+      } catch (err) {
+        console.error('[welcome-gate] arm failed:', err);
+        gate.style.animation = 'gate-failsafe 600ms ease-out 15s forwards';
+      }
+    }
+
+    var claimGate = document.getElementById('claim-gate');
+    if (isClaimGateActive()) {
+      gate.setAttribute('aria-hidden', 'true');
+      gate.style.animationPlayState = 'paused';
+    }
+
+    // Arm only after loading screen and any claim gate have completed.
+    var loader = document.getElementById('loading-screen');
+    if (!loader && !isClaimGateActive()) {
+      tryArm();
+    } else {
+      var gateObserver = new MutationObserver(function () {
+        if (!armed) {
+          tryArm();
+        } else {
+          gateObserver.disconnect();
+        }
       });
-      observer.observe(loaderParent || document.documentElement, {
+      gateObserver.observe(document.body || document.documentElement, {
         childList: true,
       });
+      if (claimGate) {
+        gateObserver.observe(claimGate, {
+          attributes: true,
+          attributeFilter: ['style', 'hidden', 'class'],
+        });
+        claimGate.addEventListener('animationend', function (e) {
+          if (e.target !== claimGate || e.animationName !== 'claim-failsafe') return;
+          claimGateDismissed = true;
+          tryArm();
+        });
+        claimGate.addEventListener('transitionend', function (e) {
+          if (e.target !== claimGate) return;
+          tryArm();
+        });
+      }
     }
   })();
 </script>

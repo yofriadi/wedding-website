@@ -18,6 +18,32 @@ pnpm run build                   # or the Docker build — disk state wins, not 
 
 Docker builds read from disk, not git: on a VPS, copy `originals/private-media/` over the clone first (same layout), then `docker compose up -d --build`. The CI image on GHCR always contains placeholders. The soundtrack is never committed (copyright); drop any licensed `*.mp3` at its referenced path — `tools/restore-private-media.sh` restores it too.
 
+### Generated responsive variants
+
+`apps/web/public/generated/` holds the AVIF + WebP resolution variants (390 / 768 / 1280 px) and the ~32 px blurred placeholders for every photographic master the markup references. It is **gitignored and never committed**: a variant of a real photo is itself private media, so the repository ships the masters as placeholders and derives from whatever is on disk.
+
+`pnpm run build` regenerates it first, through `apps/web`'s `prebuild`. **`astro dev` runs no `prebuild`**, so after a fresh clone — or after overlaying real media — run it once by hand:
+
+```sh
+tools/restore-private-media.sh          # real masters into public/ (private deploy only)
+pnpm --filter web run media:variants    # regenerate public/generated/ from them
+pnpm run dev
+```
+
+The generator is idempotent (it skips outputs newer than their master, so a second run reports `nothing to do`), never upscales, never re-emits a width the master already fills, and **fails the build** on any of: `apps/web/public/` not existing at all — the failure a developer hits most often, which is a `cd` into `apps/web/` before running the script, and produces `public/ not found: …` naming the expected path; a base name outside `[a-z0-9_-]`; a master the markup names being missing; a master present in only one of AVIF/WebP; the two formats of one base disagreeing on intrinsic width; a component referencing a base the generator's explicit list omits; a listed base matching the excluded `wedding_photo*` hero family or naming a subdirectory; a base listed twice; one of the markup sources the cross-check reads being absent (a sparse checkout or a rename); or an unreadable master. A placeholder over 4 KB also fails the build, and that cap is re-checked over every placeholder on disk — including ones restored from the Turbo cache that never pass through the encoder. Each is a guest-facing 404, a mis-declared `w` descriptor, or a silent budget increase otherwise. A generated **variant** over 200 KB is a warning naming every file, not a failure: that ceiling bounds a property of the couple's photos, and failing a deployment over one busy real photo is worse than shipping it.
+
+Changing an encode setting invalidates every output: the generator writes `generated/manifest.json` fingerprinting `PIPELINE_VERSION`, the `sharp`/libvips/aom/libwebp versions, `SETTINGS`, the width ladder and the placeholder geometry, and treats a mismatch as stale. It deliberately does **not** fingerprint `BASES` — no surviving output's bytes depend on the list — nor `src/lib/image-encode.ts`, whose constants `SETTINGS` mirrors by hand. Two consequences worth knowing. The fingerprint travels with `public/generated/**` through the Turbo cache, so it cannot be restored out of step with the outputs it describes — co-location is the reason for that, and the reason it is a plain filename rather than a dotfile. (A dotfile would additionally risk falling outside that glob, but the glob's dotfile behaviour is untested and is not what the choice rests on.) And it is **copied into `dist/client/` and served** at `/generated/manifest.json`, like everything else under `public/`; that is deliberate rather than an oversight, since the base names already appear in the delivered `srcset`s and encode settings are not secrets, but it does mean build configuration is publicly readable. Without it a quality edit is a silent no-op. The unchanged bytes then sit in **two** places: re-archived under the new cache key in `.turbo/cache/`, and — the one that matters — still in the working tree. So clearing the Turbo cache does not help; `rm -rf apps/web/public/generated` is the remedy. Note also that `generated/` is gitignored and therefore contributes **zero** Turbo inputs (a `--dry=json` run reports 152 inputs for `web#build`, none of them under `generated/`), so two different working-tree states hash identically: a cache hit can restore an older archive over a newer hand-run and nothing detects it, because the restored manifest matches the restored outputs. `tools/restore-private-media.sh --undo` does this for you, since the variants it leaves behind are derivatives of the real media. Because it reads whatever is _present_, CI derives variants from the placeholders and a restored machine derives them from the real photos — one command, both legs produce the same file set, and nothing private is ever staged. Turborepo caches the directory through `turbo.json`'s package-relative `public/generated/**` build output, which is what restores the _working-tree_ copy on a cache hit; `dist/client/generated/` was already covered by `dist/**`.
+
+> **Do not enable Turbo Remote Cache without reading this.** `.gitignore` keeps
+> these derivatives out of git because a variant of a real photo is itself private
+> media — but `.gitignore` does not reach the Turbo cache. Setting `TURBO_API` /
+> `TURBO_TOKEN` / `TURBO_TEAM` would upload up to 84 derivatives of the couple's
+> photos to a third-party cache, with no guard and no test watching for it. No
+> remote cache is configured today. Dropping the `public/generated/**` output entry
+> is _not_ the fix: without it a cache hit restores `dist/client/generated` but
+> leaves the working tree empty, which breaks `astro dev` and the generator's mtime
+> comparison. See `openspec/changes/resilient-media-delivery/follow-ups.md` §5.
+
 ## Development
 
 ```sh
@@ -57,8 +83,8 @@ Use `db:generate` after schema edits and commit SQL, snapshot, and journal toget
 
 ### Current contracts
 
-- `GET /<12-character-invite-id>` records a visit, binds/rebinds `ww_invite_id`, and redirects to `/`. **Sticky exception:** a _group_ link keeps a cookie that already maps to one of its own members, re-setting it with a fresh `Max-Age` instead of rebinding; `GET /<group-id>?fresh=1` releases back to the group identity (creates no rows and consumes no slot; the group's seen-metrics still bump as for any link visit). The release is honoured only for a real visit to our own page (`Sec-Fetch-Site: same-origin`/`none` + `Sec-Fetch-Dest: document`) and only while the group has an open slot — at capacity it is refused, because releasing then could never be undone.
-- `POST /api/invite/claim` mints one member slot under a group invite and rebinds the cookie to it. Opening a group link is free and unlimited — only a claim consumes a slot, capped atomically at `maxMembers`.
+- `GET /<12-character-invite-id>` records a visit, binds/rebinds `ww_invite_id`, and redirects to `/`. **Sticky exception:** a _group_ link keeps a cookie that already maps to one of its own members, re-setting it with a fresh `Max-Age` instead of rebinding. Seen-metrics always bump on the link id, whatever the cookie holds.
+- `POST /api/invite/claim` mints one member slot under a group invite and rebinds the cookie to it. Opening a group link is free and unlimited — only a claim consumes a slot, capped atomically at `maxMembers`. For group links below capacity, claiming occurs up front at an entry claim gate before the welcome gate, transitioning seamlessly to the welcome gate, RSVP form, and photo upload chooser with zero page reloads.
 - `GET /api/invite/me` resolves identity without changing metrics, returning `{ displayName, kind }` plus `group: { maxMembers, claimedCount }` for group cookies.
 - `POST /api/invite/opened` records opening the invitation.
 - `GET` / `POST /api/rsvp` read/upsert boolean attendance. Response timestamps are retained; the public count is attending invitations, not party headcount — so a group contributes one count per attending member. An unclaimed group cookie POSTs to `409 { "error": "claim_required" }` and reads as `{ attending: null }`.

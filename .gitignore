@@ -90,5 +90,12 @@ apps/web/public/*.mp3
 # Real Caddyfile for a custom domain (copy of Caddyfile.example); keep local.
 /Caddyfile
 
+# Build-time responsive variants of the media in apps/web/public/
+# (scripts/generate-media-variants.mjs). Derivatives of REAL private photos are
+# themselves private media, so they must never be committed — the repository
+# ships placeholders at the master paths and regenerates from whatever is
+# present. Turbo caches them through turbo.json's `public/generated/**` output.
+apps/web/public/generated/
+
 # Guest photo storage (guest-submissions D4): dev fallback root is ./var/photos
 /var/

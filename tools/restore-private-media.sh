@@ -27,7 +27,18 @@ if [ "$undo" = 1 ]; then
     git update-index --no-skip-worktree "$rel" 2>/dev/null || true
     git checkout -- "$rel" 2>/dev/null || true
   done
+  # Generated variants are derivatives of whatever masters were in place when
+  # they were encoded, so after an --undo they are derivatives of the REAL
+  # private photos while the tree is supposed to have returned to its public
+  # state. `.gitignore` and `.dockerignore` cover git and the build context;
+  # neither covers a working tree that `astro dev` is serving from. The forward
+  # direction self-heals — `cp` without `-p` resets master mtimes, so
+  # `isFresh()` invalidates every placeholder-derived variant — but --undo has
+  # no such trigger.
+  rm -rf apps/web/public/generated
   echo "Placeholders restored; git watches those paths again."
+  echo "Removed apps/web/public/generated/ (held derivatives of the real media)."
+  echo "Re-run 'pnpm --filter web run media:variants' to regenerate from placeholders."
   exit 0
 fi
 

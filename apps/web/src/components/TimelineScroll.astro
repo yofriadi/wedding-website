@@ -1,12 +1,39 @@
 ---
+import { variantSrcset } from "../lib/media-candidates";
+
+// `sizes` for the two photo shapes. Derived from the layout boxes rather than
+// from a transform: unlike the collage, these photos come to rest at scale(1),
+// so the layout box IS the presentation box.
+//
+// The portrait is height-driven — `h-[360px] sm:h-[400px] md:h-[480px] w-auto
+// aspect-[591/1280]` — so its rendered width is that height times 591/1280:
+// 166 / 185 / 222 px. The `max-w-[calc(100vw-32px)]` clamp never bites at those
+// numbers on any viewport this site supports.
+const SIZES_PORTRAIT = "(min-width: 768px) 222px, (min-width: 640px) 185px, 166px";
+
+// The two landscape cards are width-driven — `w-[340px] sm:w-[400px] md:w-[560px]
+// max-w-[calc(100vw-32px)]` — and here the clamp does bite on a narrow phone,
+// so it stays in the expression.
+const SIZES_CARD =
+  "(min-width: 768px) min(calc(100vw - 32px), 560px), (min-width: 640px) min(calc(100vw - 32px), 400px), min(calc(100vw - 32px), 340px)";
 ---
 
 <section id="timeline-section" class="timeline-section relative w-full bg-[color:var(--timeline-bg)]">
   <!-- Ships real src/srcset, with no tier deferral: the timeline story is
-       content rather than decoration, its photos are tens of KB each, and its
-       scrub binding is in the bundle regardless — so lite keeps the whole
-       narrative (media-tiering design: flattening this story is a non-goal).
-       The loading screen no longer waits on them; it gates on the hero alone.
+       content rather than decoration, and its scrub binding is in the bundle
+       regardless — so lite keeps the whole narrative (media-tiering design:
+       flattening this story is a non-goal). The loading screen no longer waits
+       on them; it gates on the hero alone.
+
+       The photos DO carry device-matched candidate sets now (responsive-media):
+       `keluarga-acik` is a 2048px, 463 KB master in a card capped at
+       `md:w-[560px]`, and a 390px phone used to download all of it. They are
+       also `loading="lazy"` — this track sits far below the fold and is
+       scrolled horizontally, so the browser, not a tier observer, should decide
+       when to spend the connection. Neither is tier deferral: the real `src`
+       ships and the box is reserved by intrinsic dimensions, so no state of
+       this component is an empty frame.
+
        The video below is the one tier-gated element in this component. -->
   <div class="timeline-stage sticky top-0 w-full overflow-hidden">
     
@@ -87,7 +114,24 @@
           <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+24px)] flex flex-col items-center">
             <div data-node2-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
               <div class="h-[360px] sm:h-[400px] md:h-[480px] w-auto max-w-[calc(100vw-32px)] aspect-[591/1280] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
-                <picture><source srcset="/awal-perkenalan.avif" type="image/avif" /><img src="/awal-perkenalan.webp" alt="Awal perkenalan" width="591" height="1280" class="h-full w-full object-cover" decoding="async" /></picture>
+                <picture>
+                  <source
+                    srcset={variantSrcset("awal-perkenalan", "avif", 591)}
+                    sizes={SIZES_PORTRAIT}
+                    type="image/avif"
+                  />
+                  <img
+                    src="/awal-perkenalan.webp"
+                    srcset={variantSrcset("awal-perkenalan", "webp", 591)}
+                    sizes={SIZES_PORTRAIT}
+                    alt="Awal perkenalan"
+                    width="591"
+                    height="1280"
+                    loading="lazy"
+                    decoding="async"
+                    class="h-full w-full object-cover"
+                  />
+                </picture>
               </div>
             </div>
 
@@ -114,7 +158,24 @@
           <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)] flex flex-col items-center">
             <div data-node3-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
               <div class="w-[340px] sm:w-[400px] md:w-[560px] max-w-[calc(100vw-32px)] h-auto aspect-[1280/591] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl mb-4 ring-1 ring-[color:var(--timeline-photo-ring)]">
-                <picture><source srcset="/keluarga-yofri.avif" type="image/avif" /><img src="/keluarga-yofri.webp" alt="Aisha diperkenalkan ke keluarga Yofri" width="1280" height="591" class="h-full w-full object-cover" decoding="async" /></picture>
+                <picture>
+                  <source
+                    srcset={variantSrcset("keluarga-yofri", "avif", 1280)}
+                    sizes={SIZES_CARD}
+                    type="image/avif"
+                  />
+                  <img
+                    src="/keluarga-yofri.webp"
+                    srcset={variantSrcset("keluarga-yofri", "webp", 1280)}
+                    sizes={SIZES_CARD}
+                    alt="Aisha diperkenalkan ke keluarga Yofri"
+                    width="1280"
+                    height="591"
+                    loading="lazy"
+                    decoding="async"
+                    class="h-full w-full object-cover"
+                  />
+                </picture>
               </div>
             </div>
             <div data-node3-date style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
@@ -147,7 +208,24 @@
           <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)]">
             <div data-node4-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
               <div class="w-[340px] sm:w-[400px] md:w-[560px] max-w-[calc(100vw-32px)] h-auto aspect-[2048/945] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
-                <picture><source srcset="/keluarga-acik.avif" type="image/avif" /><img src="/keluarga-acik.webp" alt="Yofri bertemu keluarga Aisha" width="2048" height="945" class="h-full w-full object-cover" decoding="async" /></picture>
+                <picture>
+                  <source
+                    srcset={variantSrcset("keluarga-acik", "avif", 2048)}
+                    sizes={SIZES_CARD}
+                    type="image/avif"
+                  />
+                  <img
+                    src="/keluarga-acik.webp"
+                    srcset={variantSrcset("keluarga-acik", "webp", 2048)}
+                    sizes={SIZES_CARD}
+                    alt="Yofri bertemu keluarga Aisha"
+                    width="2048"
+                    height="945"
+                    loading="lazy"
+                    decoding="async"
+                    class="h-full w-full object-cover"
+                  />
+                </picture>
               </div>
             </div>
           </div>

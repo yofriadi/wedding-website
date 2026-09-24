@@ -63,7 +63,7 @@ for (const [tag, src] of scriptTags) {
   // ("/node_modules/.vite/deps/<pkg>.js?…"); rewrite each to the esm.sh twin.
   js = js.replace(
     /from\s+"\/node_modules\/\.vite\/deps\/([^?"]+?)(?:\.js)?(?:\?[^"]*)?"/g,
-    (match, pkg) => {
+    (_match, pkg) => {
       const url = ESM_IMPORTS[pkg];
       if (!url) {
         throw new Error(

@@ -1,11 +1,28 @@
 ---
+// Font delivery (webfont-delivery, design D6). One family per role:
+//
+// - Sans: the `wght` variable entrypoint only. The four `@fontsource/geist-sans`
+//   static weights are gone — `--font-sans` resolves "Geist Variable" first and
+//   that family covers 100–900, so the static family was unreachable while still
+//   costing 15 `@font-face` rules and four legacy `.woff` files.
+// - Serif: `standard` (wght + opsz), not `full` (wght + opsz + SOFT + WONK). No
+//   consumer in `src/` drives SOFT or WONK; `opsz` is load-bearing, because
+//   `font-optical-sizing: auto` changes contrast and spacing at the hero's
+//   `clamp(2.5rem, 11.5vw, 7.5rem)` display sizes.
+//
+// Italic is retained on the serif: HeroZoom renders the display ampersand italic
+// and RsvpSection renders an italic line. Subsets are `unicode-range`-gated by the
+// stock entrypoints, so Vietnamese and Cyrillic declarations ship but transfer no
+// bytes on an Indonesian/English render — verified against the request list, not
+// the emitted CSS.
 import "@fontsource-variable/geist/wght.css";
-import "@fontsource/geist-sans/400.css";
-import "@fontsource/geist-sans/500.css";
-import "@fontsource/geist-sans/600.css";
-import "@fontsource/geist-sans/700.css";
-import "@fontsource-variable/fraunces/full.css";
-import "@fontsource-variable/fraunces/full-italic.css";
+import "@fontsource-variable/fraunces/standard.css";
+import "@fontsource-variable/fraunces/standard-italic.css";
+// Resolved through Vite rather than written as a package path: the build emits
+// this file into `dist/client/_astro/` under a content hash, so a literal
+// `/node_modules/@fontsource-variable/...` href would 404 and the hint would
+// silently double-fetch nothing.
+import frauncesLatinNormal from "@fontsource-variable/fraunces/files/fraunces-latin-standard-normal.woff2";
 import "../styles/global.css";
 
 interface Props {
@@ -23,6 +40,18 @@ const { title = "wedding-website" } = Astro.props;
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
+
+    {/* The latin serif face that paints the largest above-the-fold display
+         text. `crossorigin` is mandatory for font preloads even same-origin, or
+         the hint fetches a second copy the @font-face then ignores. One hint,
+         not two: the italic and the sans are not on the critical text path, and
+         webfont-delivery caps font preloads at two. */}
+    <link rel="preload" as="font" type="font/woff2" href={frauncesLatinNormal} crossorigin />
+
+    {/* Page-owned head hints. Layout is shared, so a hint for an asset only one
+         page renders belongs to that page: index.astro puts the hero image
+         preload here through this slot. */}
+    <slot name="head" />
 
     <!-- Media tiering: decide BEFORE the body parses whether this connection
          gets the full experience or the lite variant.
@@ -156,12 +185,15 @@ const { title = "wedding-website" } = Astro.props;
             //   304 revalidation — headers only, `transferSize` ~300 with
             //     `encodedBodySize` 0. Measured on Chromium in this repo. The
             //     same shape on WebKit comes from an external verification run
-            //     that was NOT reproduced here, so treat it as reported rather
-            //     than established until tasks 7.5/7.10 add a WebKit project.
-            //     If WebKit instead reports 0/0/0 for a same-origin 304 this
-            //     branch never fires and a warm-cache Safari guest stays on the
-            //     failsafe's `lite` — the pre-Option-A behavior, so it fails
-            //     closed rather than wrong.
+            //     that was NOT reproduced here. The suite now carries a WebKit
+            //     project (tasks 7.5/7.10 archive gate): it passes the
+            //     warm-cache outcome on WebKit, but dev-mode reloads
+            //     re-download the burst payload, so that gate proves the
+            //     outcome only, not the 304 shape — which stays pinned by
+            //     scripts/tier-verdict-harness.mjs. If WebKit instead reports
+            //     0/0/0 for a same-origin 304 this branch never fires and a
+            //     warm-cache Safari guest stays on the failsafe's `lite` — the
+            //     pre-Option-A behavior, so it fails closed rather than wrong.
             //   memory-cache hit — `transferSize` 0 with a real `decodedBodySize`.
             // LOAD-BEARING: this depends on everything under public/ being
             // served `max-age=0` + ETag, so a returning guest revalidates ~23

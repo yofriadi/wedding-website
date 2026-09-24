@@ -25,7 +25,7 @@ test.describe("scroll-fade animation on key sections", () => {
 
     // 4. "confirmation button" / RSVP link block
     const rsvpAction = page.locator("#rsvp-section [data-scroll-fade]").filter({
-      hasText: /RSVP through your personal invitation link|Reservation/i,
+      hasText: /RSVP through your personal invitation link|Confirm Reservation/i,
     });
     await expect(rsvpAction).toBeAttached();
 

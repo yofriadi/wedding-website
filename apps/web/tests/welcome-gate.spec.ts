@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { waitForLoaderDismissed } from "./helpers";
+import { pinFullTier, waitForLoaderDismissed } from "./helpers";
 
 // Well-formed invite id (12 chars of [A-Za-z0-9_-]). Deliberately NOT seeded:
 // these tests assert client-side gate behavior, which must not depend on
@@ -55,11 +55,17 @@ const heroMusicPaused = (page: Page) =>
   page.evaluate(() => (document.getElementById("hero-music") as HTMLAudioElement | null)?.paused);
 
 test.describe("welcome gate", () => {
+  // Media-tiering task 7.3: pin the tier so a stray burst measurement on a
+  // busy machine cannot flip these assertions to the lite behavior.
+  test.beforeEach(({ page }) => {
+    pinFullTier(page);
+  });
+
   test("swipe past threshold reveals, unlocks scroll, starts music, fires the metric once", async ({
     page,
     context,
   }) => {
-    test.slow(); // loader gates on audio canplay + hero image decode
+    test.slow(); // loader holds for its minimum dwell plus hero fetch + decode
 
     await context.addCookies([
       { name: "ww_invite_id", value: INVITE_ID, domain: "localhost", path: "/" },
@@ -132,7 +138,7 @@ test.describe("welcome gate", () => {
     // initial state: scale(2.8) with the names/date still hidden.
     const samples = await page.evaluate(async () => {
       const img = document.querySelector<HTMLElement>("#hero-container .animate-image")!;
-      const text = document.querySelector<HTMLElement>("#hero-container .animate-text")!;
+      const text = document.querySelector<HTMLElement>("#hero-container .animate-aisha")!;
       const seen: Array<{ scale: number; textOpacity: number; scrollY: number }> = [];
       let done = false;
 
@@ -550,20 +556,21 @@ test.describe("welcome gate", () => {
     test.slow();
     const metric = countOpenMetricPosts(page);
 
-    // Stall the music so the loader stays up deterministically (its hide waits
-    // on canplay) — removes any dependence on machine/network speed.
-    let releaseAudio: (() => void) | undefined;
-    const audioGate = new Promise<void>((resolve) => {
-      releaseAudio = resolve;
+    // Stall the hero image so the loader stays up deterministically — its hide
+    // waits on hero fetch + decode only (the retired audio gate no longer
+    // holds it) — which removes any dependence on machine/network speed.
+    let releaseHero: (() => void) | undefined;
+    const heroGate = new Promise<void>((resolve) => {
+      releaseHero = resolve;
     });
-    await page.route("**/*.mp3", async (route) => {
-      await audioGate;
+    await page.route(/\/wedding_photo.*\.(webp|avif)$/, async (route) => {
+      await heroGate;
       await route.continue();
     });
 
     try {
       await page.goto("/", { waitUntil: "domcontentloaded" });
-      // The loader is up (audio blocked). A stray keypress must be ignored.
+      // The loader is up (hero image blocked). A stray keypress must be ignored.
       await expect(page.locator("#loading-screen")).toHaveCount(1);
       const gate = page.locator("#welcome-gate");
       await page.keyboard.press("Escape");
@@ -572,13 +579,13 @@ test.describe("welcome gate", () => {
       expect(metric.posts).toBe(0);
 
       // Once the loader is gone, the same keypress dismisses normally.
-      releaseAudio!();
+      releaseHero!();
       await waitForLoaderDismissed(page);
       await page.keyboard.press("Escape");
       await expect(gate).toHaveCount(0);
     } finally {
-      releaseAudio!();
-      await page.unroute("**/*.mp3");
+      releaseHero!();
+      await page.unroute(/\/wedding_photo.*\.(webp|avif)$/);
     }
   });
 });

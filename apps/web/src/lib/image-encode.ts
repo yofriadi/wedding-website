@@ -1,4 +1,5 @@
 import sharp from "sharp";
+import type { Sharp } from "sharp";
 import type { PhotoType } from "./photo-storage";
 
 // Normalize before persistence: cap dimensions, apply orientation, and strip
@@ -17,7 +18,7 @@ export const AVIF_EFFORT = 4;
 // the cheap structural limit, not the only thing standing between us and OOM.
 const INPUT_PIXEL_LIMIT = 64_000_000;
 
-function input(bytes: Uint8Array): sharp.Sharp {
+function input(bytes: Uint8Array): Sharp {
   // Buffer.from copies: sharp wants a Buffer, and the multipart layer hands
   // back a Uint8Array view we must not alias past the request's lifetime.
   return sharp(Buffer.from(bytes), { failOn: "none", limitInputPixels: INPUT_PIXEL_LIMIT });

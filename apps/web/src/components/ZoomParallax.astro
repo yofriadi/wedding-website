@@ -10,6 +10,22 @@
  * - Result: The image (offset from center) moves radially outward and scales up, creating a 3D tunnel effect.
  */
 
+import { baseOf, masterSrc, placeholderSrc, variantSrcset } from "../lib/media-candidates";
+
+/**
+ * Collage slot config.
+ *
+ * `iw`/`ih` are the masters' TRUE intrinsic dimensions and are load-bearing:
+ * `variantSrcset(base, format, iw)` derives the width ladder from `iw`, and the
+ * markup declares them as `width`/`height`, so a wrong number both mis-names
+ * candidates and mis-states the aspect ratio to layout. The generator reads the
+ * same value off disk and fails the build when the two formats disagree.
+ *
+ * The numbered comments and the `square-`/`landscape-`/`portrait-` base names
+ * describe GRID POSITION and are legacy: three of the ten do not match the file
+ * they name. Trust `iw`/`ih`, not the name — the base names are the filenames
+ * and cannot change without moving the masters.
+ */
 const pictures = [
   // 1. Top Right Square (single right column, top)
   { 
@@ -43,7 +59,8 @@ const pictures = [
     scale: 5, // Slow (Inner ring)
     iw: 1024, ih: 768
   },
-  // 5. Mid Left Square
+  // 5. Mid left cell. The legacy `square-` base name is wrong: 473x1024 is a
+  //    portrait (ar 0.46), the narrowest master in the collage.
   { 
     src: "/square-mid-left.webp", 
     alt: "Square Mid Left",
@@ -51,7 +68,9 @@ const pictures = [
     scale: 8, // Fast (Side edge)
     iw: 473, ih: 1024
   },
-  // 6. CENTER HERO - The Focus (keeps 9:16 portrait aspect)
+  // 6. CENTER HERO - the focus slot. NOT 9:16 portrait: `center-focus` is
+  //    1920x1280 (ar 1.50, landscape) and the widest master in the collage,
+  //    which is why it is the only slot with a 1280w rung.
   { 
     src: "/center-focus.webp", 
     alt: "CENTER FOCUS",
@@ -60,7 +79,8 @@ const pictures = [
     scale: 4,
     iw: 1920, ih: 1280
   },
-  // 7. Mid Right Square
+  // 7. Mid right cell. The legacy `square-` base name is wrong: 1024x768 is a
+  //    landscape (ar 1.33), identical in shape to slot 4.
   { 
     src: "/square-mid-right.webp", 
     alt: "Square Mid Right",
@@ -95,13 +115,39 @@ const pictures = [
 ];
 
 const COL_W = 33.333; // 33.333vw
+
+// Per-slot `sizes`, keyed on the existing `isCenter` flag (resolved decision,
+// design Open Question 3).
+//
+// Presentation size here is set by TRANSFORM, not layout: the scrub scales
+// `.zoom-wrapper` 4–9× and transforms are invisible to candidate selection, so
+// a `sizes` derived from the layout box alone would serve these images from
+// their smallest candidate. The centre slot ends the sequence covering the whole
+// stage — `centerScaleFactor` exists precisely to make it do that — so it is
+// sized to the viewport and capped at its 1280w generated candidate.
+//
+// The nine outer slots are underserved DELIBERATELY, and this is a perceptual
+// judgement rather than a geometric one. Geometrically they want MORE
+// resolution: an image scaled 8–9× out of a ~130px slot inside an
+// `overflow-hidden` stage is a magnified crop that would need roughly 2300 device
+// px of source to be perfectly sharp. They are fast-moving peripheral content —
+// the config comments call them "Fast (Outer edge)", "Fast (Side edge)", "Fast
+// (Corner)" — and motion masks resolution loss. 33vw is the grid column. Do not
+// "correct" these values upward on geometric grounds alone.
+const SIZES_CENTER = "min(100vw, 1280px)";
+const SIZES_OUTER = "min(33vw, 390px)";
 ---
 
 <div id="zoom-parallax-container" class="zoom-container relative w-full">
   <div class="zoom-stage sticky top-0 w-full overflow-hidden bg-neutral-950">
     
     <!-- Items Wrapper -->
-    {pictures.map((picture, slotIndex) => (
+    {
+      pictures.map((picture, slotIndex) => {
+        // Base name drives the generated candidate URLs; `sizes` is per slot.
+        const base = baseOf(picture.src);
+        const sizes = picture.isCenter ? SIZES_CENTER : SIZES_OUTER;
+        return (
       <div 
         class="zoom-wrapper absolute inset-0 w-full h-full pointer-events-none flex items-center justify-center will-change-transform"
         data-is-center={picture.isCenter}
@@ -109,7 +155,10 @@ const COL_W = 33.333; // 33.333vw
         data-slot={slotIndex}
         style={{ zIndex: picture.isCenter ? 50 : 10 }}
       >
-        <!-- Inner Image Container (Positioned absolutely relative to grid) -->
+        {/* Inner Image Container (Positioned absolutely relative to grid).
+            An Astro expression comment, not `<!-- -->`: this sits inside
+            `pictures.map()`, so an HTML comment is emitted once per slot and ten
+            copies ship to every guest. */}
         <div 
           class="zoom-inner absolute overflow-hidden shadow-2xl ring-1 ring-white/10"
           style={`
@@ -117,18 +166,44 @@ const COL_W = 33.333; // 33.333vw
             width: ${picture.grid.w * COL_W}vw; 
           `}
         >
-          <!-- Deferred by design (media-tiering): no live src/srcset ships in
-               the markup, so no collage byte moves until the tier says so.
-               `full` promotes during the parse (inline promoter in
-               index.astro, immediately after this markup); `pending` promotes
-               on resolution to `full`; `lite` promotes per image as the
-               collage approaches (IntersectionObserver below). Intrinsic
-               width/height stay in the markup so the slots never reflow when
-               a source lands. -->
+          {/* Deferred by CANDIDATE DOWNGRADE, not by source removal
+               (media-tiering, design D3/D4). A live low-fidelity placeholder
+               ships in the markup — an AVIF `<source>` plus a WebP `<img src>` —
+               so no tier, and no scripting state, ever produces an empty frame.
+               The full-resolution candidate set waits in `data-srcset`/`data-src`
+               and promotion OVERWRITES both live attributes with it.
+
+               `full` promotes during the parse (inline promoter in index.astro,
+               immediately after this markup); `pending` promotes on resolution to
+               `full`; `lite` promotes per image as the collage approaches
+               (IntersectionObserver below).
+
+               Every URL here — the two placeholders, the two candidate sets and
+               `data-src` — is derived through `media-candidates.ts`, which
+               normalises the base name, so the slot config may carry an extension
+               or not without the five diverging. `data-src` was raw string
+               assignment until review pointed out that normalising the config to
+               `"/square-top-right"` (the neighbouring component's idiom) would
+               leave it a bare 404 while the `srcset` beside it stayed correct.
+
+               Intrinsic `width`/`height` and `sizes` stay in the markup so the
+               slots never reflow when a candidate lands. `width` MUST equal the
+               master's real intrinsic width: the generator skips every ladder
+               width at or above it, and markup derives its candidate list from
+               the same rule, so a mismatch here names a file that was never
+               emitted. */}
           <picture>
-            <source data-srcset={`${picture.src.replace(/\.webp$/, ".avif")}`} type="image/avif" />
+            <source
+              srcset={placeholderSrc(base, "avif")}
+              data-srcset={variantSrcset(base, "avif", picture.iw)}
+              sizes={sizes}
+              type="image/avif"
+            />
             <img
-              data-src={picture.src}
+              src={placeholderSrc(base, "webp")}
+              data-src={masterSrc(picture.src, "webp")}
+              data-srcset={variantSrcset(base, "webp", picture.iw)}
+              sizes={sizes}
               alt={picture.alt}
               width={picture.iw}
               height={picture.ih}
@@ -138,18 +213,22 @@ const COL_W = 33.333; // 33.333vw
           </picture>
         </div>
       </div>
-    ))}
+        );
+      })
+    }
     
   </div>
 </div>
 
 <!--
-  No scripting: nothing promotes the deferred collage sources, so the pinned
-  runway would be four screens of empty frames. Collapse it to the same
-  one-viewport grid the lite tier shows. This is absence-keyed, not
-  value-keyed, so it cannot conflict with the `lite`/`pending` rules below and
-  it disappears on a real rollback (which reverts the deferred markup too).
-  Media-tiering D4 accepted a degraded no-JS tail; this keeps it to one screen.
+  No scripting: nothing promotes the deferred collage candidates, so the pinned
+  runway would be four screens of blurred placeholders that never sharpen.
+  Collapse it to the same one-viewport grid the lite tier shows — the blur is
+  legible as a photo at bento size and useless as four screens of it. This is
+  absence-keyed, not value-keyed, so it cannot conflict with the `lite`/`pending`
+  rules below and it disappears on a real rollback (which reverts the deferred
+  markup too). Media-tiering D4 accepted a degraded no-JS tail; this keeps it to
+  one screen.
 -->
 <noscript>
   <style>
@@ -182,12 +261,12 @@ const COL_W = 33.333; // 33.333vw
   // reads it. `full` gets the pinned scroll-zoom plus every collage byte at
   // parse time. `lite` and `pending` get the collapsed static bento grid, no
   // scroll binding, and per-image promotion as the collage approaches.
-  const COLLAGE_IMAGES = "#zoom-parallax-container img[data-src]:not([src])";
+  const COLLAGE_IMAGES = "#zoom-parallax-container img[data-src]:not([data-promoted])";
   // Generous on purpose: a lite guest pays for a photo well before it could be
-  // seen, so the frames are never empty on arrival. Two viewport heights also
-  // absorb a `pending → full` resolution that lands after the guest already
-  // scrolled — promotion is idempotent, so the worst case is a late load,
-  // never a missing one.
+  // seen, so the placeholder has already sharpened by the time the slot arrives.
+  // Two viewport heights also absorb a `pending → full` resolution that lands
+  // after the guest already scrolled — promotion is idempotent against the
+  // `data-promoted` marker, so the worst case is a late load, never a missing one.
   //
   // Computed in pixels rather than written as "200% 0px": a percentage root
   // margin resolves per-axis against the root box, and engines have not agreed
@@ -222,16 +301,41 @@ const COL_W = 33.333; // 33.333vw
   }
 
   function promoteImage(img: HTMLImageElement) {
-    // <source> first: the moment the <img> grows a src the <picture>
+    // The marker is the SOLE idempotency mechanism: every collage <img> now
+    // ships a live placeholder `src` and every <source> a live placeholder
+    // `srcset`, so neither `[src]` nor `[srcset]` discriminates an unpromoted
+    // image any more. A presence test here would silently never fire.
+    if (img.hasAttribute("data-promoted")) return;
+
+    // <source> first: the moment the <img> grows a srcset the <picture>
     // re-resolves, and promoting in the other order would fetch the WebP
     // fallback and then the AVIF over it.
+    //
+    // No `:not([srcset])` clause. The AVIF <source> carries a LIVE placeholder
+    // srcset from parse time, so that clause would never match, the <source>
+    // would never be promoted — and because <picture> resolves to the first
+    // matching <source>, every AVIF-capable engine would keep the 32px
+    // placeholder forever. That failure is invisible to a `[src]` probe and to
+    // any `data-promoted` count.
     const picture = img.closest("picture");
-    picture?.querySelectorAll("source[data-srcset]:not([srcset])").forEach((source) => {
+    picture?.querySelectorAll("source[data-srcset]").forEach((source) => {
       const srcset = source.getAttribute("data-srcset");
       if (srcset) source.setAttribute("srcset", srcset);
     });
+
+    // Candidate swap, not source addition: OVERWRITE both live attributes,
+    // srcset before src so the promoted AVIF <source> wins the re-resolution and
+    // the WebP fallback is never fetched. The box does not change — intrinsic
+    // width/height are already in the markup — so a placeholder that has already
+    // painted is replaced in place.
+    const srcset = img.getAttribute("data-srcset");
+    if (srcset) img.setAttribute("srcset", srcset);
     const src = img.getAttribute("data-src");
-    if (src && !img.getAttribute("src")) img.setAttribute("src", src);
+    if (src) img.setAttribute("src", src);
+
+    // Set LAST: a throw mid-promotion leaves the element eligible for the next
+    // pass rather than marked done on a half-swapped candidate set.
+    img.setAttribute("data-promoted", "");
   }
 
   function promoteAll() {
@@ -320,8 +424,8 @@ const COL_W = 33.333; // 33.333vw
     measuredWidth = window.innerWidth;
 
     // Deferred promotion and the scroll binding are both tier-driven, and
-    // promotion runs on every tier and every motion preference: the static
-    // grid is content, and an unpromoted <img> is an empty frame.
+    // promotion runs on every tier and every motion preference: the static grid
+    // is content, and an unpromoted <img> is a placeholder that never sharpens.
     applyTier(rebuild);
   }
 
@@ -505,14 +609,6 @@ const COL_W = 33.333; // 33.333vw
        never this element, so hinting `transform` here only doubles the
        number of full-viewport layers the compositor holds. */
     transform: translateZ(0);
-  }
-
-  /* Deferred sources: until promotion gives the <img> a real src the browser
-     would paint its alt text into the slot. Hide the placeholder so an
-     unpromoted frame reads as an empty frame, not a broken image. Geometric
-     only — IntersectionObserver still sees the element. */
-  .zoom-image:not([src]) {
-    visibility: hidden;
   }
 
   /* Lite/pending collapse (media-tiering D4): the stage stops pinning and the

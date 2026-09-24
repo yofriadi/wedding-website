@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Personalized greeting on the black loading overlay for invite holders, rendered server-side at request time so the name is present at first paint on every visit. Public visitors see the overlay exactly as today.
+Personalized greeting on the welcome gate for invite holders, rendered server-side at request time so the name is present at first paint on every visit; the loading overlay shows the shimmer phrases alone. Public visitors see an empty greeting, indistinguishable from the pre-personalization experience.
 
 ## Requirements
 
@@ -20,6 +20,11 @@ The welcome gate SHALL contain the greeting element, vertically centered in the 
 - **WHEN** no valid invite cookie is present on the request
 - **THEN** the greeting element renders empty and the gate shows only the swipe hint, indistinguishable from the pre-personalization experience
 
+#### Scenario: Loading overlay is phrases-only
+
+- **WHEN** the loading overlay is visible
+- **THEN** it shows only the shimmer phrases, for invited and anonymous visitors alike
+
 ### Requirement: Greeting rendered server-side at request time
 
 The server SHALL read the `ww_invite_id` cookie on each homepage request, resolve the invite, and render the `displayName` into the greeting element in the response HTML; no client-side fetch is required for the greeting.
@@ -27,7 +32,7 @@ The server SHALL read the `ww_invite_id` cookie on each homepage request, resolv
 #### Scenario: Invitee sees name at first paint
 
 - **WHEN** a request arrives with a valid invite cookie
-- **THEN** the response HTML already contains the invite's display name in the greeting element (no post-load fetch, no flash, no race with overlay dismissal)
+- **THEN** the response HTML already contains the invite's display name in the gate's greeting element (no post-load fetch, no flash, no race with the gate reveal)
 
 #### Scenario: Unknown or malformed cookie renders empty
 
@@ -36,20 +41,7 @@ The server SHALL read the `ww_invite_id` cookie on each homepage request, resolv
 
 ### Requirement: Greeting text verbatim and escaped
 
-### Requirement: Loading overlay is phrases-only
-
-The loading overlay SHALL render only the shimmer phrases (no greeting element). This applies equally to invited and anonymous visitors.
-
-#### Scenario: Invited landing
-
-- **WHEN** an invited guest loads the homepage
-- **THEN** the loading overlay shows shimmer phrases while awaiting hydration
-
-#### Scenario: Anonymous landing
-
-- **WHEN** an anonymous visitor loads the homepage
-- **THEN** the loading overlay shows shimmer phrases while awaiting hydration
-  The greeting SHALL render the invite's `displayName` verbatim (exactly as stored, no template-added prefix or suffix), via template auto-escaping (never parsed as HTML).
+The greeting SHALL render the invite's `displayName` verbatim (exactly as stored, no template-added prefix or suffix), via template auto-escaping (never parsed as HTML).
 
 #### Scenario: Verbatim rendering
 

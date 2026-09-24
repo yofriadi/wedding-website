@@ -693,9 +693,8 @@ const CHECK_LONG_ARM = "M9 17 14.5 11.5 20 6";
   const toPath = (pts: number[][]) =>
     `M${pts.map(([x, y]) => `${Math.round(x! * 100) / 100} ${Math.round(y! * 100) / 100}`).join(" ")}`;
 
-  const setupEntrance = (btn: HTMLButtonElement, label: HTMLElement) => {
+  const setupEntrance = (btn: HTMLButtonElement) => {
     const motionPreference = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const isConfirmed = btn.classList.contains("slide-to-confirm--confirmed");
     if (
       motionPreference.matches ||
       btn.matches(":focus") ||
@@ -834,7 +833,7 @@ const CHECK_LONG_ARM = "M9 17 14.5 11.5 20 6";
       window.addEventListener("resize", measure);
     }
 
-    const finishEntrance = setupEntrance(btn, label);
+    const finishEntrance = setupEntrance(btn);
     // Set by a threshold-crossing release so that gesture's own click is
     // allowed through to the submit (see the click listener).
     let armedViaDrag = false;

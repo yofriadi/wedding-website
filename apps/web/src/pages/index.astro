@@ -9,14 +9,16 @@ import AddImageButton from "../components/AddImageButton.astro";
 import WeddingFAQ from '../components/WeddingFAQ.astro';
 import TextShimmer from "../components/TextShimmer.astro";
 import WelcomeGate from "../components/WelcomeGate.astro";
+import ClaimMemberGate from "../components/ClaimMemberGate.astro";
 import RsvpSection from "../components/RsvpSection.astro";
 import VenueMap from "../components/VenueMap.astro";
 import EventTimes from "../components/EventTimes.astro";
 import { db } from "@wedding-website/db";
 import { invites, rsvps } from "@wedding-website/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
 import { inviteIdFromCookies, readGroupQuota } from "../lib/invite-session";
+import { HERO_SIZES, HERO_SRCSET_AVIF } from "../lib/hero-media";
 
 // Personalized greeting + RSVP controls (server-rendered; read-only — metrics
 // stay exclusive to /{id}).
@@ -24,9 +26,6 @@ let inviteDisplayName: string | null = null;
 let inviteRsvpAttending: boolean | null = null;
 let inviteKind: "individual" | "member" | "group" | null = null;
 let inviteGroupQuota: { maxMembers: number; claimedCount: number } | null = null;
-// The group link this visitor belongs to, when any: a group cookie's own id, or
-// a member cookie's parent. Drives the "Not you?" release control.
-let inviteGroupLinkId: string | null = null;
 const inviteCookieValue = inviteIdFromCookies(Astro.cookies);
 if (inviteCookieValue) {
   try {
@@ -66,7 +65,6 @@ if (inviteCookieValue) {
       const quota = await readGroupQuota(row.id);
       if (quota) {
         inviteGroupQuota = quota;
-        inviteGroupLinkId = row.id;
       } else {
         // Unreachable in practice: readGroupQuota's non-group branch is dead
         // (nothing UPDATEs invites.type — only seen_*/opened_* metrics ever move)
@@ -79,37 +77,6 @@ if (inviteCookieValue) {
         inviteDisplayName = null;
         inviteRsvpAttending = null;
         inviteGroupQuota = null;
-        inviteGroupLinkId = null;
-      }
-    } else if (row && inviteKind === "member" && parentId !== null) {
-      // A member also needs the PARENT group's quota, because the release control is
-      // only safe while that group has an open slot. Releasing at capacity is
-      // permanent — the member id lives only in the cookie and no slot could be
-      // re-claimed — so it would be an identity dead-end (design Goals), and it
-      // would help nobody: the second household member the release exists to
-      // unblock cannot claim either.
-      //
-      // SCOPED try/catch: this query only feeds an OPTIONAL affordance. If it
-      // fails, drop the release control and KEEP the identity resolved above, so a
-      // valid answered member still gets their greeting and confirm button.
-      // Falling through to the outer catch would trade a cosmetic degradation for
-      // an identity dead-end.
-      try {
-        // readGroupQuota returns null unless the parent is genuinely a group row.
-        // A parent_id pointing at a non-group row is unreachable through the API
-        // (admin rejects a non-null parentId, and a claim always parents to a
-        // resolved group), but if the database were hand-edited the release href
-        // would rebind this member's cookie to someone else's invite — an identity
-        // swap, not a release. Null therefore means: no release affordance.
-        const quota = await readGroupQuota(parentId);
-        if (quota) {
-          inviteGroupLinkId = parentId;
-          inviteGroupQuota = quota;
-        }
-      } catch (err) {
-        console.error("[invite-greeting] parent group lookup failed:", err);
-        inviteGroupLinkId = null;
-        inviteGroupQuota = null;
       }
     }
   } catch (err) {
@@ -119,9 +86,13 @@ if (inviteCookieValue) {
     inviteRsvpAttending = null;
     inviteKind = null;
     inviteGroupQuota = null;
-    inviteGroupLinkId = null;
   }
 }
+
+const canClaimAtEntry =
+  inviteKind === "group" &&
+  inviteGroupQuota !== null &&
+  inviteGroupQuota.claimedCount < inviteGroupQuota.maxMembers;
 
 // Homepage HTML is personalized per invite; never let a shared cache serve it.
 Astro.response.headers.set("Cache-Control", "no-store");
@@ -129,6 +100,60 @@ Astro.response.headers.set("Cache-Control", "no-store");
 ---
 
 <Layout title="Yofriadi Yahya & Aisha Amalia">
+  {/*
+    LCP hint (responsive-media: "The largest contentful paint image is
+    prioritised"). Routed through Layout's `head` slot rather than written into
+    Layout, because Layout is shared and only this page renders a hero.
+
+    `imagesrcset`/`imagesizes` mirror HeroZoom's AVIF `<source>` — both read the
+    same constants, so they cannot drift. A bare `href` would fetch a candidate
+    the `<picture>` then discards. `type="image/avif"` lets a non-AVIF engine
+    skip the hint instead of fetching bytes it will throw away.
+
+    `fetchpriority="high"` MATCHES the `<img>`'s, deliberately. The
+    `responsive-media` "exactly one image" rule counts `img` elements and a
+    `<link>` is not one; Chrome's guidance for a preloaded LCP image is that the
+    hint and its consumer agree, and a preload left at default priority is queued
+    BELOW the font preload that Layout emits first in document order — so the
+    hint would not deliver the prioritisation this comment block claims, and
+    Chrome reports the mismatch.
+  */}
+  <link
+    slot="head"
+    rel="preload"
+    as="image"
+    type="image/avif"
+    imagesrcset={HERO_SRCSET_AVIF}
+    imagesizes={HERO_SIZES}
+    fetchpriority="high"
+  />
+  {/*
+    Basemap tile hints for `<VenueMap />`, rendered unconditionally further down
+    this page. They live here rather than inside the component because a
+    `<link rel="preconnect">` in the body is an HTML conformance error — the
+    Standard permits a body `<link>` only with `itemprop` — and engines honour it
+    there only as a quirk. This page is the map's only consumer, so a head-level
+    hint ships exactly when the map does.
+
+    COUNT: one `preconnect`, three `dns-prefetch` — not four `preconnect`s. The
+    map is below the fold AND lazily initialized (IntersectionObserver, then a
+    dynamic `import("./venue-map")`), so its first tile request is seconds away;
+    four TCP+TLS handshakes opened during parse would be four idle sockets held
+    for a widget the guest may never scroll to. `venue-map.ts:518,523` sets
+    `subdomains: "abcd"` and Leaflet round-robins them by tile coordinate, so no
+    single host is guaranteed to carry the first tile: `a` gets the full
+    handshake and b/c/d get DNS only, which is the expensive half of a cold
+    cross-origin lookup at a fraction of the socket cost.
+
+    Tiles are plain `<img>` fetches (no `crossOrigin` on the Leaflet TileLayer),
+    so these are no-CORS hints — adding `crossorigin` would warm the wrong pool.
+    They follow the hero and font preloads in document order, so they cannot
+    displace the LCP path on the throttled link this change exists to protect.
+  */}
+  <link slot="head" rel="preconnect" href="https://a.basemaps.cartocdn.com" />
+  <link slot="head" rel="dns-prefetch" href="https://b.basemaps.cartocdn.com" />
+  <link slot="head" rel="dns-prefetch" href="https://c.basemaps.cartocdn.com" />
+  <link slot="head" rel="dns-prefetch" href="https://d.basemaps.cartocdn.com" />
   <!-- Loading Overlay -->
   <div id="loading-screen" class="fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300 ease-out">
     <div class="flex flex-col items-center">
@@ -151,6 +176,27 @@ Astro.response.headers.set("Cache-Control", "no-store");
       </TextShimmer>
     </div>
   </div>
+
+  {/*
+    No-script escape (progressive-enhancement: "An overlay never traps a
+    no-script guest"). This layer is `fixed inset-0 z-50` and opaque, and
+    `doHideLoadingScreen` below is the only thing that removes it — so without
+    scripting a guest sits behind it permanently. `WelcomeGate` already
+    establishes the idiom (its own <noscript> plus an `@media (scripting:
+    none)` twin, because Safari has not shipped the `scripting` feature):
+    SUPPRESS the overlay without script, never invert it. The loader still ships
+    rendered, so the scripted path — which fades and removes it — is untouched.
+  */}
+  <noscript>
+    <style>
+      #loading-screen {
+        display: none;
+      }
+    </style>
+  </noscript>
+
+  {/* Entry claim gate: presented before WelcomeGate for eligible group invites */}
+  {canClaimAtEntry && <ClaimMemberGate />}
 
   <!-- Welcome gate: the loader fade reveals it; swipe up opens the site. -->
   <WelcomeGate displayName={inviteDisplayName} />
@@ -176,7 +222,7 @@ Astro.response.headers.set("Cache-Control", "no-store");
     <script is:inline>
       (function () {
         var root = document.documentElement;
-        var PENDING = '#zoom-parallax-container img[data-src]:not([src])';
+        var PENDING = '#zoom-parallax-container img[data-src]:not([data-promoted])';
 
         function promote() {
           var images = document.querySelectorAll(PENDING);
@@ -187,13 +233,29 @@ Astro.response.headers.set("Cache-Control", "no-store");
               // <source> first: setting the <img> src makes the <picture>
               // re-resolve, and the other order would fetch the WebP fallback
               // and then the AVIF over it.
-              var sources = picture.querySelectorAll('source[data-srcset]:not([srcset])');
+              //
+              // No `:not([srcset])` clause. Every collage <source> now ships a
+              // LIVE low-fidelity srcset, so a presence test would never match:
+              // the <source> would stay on the placeholder and, because
+              // <picture> resolves to the first matching <source>, every
+              // AVIF-capable engine would keep the 32px image forever.
+              var sources = picture.querySelectorAll('source[data-srcset]');
               for (var j = 0; j < sources.length; j++) {
                 sources[j].setAttribute('srcset', sources[j].getAttribute('data-srcset'));
               }
             }
+            // Candidate swap, not a source addition: both attributes are
+            // OVERWRITTEN, srcset before src so the promoted AVIF <source> wins
+            // the re-resolution and the WebP fallback is never fetched.
+            var deferredSet = img.getAttribute('data-srcset');
+            if (deferredSet) img.setAttribute('srcset', deferredSet);
             var deferred = img.getAttribute('data-src');
             if (deferred) img.setAttribute('src', deferred);
+            // The marker is the SOLE idempotency mechanism: every image has a
+            // live src from the moment it parses, so `:not([src])` no longer
+            // discriminates anything. Set last, so a throw mid-promotion leaves
+            // the element eligible for the next pass.
+            img.setAttribute('data-promoted', '');
           }
         }
 
@@ -241,7 +303,6 @@ Astro.response.headers.set("Cache-Control", "no-store");
           inviteDisplayName={inviteDisplayName}
           rsvpAttending={inviteRsvpAttending}
           inviteKind={inviteKind}
-          groupLinkId={inviteGroupLinkId}
           groupQuota={inviteGroupQuota}
         />
       </div>
@@ -483,6 +544,15 @@ Astro.response.headers.set("Cache-Control", "no-store");
   /* Loading screen theme-aware background */
   #loading-screen {
     background-color: var(--loading-bg);
+  }
+
+  /* No-script escape, Chromium twin of the <noscript> block above: Safari has
+     not shipped the `scripting` media feature, so neither mechanism alone
+     covers every engine. Does not match when scripting is enabled. */
+  @media (scripting: none) {
+    #loading-screen {
+      display: none;
+    }
   }
 
   /* RSVP section background (was a hard-coded bg-neutral-950 utility) */

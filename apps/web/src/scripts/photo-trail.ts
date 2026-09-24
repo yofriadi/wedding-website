@@ -18,19 +18,18 @@ const PHOTO_ERRORS: Record<string, string> = {
   photo_too_large: "Ukuran gambar maksimal 10 MB.",
   invalid_photo_type: "Pilih gambar JPEG, PNG, WebP, atau AVIF yang valid.",
   empty_photo: "Pilih satu gambar terlebih dahulu.",
-  // Group identities are valid but UNCLAIMED: they route to the shared claim
-  // flow, or to the read-only capacity state, instead of the uploader.
+  // Group identities are valid but UNCLAIMED: slots open ⇒ the pill stays
+  // hidden until claimed at entry; quota exhausted ⇒ read-only capacity state.
   claim_required: "Klaim tempatmu dulu untuk menambahkan gambar.",
   group_full: "Undangan grup ini sudah penuh.",
 };
 const SYNC_ERROR =
   "Gambar sudah diunggah, tetapi galeri belum diperbarui. Coba lagi untuk memuatnya.";
-const GROUP_CLAIM_LABEL = "Klaim tempatmu";
 const GROUP_FULL_LABEL = "Grup sudah penuh";
 
 /**
  * "none"    — standalone individual or claimed member: the normal uploader rules.
- * "claim"   — group cookie with slots open: show the claim affordance.
+ * "claim"   — group cookie with slots open: the pill stays hidden until claimed at entry.
  * "full"    — group cookie at quota: show the read-only capacity state.
  * "unknown" — the identity probe could not answer. Treated as INELIGIBLE (the
  *             guest-photo-trail spec bars "unresolved/error states" from opening
@@ -95,10 +94,10 @@ export function initPhotoTrail(controls: HTMLElement): () => void {
   let disposed = false;
   let inviteValid = false;
   let canPost = false;
-  // Identity kind only changes through a claim, and a successful claim does a
-  // FULL page reload — so a DEFINITIVE answer is authoritative for the page
-  // lifetime and is cached. A failed probe is deliberately NOT cached: one
-  // transient blip would otherwise hide the uploader until a manual reload.
+  // Identity kind changes through entry claiming, which is an in-place
+  // handoff — so a DEFINITIVE answer is authoritative only until claim:success
+  // or claim:capacity invalidates it below. A failed probe is deliberately NOT
+  // cached: one transient blip would otherwise hide the uploader until a reload.
   let groupState: GroupIdentityState = "none";
   // Started EAGERLY, not lazily inside syncGroupState: refresh() awaits that
   // AFTER `await loadGuestPhotos()`, so a lazily-created probe would make the
@@ -114,8 +113,9 @@ export function initPhotoTrail(controls: HTMLElement): () => void {
     // Identity-guard the reset: two refreshes can overlap and both await the
     // shared promise, so a stale continuation must not drop a NEWER in-flight
     // probe that a third caller has already installed.
-    if (next === "unknown" && groupProbe === probe) groupProbe = null;
-    groupState = next;
+    const isCurrent = groupProbe === probe;
+    if (next === "unknown" && isCurrent) groupProbe = null;
+    if (isCurrent) groupState = next;
     // Recovery must not depend on the guest happening to switch tabs — focus and
     // visibilitychange are the only other triggers, so a single-page visit would
     // never retry. "unknown" fails closed for the pill, which is right for a
@@ -161,36 +161,14 @@ export function initPhotoTrail(controls: HTMLElement): () => void {
     error.hidden = !message;
   };
 
-  // ONE shared claim affordance: the photo CTA routes to the RSVP section's
-  // claim form instead of rendering a second, ad-hoc prompt.
-  const openClaimFlow = () => {
-    const claimForm = document.querySelector<HTMLElement>("[data-claim-form]");
-    // The two identity paths are independent (the RSVP surface resolves inline
-    // server-side, this one probes /api/invite/me), so SSR can have degraded to
-    // anonymous while we still know the visitor is a group. Reload rather than
-    // scroll to a section whose claim form does not exist — the same
-    // self-healing move RsvpSection makes on a 409 claim_required.
-    if (!claimForm) {
-      window.location.reload();
-      return;
-    }
-    // Clear a stale upload error only once we know a reload is not about to
-    // discard the message anyway.
-    showError();
-    claimForm.scrollIntoView({ behavior: "smooth", block: "center" });
-    const nameInput = claimForm.querySelector<HTMLInputElement>("[data-claim-name]");
-    // Focus once the scroll has started so the caret lands without a second jump.
-    window.setTimeout(() => nameInput?.focus({ preventScroll: true }), 320);
-  };
-
   const render = () => {
-    // A group identity reveals the pill as the claim/capacity affordance rather
-    // than hiding it — but it can never open the picker, because canPost below
-    // stays false for the whole time groupState is not "none". An "unknown"
-    // probe keeps the pill hidden: a visible control that cannot work is worse
-    // than no control, and the next refresh retries the probe.
-    const groupAffordance = groupState === "claim" || groupState === "full";
-    button.hidden = !inviteValid || (!canPost && !committed && !uncertain && !groupAffordance);
+    // An at-capacity group identity reveals the pill as the capacity affordance;
+    // an unclaimed group identity hides it until claimed at entry.
+    const groupAffordance = groupState === "full";
+    button.hidden =
+      !inviteValid ||
+      groupState === "claim" ||
+      (!canPost && !committed && !uncertain && !groupAffordance);
     button.dataset.state = state;
     button.setAttribute("aria-busy", String(state === "uploading"));
     // Keep keyboard focus on the status button, but guard every activation.
@@ -198,7 +176,6 @@ export function initPhotoTrail(controls: HTMLElement): () => void {
     input.disabled = !canPost || state !== "idle";
     if (state === "uploading") label.textContent = "Mengunggah…";
     else if (state === "success") label.textContent = "Foto ditambahkan";
-    else if (groupState === "claim") label.textContent = GROUP_CLAIM_LABEL;
     else if (groupState === "full") label.textContent = GROUP_FULL_LABEL;
     else if (selectedFile || committed || uncertain) label.textContent = "Coba lagi";
     else label.textContent = "Tambah punyamu";
@@ -308,9 +285,8 @@ export function initPhotoTrail(controls: HTMLElement): () => void {
             invalidateGuestPhotos();
             window.dispatchEvent(new CustomEvent(GUEST_PHOTO_POSTED_EVENT));
           } else if (response.status === 409 && code === "claim_required") {
-            // A stale page after a release: this browser is a group identity
-            // again. Route to the shared claim flow — never the committed path,
-            // so no upload-success or SYNC_ERROR messaging is shown.
+            // A stale render where this browser holds an unclaimed group identity.
+            // Keep the pill hidden — claiming happens at the entry gate.
             groupState = "claim";
             // Invalidate the cached probe: the server just told us something the
             // earlier answer did not know, and the next refresh must not silently
@@ -402,12 +378,9 @@ export function initPhotoTrail(controls: HTMLElement): () => void {
 
   const open = () => {
     if (disposed || state !== "idle") return;
-    // Group identities never reach the file chooser. Slots open ⇒ the shared
-    // claim flow; quota exhausted ⇒ the read-only capacity state.
-    if (groupState === "claim") {
-      openClaimFlow();
-      return;
-    }
+    // Group identities never reach the file chooser. Slots open ⇒ the pill
+    // stays hidden; quota exhausted ⇒ the read-only capacity state.
+    if (groupState === "claim") return;
     if (groupState === "full") {
       showError(PHOTO_ERRORS.group_full);
       return;
@@ -457,6 +430,18 @@ export function initPhotoTrail(controls: HTMLElement): () => void {
   window.addEventListener(GUEST_PHOTO_POSTED_EVENT, posted);
   window.addEventListener("focus", retry);
   document.addEventListener("visibilitychange", retry);
+  const onClaimSuccess = () => {
+    groupProbe = null;
+    invalidateGuestPhotos();
+    void reloadPhotos();
+  };
+  const onClaimCapacity = () => {
+    groupProbe = null;
+    groupState = "full";
+    render();
+  };
+  window.addEventListener("claim:success", onClaimSuccess);
+  window.addEventListener("claim:capacity", onClaimCapacity);
   void reloadPhotos();
 
   return () => {
@@ -469,6 +454,8 @@ export function initPhotoTrail(controls: HTMLElement): () => void {
     button.removeEventListener("click", open);
     input.removeEventListener("change", pick);
     input.removeEventListener("cancel", cancel);
+    window.removeEventListener("claim:success", onClaimSuccess);
+    window.removeEventListener("claim:capacity", onClaimCapacity);
     window.removeEventListener("scroll", reveal);
     window.removeEventListener("resize", reveal);
     window.removeEventListener(GUEST_PHOTO_POSTED_EVENT, posted);

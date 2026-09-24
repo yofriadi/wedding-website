@@ -1,0 +1,692 @@
+---
+/**
+ * Entry claim gate for unclaimed group invitations.
+ * Stacked at z-45 between #loading-screen (z-50) and #welcome-gate (z-40).
+ * Presents an underline input with character scale animations and dynamic "Mulai" pill.
+ */
+---
+
+<div
+  id="claim-gate"
+  class="claim-surface fixed inset-0 z-45 flex flex-col items-center justify-center select-none"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="claim-gate-label"
+>
+  <div class="w-full max-w-sm px-6 flex flex-col items-center">
+    <form
+      id="claim-gate-form"
+      method="post"
+      action="/api/invite/claim"
+      class="w-full flex flex-col items-center"
+      novalidate
+    >
+      <!-- Prompt label above underline input -->
+      <label
+        for="claim-gate-input"
+        id="claim-gate-label"
+        class="mb-5 text-sm font-medium tracking-tight text-[color:var(--claim-muted)] text-center select-none"
+      >
+        Tulis nama Anda
+      </label>
+
+      <div class="claim-input-box relative w-full flex flex-col items-center">
+        <!-- Native accessible input behind visual display -->
+        <input
+          type="text"
+          id="claim-gate-input"
+          name="displayName"
+          class="claim-native-input"
+          maxlength="120"
+          autocomplete="name"
+          spellcheck="false"
+          required
+        />
+
+        <!-- Underline baseline with animated character track -->
+        <div class="claim-visual-line w-full pb-2 border-b flex items-center justify-start overflow-x-auto overflow-y-hidden cursor-text no-scrollbar" aria-hidden="true">
+          <div class="claim-char-track inline-flex items-center text-xl sm:text-2xl font-medium tracking-tight">
+            <span class="claim-cursor" aria-hidden="true">|</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action pill container: hidden when empty -->
+      <div class="claim-action-container mt-6 flex flex-col items-center">
+        <button
+          type="submit"
+          id="claim-gate-submit"
+          class="claim-button"
+          tabindex="-1"
+          aria-disabled="true"
+        >
+          Mulai
+        </button>
+      </div>
+
+      <!-- Inline error / alert notification -->
+      <div
+        id="claim-gate-error"
+        class="hidden mt-4 text-center text-sm"
+        role="alert"
+      >
+        <p id="claim-gate-error-text" class="text-[color:var(--claim-error)] text-pretty"></p>
+        <div id="claim-gate-error-actions" class="hidden mt-3 flex items-center justify-center gap-3">
+          <button
+            type="button"
+            id="claim-gate-reload-btn"
+            class="claim-sub-button text-xs underline underline-offset-4"
+          >
+            Muat ulang
+          </button>
+          <button
+            type="button"
+            id="claim-gate-continue-btn"
+            class="claim-sub-button text-xs underline underline-offset-4"
+          >
+            Lanjutkan sebagai tamu
+          </button>
+        </div>
+      </div>
+
+      <p id="claim-gate-status" class="sr-only" aria-live="polite"></p>
+    </form>
+  </div>
+</div>
+
+<noscript>
+  <style>
+    #claim-gate {
+      display: none !important;
+    }
+  </style>
+</noscript>
+
+<style>
+  :root {
+    --claim-bg: #0a0a0a;
+    --claim-fg: #ededed;
+    --claim-muted: #a1a1aa;
+    --claim-line: rgba(237, 237, 237, 0.4);
+    --claim-cursor: #ededed;
+    --claim-error: #f87171;
+  }
+
+  @media (prefers-color-scheme: light) {
+    :root {
+      --claim-bg: #ffffff;
+      --claim-fg: #0a0a0a;
+      --claim-muted: #71717a;
+      --claim-line: rgba(10, 10, 10, 0.3);
+      --claim-cursor: #0a0a0a;
+      --claim-error: #b91c1c;
+    }
+  }
+
+  :global(.light),
+  :global([data-theme="light"]) {
+    --claim-bg: #ffffff;
+    --claim-fg: #0a0a0a;
+    --claim-muted: #71717a;
+    --claim-line: rgba(10, 10, 10, 0.3);
+    --claim-cursor: #0a0a0a;
+    --claim-error: #b91c1c;
+  }
+
+  #claim-gate {
+    background-color: var(--claim-bg);
+    color: var(--claim-fg);
+    touch-action: manipulation;
+    /* 10-second CSS failsafe for unscripted / script-failure visitors */
+    animation: claim-failsafe 600ms ease-out 10s forwards;
+  }
+
+  @keyframes claim-failsafe {
+    to {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+  }
+
+  @media (scripting: none) {
+    #claim-gate {
+      display: none !important;
+    }
+  }
+
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .claim-input-box {
+    max-width: 280px;
+  }
+
+  @media (min-width: 640px) {
+    .claim-input-box {
+      max-width: 320px;
+    }
+  }
+
+  /* Native input covers visual box so taps directly focus it */
+  .claim-native-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: text;
+    z-index: 2;
+    font-size: 16px; /* Prevents iOS auto-zoom on focus */
+    -webkit-user-select: text;
+    user-select: text;
+  }
+
+  .claim-visual-line {
+    border-color: var(--claim-line);
+    min-height: 2.5rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  .claim-char-track {
+    white-space: pre;
+    color: var(--claim-fg);
+    line-height: 1;
+  }
+
+  .claim-char-track :global(.claim-char) {
+    display: inline-block;
+    transform-origin: center bottom;
+    animation: char-pop-in 160ms cubic-bezier(0.2, 0, 0, 1) forwards;
+  }
+
+  .claim-char-track :global(.claim-char-out) {
+    display: inline-block;
+    transform-origin: center bottom;
+    animation: char-pop-out 140ms ease-in forwards;
+  }
+
+  @keyframes char-pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.35);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes char-pop-out {
+    from {
+      opacity: 1;
+      transform: scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.35);
+    }
+  }
+
+  .claim-char-track :global(.claim-cursor) {
+    display: inline-block;
+    color: var(--claim-cursor);
+    font-weight: 300;
+    margin-left: 1px;
+    animation: cursor-blink 1s step-end infinite;
+  }
+
+  @keyframes cursor-blink {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
+  }
+
+  .claim-action-container {
+    height: 2.75rem;
+  }
+
+  /* Action button: outlined curved pill */
+  .claim-button {
+    padding: 0.625rem 2rem;
+    border: 1px solid color-mix(in srgb, var(--claim-fg) 30%, transparent);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--claim-fg);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    letter-spacing: -0.015em;
+    cursor: pointer;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(8px);
+    pointer-events: none;
+    transition: opacity 250ms ease, transform 250ms ease, visibility 250ms ease, background-color 160ms ease;
+  }
+
+  .claim-button[data-visible="true"] {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .claim-button:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--claim-fg) 10%, transparent);
+  }
+
+  .claim-button:disabled {
+    cursor: default;
+    opacity: 0.55;
+  }
+
+  .claim-button:focus-visible {
+    outline: 2px solid var(--claim-fg);
+    outline-offset: 4px;
+  }
+
+  .claim-sub-button {
+    background: transparent;
+    border: none;
+    color: var(--claim-muted);
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .claim-sub-button:hover {
+    color: var(--claim-fg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .claim-char-track :global(.claim-char) {
+      animation: none !important;
+      transform: none !important;
+    }
+    .claim-char-track :global(.claim-char-out) {
+      animation: none !important;
+      display: none !important;
+    }
+    .claim-button {
+      transition: none !important;
+    }
+  }
+</style>
+
+<script is:inline>
+  (function () {
+    var gate = document.getElementById('claim-gate');
+    if (!gate) return;
+
+    var form = document.getElementById('claim-gate-form');
+    var input = document.getElementById('claim-gate-input');
+    var charTrack = gate.querySelector('.claim-char-track');
+    var submitBtn = document.getElementById('claim-gate-submit');
+    var errorContainer = document.getElementById('claim-gate-error');
+    var errorText = document.getElementById('claim-gate-error-text');
+    var errorActions = document.getElementById('claim-gate-error-actions');
+    var reloadBtn = document.getElementById('claim-gate-reload-btn');
+    var continueBtn = document.getElementById('claim-gate-continue-btn');
+    var statusEl = document.getElementById('claim-gate-status');
+
+    if (!form || !input || !charTrack || !submitBtn) return;
+
+    // Cancel the 10s CSS failsafe only after confirming all required elements are present
+    gate.style.animation = 'none';
+    if (typeof gate.getAnimations === 'function') {
+      gate.getAnimations().forEach(function (anim) {
+        anim.cancel();
+      });
+    }
+
+    var visualLine = gate.querySelector('.claim-visual-line');
+    var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var isSubmitting = false;
+    var isDismissed = false;
+    var isAmbiguousError = false;
+    var previousValue = '';
+    var deleteTimeout = null;
+
+    // Outcome UNKNOWN — moved verbatim from RsvpSection.astro:472-473.
+    // Behind the documented Caddy deployment a process death or a connection
+    // reset between the committed INSERT and the response write surfaces as
+    // a 502/504 synthesised by the PROXY, never as a 503 from the app.
+    // That is precisely the shape the accepted residual risk takes in production,
+    // so matching >= 500 copy prevents blind retries from minting duplicate
+    // member rows out of scarce quota while offering reload and guest continue paths.
+    var AMBIGUOUS_CLAIM_COPY =
+      "Something went wrong and your spot may already be claimed. Please don't keep retrying — reload the page, and if this form is still here, let us know and we'll sort it out.";
+
+    function showError(message, showActions, isAmbiguous) {
+      isAmbiguousError = Boolean(isAmbiguous);
+      if (!errorContainer || !errorText) return;
+      if (!message) {
+        errorContainer.classList.add('hidden');
+        errorText.textContent = '';
+        if (errorActions) errorActions.classList.add('hidden');
+        return;
+      }
+      errorText.textContent = message;
+      errorContainer.classList.remove('hidden');
+      if (errorActions) {
+        if (showActions) {
+          errorActions.classList.remove('hidden');
+        } else {
+          errorActions.classList.add('hidden');
+        }
+      }
+    }
+
+    function syncVisualTrack(animLastChar, deletedChar) {
+      if (deleteTimeout) {
+        clearTimeout(deleteTimeout);
+        deleteTimeout = null;
+      }
+      var val = input.value;
+      var selStart = input.selectionStart != null ? input.selectionStart : val.length;
+
+      // Render character spans with cursor at selectionStart
+      var chars = val.split('');
+      var frag = document.createDocumentFragment();
+
+      for (var i = 0; i < chars.length; i++) {
+        if (i === selStart) {
+          var cursorMid = document.createElement('span');
+          cursorMid.className = 'claim-cursor';
+          cursorMid.setAttribute('aria-hidden', 'true');
+          cursorMid.textContent = '|';
+          frag.appendChild(cursorMid);
+        }
+        var span = document.createElement('span');
+        span.className = 'claim-char';
+        span.textContent = chars[i];
+        if (!animLastChar || i !== chars.length - 1 || reducedMotion) {
+          span.style.animation = 'none';
+        }
+        frag.appendChild(span);
+      }
+
+      if (deletedChar && !reducedMotion) {
+        var outSpan = document.createElement('span');
+        outSpan.className = 'claim-char-out';
+        outSpan.textContent = deletedChar;
+        frag.appendChild(outSpan);
+      }
+
+      if (selStart >= chars.length) {
+        var cursorEnd = document.createElement('span');
+        cursorEnd.className = 'claim-cursor';
+        cursorEnd.setAttribute('aria-hidden', 'true');
+        cursorEnd.textContent = '|';
+        frag.appendChild(cursorEnd);
+      }
+
+      charTrack.innerHTML = '';
+      charTrack.appendChild(frag);
+
+      // Keep active cursor visible in scrollable track
+      if (visualLine) {
+        var activeCursor = charTrack.querySelector('.claim-cursor');
+        if (activeCursor) {
+          var offset = activeCursor.offsetLeft;
+          var maxScroll = visualLine.scrollWidth - visualLine.clientWidth;
+          visualLine.scrollLeft = Math.max(0, Math.min(offset - visualLine.clientWidth + 24, maxScroll));
+        }
+      }
+
+      if (deletedChar && !reducedMotion) {
+        deleteTimeout = setTimeout(function () {
+          if (input.value === val) {
+            syncVisualTrack(false);
+          }
+        }, 130);
+      }
+
+      // Mulai button threshold: trimmed length >= 1
+      var trimmed = val.trim();
+      var isValidLength = trimmed.length >= 1;
+      if (isValidLength) {
+        submitBtn.setAttribute('data-visible', 'true');
+        submitBtn.removeAttribute('tabindex');
+        submitBtn.removeAttribute('aria-disabled');
+      } else {
+        submitBtn.removeAttribute('data-visible');
+        submitBtn.setAttribute('tabindex', '-1');
+        submitBtn.setAttribute('aria-disabled', 'true');
+      }
+
+      previousValue = val;
+    }
+
+    // Input event handler
+    input.addEventListener('input', function () {
+      if (!isAmbiguousError) showError('', false, false);
+      var current = input.value;
+      var isSingleAppend = current.length === previousValue.length + 1 && current.startsWith(previousValue);
+      var isSingleDelete = current.length === previousValue.length - 1 && previousValue.startsWith(current);
+      var deletedChar = isSingleDelete ? previousValue.charAt(previousValue.length - 1) : null;
+      syncVisualTrack(isSingleAppend, deletedChar);
+    });
+
+    // Caret navigation synchronization
+    input.addEventListener('keyup', function (e) {
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'Home' || e.key === 'End') {
+        syncVisualTrack(false);
+      }
+    });
+
+    input.addEventListener('click', function () {
+      syncVisualTrack(false);
+    });
+
+    // Enter key submits form
+    input.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        var trimmed = input.value.trim();
+        if (trimmed.length >= 1 && !isSubmitting && !isDismissed) {
+          submitClaim();
+        }
+      }
+    });
+
+    function dismissGateSmoothly(claimedName) {
+      isDismissed = true;
+      if (reducedMotion) {
+        if (claimedName) {
+          var greetingEl = document.getElementById('gate-greeting');
+          if (greetingEl) greetingEl.textContent = claimedName;
+          window.dispatchEvent(
+            new CustomEvent('claim:success', {
+              detail: { displayName: claimedName },
+            })
+          );
+        }
+        gate.remove();
+        return;
+      }
+
+      // Fade out claim gate
+      gate.style.transition = 'opacity 400ms ease, transform 400ms ease';
+      gate.style.opacity = '0';
+      gate.style.transform = 'scale(0.98)';
+      gate.style.pointerEvents = 'none';
+
+      if (claimedName) {
+        // Dynamically update WelcomeGate greeting
+        var greetingEl = document.getElementById('gate-greeting');
+        if (greetingEl) {
+          greetingEl.textContent = claimedName;
+        }
+
+        // Dispatch claim:success identity event on window
+        window.dispatchEvent(
+          new CustomEvent('claim:success', {
+            detail: { displayName: claimedName },
+          })
+        );
+      }
+
+      setTimeout(function () {
+        gate.remove();
+      }, 420);
+    }
+
+    async function submitClaim() {
+      if (isSubmitting || isDismissed) return;
+      var displayName = input.value.trim();
+      if (displayName.length < 1) return;
+      isSubmitting = true;
+      submitBtn.disabled = true;
+      submitBtn.setAttribute('aria-busy', 'true');
+      showError('', false);
+      if (statusEl) statusEl.textContent = 'Menyimpan nama Anda…';
+
+      try {
+        var res = await fetch('/api/invite/claim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          cache: 'no-store',
+          body: JSON.stringify({ displayName: displayName }),
+        });
+
+        var body = null;
+        try {
+          body = await res.json();
+        } catch (_) {}
+
+        if (res.status === 201 || res.status === 200) {
+          // Success: smooth handoff to welcome gate with claimed name
+          var finalName = (body && body.displayName) || displayName;
+          dismissGateSmoothly(finalName);
+          return;
+        }
+
+        if (res.status === 409) {
+          var code = body && body.error;
+          if (code === 'group_full') {
+            isDismissed = true;
+            // Concurrency race: last slot taken. Notify and hand off to welcome gate under group identity
+            showError('Kuota undangan telah penuh. Membuka undangan…', false, false);
+            window.dispatchEvent(new CustomEvent('claim:capacity'));
+            setTimeout(function () {
+              dismissGateSmoothly(null); // Keep server-rendered group name
+            }, 1200);
+            return;
+          }
+          if (code === 'not_a_group') {
+            // Stale identity: dismiss to welcome gate without updating name
+            dismissGateSmoothly(null);
+            return;
+          }
+        }
+
+        if (res.status === 404) {
+          // Stale / not found cookie: dismiss to welcome gate without trapping
+          dismissGateSmoothly(null);
+          return;
+        }
+
+        if (res.status === 403) {
+          // Cross-origin failure: retryable
+          showError('Tidak dapat memproses permintaan (origin error). Silakan coba lagi.', true, false);
+          return;
+        }
+
+        if (res.status === 400) {
+          var err = body && body.error;
+          if (err === 'display_name_too_long') {
+            showError('Nama terlalu panjang (maksimal 120 karakter).', false);
+          } else {
+            showError('Silakan masukkan nama yang valid.', false, false);
+          }
+          return;
+        }
+
+        if (res.status >= 500) {
+          showError(AMBIGUOUS_CLAIM_COPY, true, true);
+          return;
+        }
+
+        // Other unexpected errors
+        showError('Terjadi kesalahan. Silakan coba lagi.', false);
+      } catch (err) {
+        // Network drop: treat as ambiguous outcome
+        showError(AMBIGUOUS_CLAIM_COPY, true, true);
+      } finally {
+        isSubmitting = false;
+        submitBtn.disabled = false;
+        submitBtn.removeAttribute('aria-busy');
+        if (statusEl) statusEl.textContent = '';
+      }
+    }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      submitClaim();
+    });
+
+    if (reloadBtn) {
+      reloadBtn.addEventListener('click', function () {
+        window.location.reload();
+      });
+    }
+
+    if (continueBtn) {
+      continueBtn.addEventListener('click', function () {
+        dismissGateSmoothly(null);
+      });
+    }
+
+    // Input focus: applied only after #loading-screen is dismissed
+    function focusInputWhenReady() {
+      var loader = document.getElementById('loading-screen');
+      if (!loader) {
+        input.focus();
+        return;
+      }
+      var observer = new MutationObserver(function () {
+        if (!loader.isConnected) {
+          observer.disconnect();
+          input.focus();
+        }
+      });
+      observer.observe(loader.parentNode || document.documentElement, {
+        childList: true,
+      });
+    }
+
+    // Focus containment loop for Tab key inside modal claim gate
+    gate.addEventListener('keydown', function (e) {
+      if (e.key === 'Tab') {
+        var focusable = Array.prototype.filter.call(
+          gate.querySelectorAll('button, input'),
+          function (el) {
+            return !el.disabled && el.tabIndex !== -1 && el.getClientRects().length > 0;
+          }
+        );
+        if (focusable.length === 0) return;
+        var first = focusable[0];
+        var last = focusable[focusable.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    });
+
+    focusInputWhenReady();
+    syncVisualTrack(false);
+  })();
+</script>

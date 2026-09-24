@@ -16,5 +16,5 @@ catalog:
   dotenv: ^18.0.1
   # TS 7 drops the programmatic API `astro check` needs; stay on 6.x until
   # https://github.com/withastro/roadmap/discussions/1321 ships.
-  typescript: ^7.0.2
+  typescript: ^6.0.3
   zod: ^4.6.5

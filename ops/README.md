@@ -76,7 +76,7 @@ Missing tables, SQL failures on either side, missing canonical files, or checksu
 
 ## Moderation and offline recovery
 
-See [MODERATION.md](MODERATION.md). Deleting a photo releases that invitation's posting slot; deleting an invitation is not a safe ban mechanism. The `invites.parent_id` self-foreign key is now a mechanical backstop on that rule: with foreign keys enabled, `DELETE FROM invites WHERE id = <group id>` **fails** for as long as the group has member rows, so a group cannot be removed out from under its members' RSVP and photo records. A memberless group can be deleted. Releasing a _slot_ (removing one member) is not implemented — the browser-side `?fresh=1` path only drops that browser's cookie and leaves the member row intact. Any orphan reconciliation requires stopped writers/AVIF jobs and explicit review, not automatic age-based deletion.
+See [MODERATION.md](MODERATION.md). Deleting a photo releases that invitation's posting slot; deleting an invitation is not a safe ban mechanism. The `invites.parent_id` self-foreign key is now a mechanical backstop on that rule: with foreign keys enabled, `DELETE FROM invites WHERE id = <group id>` **fails** for as long as the group has member rows, so a group cannot be removed out from under its members' RSVP and photo records. A memberless group can be deleted. Releasing a _slot_ (removing one member) is not implemented — member cookies are sticky and have no guest-side release path. Any orphan reconciliation requires stopped writers/AVIF jobs and explicit review, not automatic age-based deletion.
 
 ## Origin checks and the TLS-terminating proxy
 

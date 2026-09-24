@@ -1,4 +1,5 @@
 ---
+import { masterSrc, variantSrcset } from "../lib/media-candidates";
 /**
  * EventTimes — Schedule Cards
  *
@@ -31,6 +32,12 @@ const EVENTS = [
     height: 525,
   },
 ];
+
+// The cards are full-bleed (`w-full` on both the section and the article) and the
+// image is `absolute inset-0 h-full w-full object-cover`, so its presentation
+// width is the viewport width at every breakpoint — there is no max-width to
+// clamp against.
+const SIZES_FULL_BLEED = "100vw";
 ---
 
 <section id="event-times" class="relative z-10 w-full overflow-hidden py-12 md:py-16" aria-label="Rangkaian Acara">
@@ -52,13 +59,27 @@ const EVENTS = [
           data-index={i}
           aria-label={`${event.name} pukul ${event.time} untuk ${event.audience}`}
         >
-          {/* Background image — fully covers the card with soft blur */}
+          {/* Background image — fully covers the card with soft blur.
+              Candidate set, not the bare master (responsive-media). `event.width`
+              is the master's true intrinsic width, so `variantSrcset` emits every
+              rung strictly below it plus the master itself at that width. For
+              `event-resepsi` (584 px) that is `-w390` plus the master: the
+              master-is-top-candidate rule is what makes this a two-candidate set
+              rather than a lone 390w, which would REGRESS the 584 px file this
+              card ships today. */}
           <picture class="pointer-events-none absolute inset-0">
-            <source srcset={`${event.image}.avif`} type="image/avif" />
+            <source
+              srcset={variantSrcset(event.image, "avif", event.width)}
+              sizes={SIZES_FULL_BLEED}
+              type="image/avif"
+            />
             <img
-              src={`${event.image}.webp`}
+              src={masterSrc(event.image, "webp")}
+              srcset={variantSrcset(event.image, "webp", event.width)}
+              sizes={SIZES_FULL_BLEED}
               alt=""
               loading="lazy"
+              decoding="async"
               width={event.width}
               height={event.height}
               class="times-img pointer-events-none absolute inset-0 h-full w-full object-cover"

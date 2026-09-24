@@ -134,6 +134,14 @@ const VENUE_MAPS_LINK = `https://www.google.com/maps/search/?api=1&query=${VENUE
 ---
 
 <section id="venue-map" class="relative z-10 overflow-hidden py-12 md:py-16 bg-[color:var(--venue-bg)]">
+  {/*
+    Basemap tile hints live in `pages/index.astro`'s `slot="head"` block beside
+    the hero preload — NOT here. A `<link rel="preconnect">` in the body is an
+    HTML conformance error (the Standard permits a body `<link>` only with
+    `itemprop`), and this repo treats the Standard as normative elsewhere. The
+    page renders `<VenueMap />` unconditionally, so a head-level hint ships
+    exactly when the map does. The COUNT rationale is recorded beside them.
+  */}
   <div class="mx-auto max-w-2xl space-y-4 px-6 text-center" data-scroll-fade>
     <p class="text-xs tracking-widest uppercase text-[color:var(--venue-eyebrow)]">Venue</p>
     <div class="space-y-2">

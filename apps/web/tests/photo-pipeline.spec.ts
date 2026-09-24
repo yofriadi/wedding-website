@@ -3,6 +3,7 @@ import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
 import sharp from "sharp";
+import type { Exif } from "sharp";
 import type { GuestPhoto, GuestPhotosPayload } from "../src/lib/guest-photos";
 import { createTestServer, startTestServer } from "./support/server";
 
@@ -177,7 +178,7 @@ test("orientation is applied and camera EXIF/GPS never reaches public output", a
     .withExif({
       IFD0: { Make: "Apple", ImageDescription: "private camera information" },
       GPS: { GPSLatitude: "6/1", GPSLatitudeRef: "N", GPSLongitude: "106/1", GPSLongitudeRef: "E" },
-    } as unknown as sharp.Exif)
+    } as unknown as Exif)
     .toBuffer();
   expect((await sharp(original).metadata()).exif?.length).toBeGreaterThan(0);
   const photo = await upload(original);
