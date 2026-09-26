@@ -77,4 +77,34 @@ test.describe("scroll-fade animation on key sections", () => {
       expect(state.transform).toBe("none");
     }
   });
+
+  test("all data-scroll-fade participants are visible with JavaScript disabled", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    try {
+      await page.goto("/");
+      const fadeElements = page.locator("[data-scroll-fade]");
+      const count = await fadeElements.count();
+      expect(count).toBeGreaterThanOrEqual(5);
+
+      for (let i = 0; i < count; i++) {
+        const el = fadeElements.nth(i);
+        const style = await el.evaluate((node) => {
+          const s = window.getComputedStyle(node);
+          return {
+            opacity: parseFloat(s.opacity),
+            visibility: s.visibility,
+            display: s.display,
+          };
+        });
+        expect(style.display).not.toBe("none");
+        expect(style.visibility).not.toBe("hidden");
+        expect(style.opacity).toBe(1);
+      }
+    } finally {
+      await context.close();
+    }
+  });
 });

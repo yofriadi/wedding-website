@@ -53,9 +53,9 @@ export type ConnectionStub = {
 } | null;
 
 /**
- * Replace `navigator.connection` before any page script runs (media-tiering
- * task 7.3). `null` models an engine without the API (Safari/Firefox): the
- * head script then yields `pending` and resolves by measurement.
+ * Replace `navigator.connection` before any page script runs.
+ * `null` models an engine without the API (Safari/Firefox): the head script
+ * then yields `full` deterministically.
  */
 export function stubNetworkConnection(page: Page, conn: ConnectionStub) {
   page.addInitScript((value) => {
@@ -73,24 +73,20 @@ export const CONNECTION_FULL: ConnectionStub = {
   downlink: 10,
 };
 export const CONNECTION_LITE: ConnectionStub = {
-  saveData: false,
-  effectiveType: "3g",
-  downlink: 0.9,
+  saveData: true,
+  effectiveType: "4g",
+  downlink: 10,
 };
-
+export const CONNECTION_SLOW_NO_SAVE_DATA: ConnectionStub = {
+  saveData: false,
+  effectiveType: "2g",
+  downlink: 0.1,
+};
 /**
- * Pin the media tier to `full` for a suite that asserts full-tier behavior
- * (task 7.3): the API verdict is synchronous, and blanking the resource
- * timing buffer takes the measured burst out of the picture so a loaded
- * machine or a parallel worker cannot silently downgrade the suite to lite
- * halfway through its assertions.
+ * Pin the media tier to `full` for a suite that asserts full-tier behavior.
  */
 export function pinFullTier(page: Page) {
   stubNetworkConnection(page, CONNECTION_FULL);
-  page.addInitScript(() => {
-    const real = performance.getEntriesByType.bind(performance);
-    performance.getEntriesByType = (type: string) => (type === "resource" ? [] : real(type));
-  });
 }
 
 /**

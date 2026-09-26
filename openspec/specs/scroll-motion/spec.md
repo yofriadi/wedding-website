@@ -8,7 +8,7 @@ Behavioral requirements for the scroll-driven set pieces (HeroZoom, ZoomParallax
 
 ### Requirement: ZoomParallax honors reduced motion
 
-When the user prefers reduced motion, the ZoomParallax component SHALL present the bento grid as static content: no scroll-driven zoom animation is bound, the section collapses to a single viewport of height, and the stage is not pinned. The identical static presentation SHALL apply while the media tier is `lite` or `pending` (see the `media-tiering` capability), whether or not reduced motion was requested, and while the media tier is absent from the document entirely the component SHALL behave as it does on a `full` tier.
+When the user prefers reduced motion, the ZoomParallax component SHALL present the bento grid as static content: no scroll-driven zoom animation is bound, the section collapses to a single viewport of height, and the stage is not pinned. The identical static presentation SHALL apply while the media tier is `lite` (see the `media-tiering` capability), whether or not reduced motion was requested, and while the media tier is absent from the document entirely the component SHALL behave as it does on a `full` tier.
 
 #### Scenario: Reduced-motion user scrolls past the grid
 
@@ -22,13 +22,8 @@ When the user prefers reduced motion, the ZoomParallax component SHALL present t
 
 #### Scenario: Motion-permitted user scrolls the grid on a lite tier
 
-- **WHEN** reduced motion is not requested and the media tier is `lite` or `pending`
+- **WHEN** reduced motion is not requested and the media tier is `lite`
 - **THEN** no wrapper receives a scroll-driven transform, the stage is not pinned, and the section occupies exactly one viewport of scroll distance
-
-#### Scenario: Tier downgrades mid-scroll
-
-- **WHEN** the media tier downgrades from `full` to `lite` while the guest is scrolling the section
-- **THEN** the scroll-driven transforms stop, every wrapper returns to its natural grid scale, and the section collapses to one viewport
 
 ### Requirement: TimelineScroll honors reduced motion with full content access
 
@@ -75,26 +70,21 @@ The TimelineScroll connector paths SHALL be recomputed only in response to layou
 
 ### Requirement: ZoomParallax initializes exactly once per page load
 
-On initial page load the ZoomParallax component SHALL bind its scroll-driven animations exactly once: one live set of scroll bindings and one layout flush. Initialization is no longer driven by `DOMContentLoaded` alone — a `net-tier:change` resolution may arrive first, because the head script's measurement can settle between module evaluation and `DOMContentLoaded`. Whichever of the two runs first SHALL create the bindings and the other SHALL NOT create a second set. A `resize` that changes the viewport width MAY rebuild the bindings; a height-only resize SHALL NOT. The flush count is an implementation consequence rather than an observable contract: tests SHOULD assert the visible outcome (one promotion, a correct zoom sequence, no duplicated transform writes) rather than the number of layout flushes.
+On initial page load the ZoomParallax component SHALL bind its scroll-driven animations exactly once: one live set of scroll bindings and one layout flush. A `resize` that changes the viewport width MAY rebuild the bindings; a height-only resize SHALL NOT. The flush count is an implementation consequence rather than an observable contract: tests SHOULD assert the visible outcome (one promotion, a correct zoom sequence, no duplicated transform writes) rather than the number of layout flushes.
 
 #### Scenario: Initial page load
 
-- **WHEN** the page finishes its initial load with the media tier already resolved
+- **WHEN** the page finishes its initial load
 - **THEN** ZoomParallax initialization binds exactly once (one set of scroll bindings, one layout flush)
 
-#### Scenario: Tier resolves before DOMContentLoaded
+#### Scenario: Viewport width resize rebuilds bindings
 
-- **WHEN** a `pending` media tier resolves to `full` after the component's module has been evaluated but before `DOMContentLoaded` fires
-- **THEN** the collage is promoted once and the zoom sequence runs correctly, with only one live set of scroll bindings and no duplicated transform writes
-
-#### Scenario: Tier resolves after initialization
-
-- **WHEN** a `pending` media tier resolves to `full` after `DOMContentLoaded` with no bindings live
-- **THEN** one set of scroll bindings is created at resolution
+- **WHEN** the viewport width changes
+- **THEN** ZoomParallax rebuilds its bindings to match the new stage geometry
 
 ### Requirement: Pinned stages are sized to the chrome-hidden viewport
 
-The scroll runways and sticky stages of HeroZoom and ZoomParallax, and their viewport-height-dependent element positions, SHALL be sized in `lvh` (the large viewport: browser chrome hidden) with a `vh` fallback declaration — because every mobile browser retracts its URL bar on the first downward scroll, so the chrome-hidden viewport is the state a pinned sequence is actually watched in. TimelineScroll's sticky stage and scroll runway SHALL be sized in `svh` (with a `vh` fallback declaration) so the stage does not jump when browser chrome expands during reverse scrolling. FamiliesReveal's type sizing and its JS-normalised reveal units SHALL likewise be derived from `lvh`, never from the dynamic viewport. Runways and stage geometry SHALL NOT use `dvh`, and scroll-driven geometry derived in JavaScript SHALL NOT be measured from the dynamic viewport (`window.innerHeight`), because both re-resolve while browser chrome collapses and would change a scrub's length or alignment mid-scroll.
+The scroll runways and sticky stages of HeroZoom and ZoomParallax, and their viewport-height-dependent element positions, SHALL be sized in `lvh` (the large viewport: browser chrome hidden) with a `vh` fallback declaration — because every mobile browser retracts its URL bar on the first downward scroll, so the chrome-hidden viewport is the state a pinned sequence is actually watched in. TimelineScroll's sticky stage and scroll runway SHALL be sized in `svh` (with a `vh` fallback declaration) so the stage does not jump when browser chrome expands during reverse scrolling. FamiliesReveal's type sizing and its JS-normalised reveal units SHALL likewise be derived from `lvh`, never from the dynamic viewport. Runways and stage geometry SHALL NOT use `dvh`, and scroll-driven geometry derived in JavaScript SHALL NOT be measured from the dynamic viewport (`window.innerHeight`) — with the deliberate carve-out that `media-tiering`'s approach-promotion margin is not scrub geometry and MAY derive from `window.innerHeight` — because both re-resolve while browser chrome collapses and would change a scrub's length or alignment mid-scroll.
 
 #### Scenario: Mobile browser with its URL bar retracted
 

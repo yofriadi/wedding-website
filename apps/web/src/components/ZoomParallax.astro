@@ -174,9 +174,8 @@ const SIZES_OUTER = "min(33vw, 390px)";
                and promotion OVERWRITES both live attributes with it.
 
                `full` promotes during the parse (inline promoter in index.astro,
-               immediately after this markup); `pending` promotes on resolution to
-               `full`; `lite` promotes per image as the collage approaches
-               (IntersectionObserver below).
+               immediately after this markup); `lite` promotes per image as the
+               collage approaches (IntersectionObserver below).
 
                Every URL here — the two placeholders, the two candidate sets and
                `data-src` — is derived through `media-candidates.ts`, which
@@ -225,7 +224,7 @@ const SIZES_OUTER = "min(33vw, 390px)";
   runway would be four screens of blurred placeholders that never sharpen.
   Collapse it to the same one-viewport grid the lite tier shows — the blur is
   legible as a photo at bento size and useless as four screens of it. This is
-  absence-keyed, not value-keyed, so it cannot conflict with the `lite`/`pending`
+  absence-keyed, not value-keyed, so it cannot conflict with the `lite`
   rules below and it disappears on a real rollback (which reverts the deferred
   markup too). Media-tiering D4 accepted a degraded no-JS tail; this keeps it to
   one screen.
@@ -259,14 +258,11 @@ const SIZES_OUTER = "min(33vw, 390px)";
   // --- Media tier ------------------------------------------------------------
   // Layout.astro's head script owns `html[data-tier]`; this component only
   // reads it. `full` gets the pinned scroll-zoom plus every collage byte at
-  // parse time. `lite` and `pending` get the collapsed static bento grid, no
+  // parse time. `lite` gets the collapsed static bento grid, no
   // scroll binding, and per-image promotion as the collage approaches.
   const COLLAGE_IMAGES = "#zoom-parallax-container img[data-src]:not([data-promoted])";
-  // Generous on purpose: a lite guest pays for a photo well before it could be
   // seen, so the placeholder has already sharpened by the time the slot arrives.
-  // Two viewport heights also absorb a `pending → full` resolution that lands
-  // after the guest already scrolled — promotion is idempotent against the
-  // `data-promoted` marker, so the worst case is a late load, never a missing one.
+  // Promotion is idempotent against the `data-promoted` marker.
   //
   // Computed in pixels rather than written as "200% 0px": a percentage root
   // margin resolves per-axis against the root box, and engines have not agreed
@@ -288,16 +284,14 @@ const SIZES_OUTER = "min(33vw, 390px)";
     return document.documentElement.getAttribute("data-tier");
   }
 
-  // Only an explicit `lite`/`pending` collapses. A MISSING attribute means the
+  // Only an explicit `lite` collapses. A MISSING attribute means the
   // head script never ran (rollback, an inline-script blocker, an exception),
   // and media-tiering D4 requires that case to behave like `full` — the same
-  // way the CSS does, since its collapse rules key on those two values. Ask
-  // "is it collapsed?" rather than "is it full?": getting this backwards leaves
+  // way the CSS does. Ask "is it collapsed?" rather than "is it full?":
   // the JS and the CSS disagreeing, with a 400lvh pinned runway that nothing
   // scrubs and a collage nothing promotes.
   function isCollapsedTier(): boolean {
-    const tier = mediaTier();
-    return tier === "lite" || tier === "pending";
+    return mediaTier() === "lite";
   }
 
   function promoteImage(img: HTMLImageElement) {
@@ -372,15 +366,8 @@ const SIZES_OUTER = "min(33vw, 390px)";
     deferredObserver = null;
   }
 
-  // Re-read the verdict whenever the head script resolves or downgrades it.
-  //
-  // `rebuild` separates the two callers. Resize and (re)initialization must
-  // re-measure the center scale against the current stage rect, so they
-  // rebuild. A tier change must not: `net-tier:change` can fire between module
-  // evaluation and DOMContentLoaded (the observer callback is a task and the
-  // parser yields between chunks), and rebuilding from both would bind twice in
-  // one page load — two layout flushes, contradicting the archived
-  // scroll-motion requirement that ZoomParallax binds exactly once.
+  // `rebuild` indicates whether the geometry the bindings were measured against
+  // has changed — a width-changing resize, or a client navigation.
   function applyTier(rebuild: boolean) {
     if (!isCollapsedTier()) {
       stopWatchingDeferredImages();
@@ -391,20 +378,12 @@ const SIZES_OUTER = "min(33vw, 390px)";
       watchDeferredImages();
     }
   }
-
-  function onTierChange() {
-    applyTier(false);
-  }
-
   function bindScrollZoomIfEligible() {
     // Reduced motion: the static bento grid is the content; bind no
     // scroll-driven transforms and let the CSS media query collapse the pin.
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    // Tier gate: while collapsed the stage stays static (see the CSS below) and
-    // no scroll-driven zoom runs. A `pending` tier that resolves to `full`
-    // re-enters here through the net-tier:change listener; a `full → lite`
-    // downgrade tears the binding down again.
+    // Tier gate: while collapsed the stage stays static and no scroll-driven zoom runs.
     if (isCollapsedTier()) return;
 
     // Re-binding is the resize path too: bindScrollZoom drops the previous
@@ -413,11 +392,7 @@ const SIZES_OUTER = "min(33vw, 390px)";
   }
 
   // `rebuild` is true only when the geometry the bindings were measured
-  // against has changed — a width-changing resize, or a client navigation to a
-  // fresh document. First initialization passes false: a `pending → full`
-  // resolution can arrive between module evaluation and DOMContentLoaded, and
-  // rebuilding there would bind twice in one page load and flush layout twice,
-  // contradicting the archived scroll-motion requirement.
+  // against has changed — a width-changing resize, or a client navigation.
   function initZoomParallax(rebuild = false) {
     // Record the width the measurements below are taken against, so
     // handleResize can ignore the height-only resizes browser chrome emits.
@@ -544,9 +519,6 @@ const SIZES_OUTER = "min(33vw, 390px)";
     if (window.innerWidth === measuredWidth) return;
     resizeTimeout = setTimeout(() => initZoomParallax(true), 150) as unknown as number;
   }
-
-  window.addEventListener("net-tier:change", onTierChange);
-
   // astro:page-load covers client navigation (a fresh document, so rebuild);
   // the readyState branch covers the initial load, which this site enters
   // without ClientRouter — no astro:page-load fires on first render. Wrapped
@@ -611,34 +583,26 @@ const SIZES_OUTER = "min(33vw, 390px)";
     transform: translateZ(0);
   }
 
-  /* Lite/pending collapse (media-tiering D4): the stage stops pinning and the
+  /* Lite collapse (media-tiering D4): the stage stops pinning and the
      runway shrinks to one viewport, so the ten photos read as a static bento
      grid in normal document flow with no scroll-driven zoom.
-     Keyed on the explicit tier values and NEVER on `:not([data-tier="full"])`:
+     Keyed on explicit 'lite' and NEVER on `:not([data-tier="full"])`:
      a rolled-back build without the head script then degrades to today's full
      behavior instead of a broken static page.
      `position: relative` rather than `static` keeps the stage as the
      containing block for the absolutely positioned bento slots — the same
      collapse the reduced-motion rule below already ships. */
-  :global(html[data-tier="lite"]) .zoom-container,
-  :global(html[data-tier="pending"]) .zoom-container {
+  :global(html[data-tier="lite"]) .zoom-container {
     height: 100vh !important;
     height: 100lvh !important;
   }
-  :global(html[data-tier="lite"]) .zoom-stage,
-  :global(html[data-tier="pending"]) .zoom-stage {
+  :global(html[data-tier="lite"]) .zoom-stage {
     position: relative !important;
   }
 
-  /* Nothing transforms these wrappers while collapsed, so the compositor
-     promotion hint only reserves ten full-viewport layers for an animation
-     that will never run. Release them: the population paying for those layers
-     is the low-memory device population the lite tier exists to serve. A
-     `pending → full` resolution restores the hint by dropping out of this
-     selector. The reduced-motion block below does the same for the identical
-     static presentation, so neither collapse path is asymmetric. */
-  :global(html[data-tier="lite"]) .zoom-wrapper,
-  :global(html[data-tier="pending"]) .zoom-wrapper {
+  /* Nothing transforms these wrappers while collapsed, so release the compositor
+     promotion hint to save memory on lite-tier devices. */
+  :global(html[data-tier="lite"]) .zoom-wrapper {
     will-change: auto !important;
   }
 

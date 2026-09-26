@@ -1216,10 +1216,8 @@ const SIZES_CARD =
   // --- Timeline video: tier-conditional playback ---------------------------
   // The element ships without `autoplay` and at preload="none", so no tier
   // transfers its bytes at parse time. On `full` the video plays while its card
-  // is in the viewport and pauses when it leaves; on `lite`/`pending` it
+  // is in the viewport and pauses when it leaves; on `lite` it
   // exposes native controls and never plays without an explicit guest action.
-  // The verdict can change mid-pageview — a `pending` measurement resolving, or
-  // a measurement contradicting an API `full` — so both directions re-apply.
   const TIMELINE_VIDEO = "#timeline-video";
   let videoObserver: IntersectionObserver | null = null;
 
@@ -1227,14 +1225,11 @@ const SIZES_CARD =
     return document.documentElement.getAttribute("data-tier");
   }
 
-  // Only an explicit `lite`/`pending` hands the video to the guest. A MISSING
+  // Only an explicit `lite` hands the video to the guest. A MISSING
   // attribute means the head script never ran (rollback, inline-script
-  // blocker), and media-tiering D4 requires that case to behave like `full` —
-  // otherwise the timeline's one moving element is silently left paused with
-  // controls on it.
+  // blocker), and media-tiering D4 requires that case to behave like `full`.
   function isCollapsedTier(): boolean {
-    const tier = mediaTier();
-    return tier === "lite" || tier === "pending";
+    return mediaTier() === "lite";
   }
 
   // Where "in view" begins. A constant because the threshold list and the ratio
@@ -1296,7 +1291,6 @@ const SIZES_CARD =
     applyVideoTier();
   }
 
-  window.addEventListener("net-tier:change", applyVideoTier);
   document.addEventListener("astro:page-load", boot);
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", boot);

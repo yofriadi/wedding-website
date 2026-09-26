@@ -215,10 +215,8 @@ Astro.response.headers.set("Cache-Control", "no-store");
     <!-- Collage promoter (media-tiering). Inline and here, not in a module:
          it must run the instant the collage markup above has parsed, so a
          `full` verdict starts every collage fetch as early as a shipped `src`
-         would. `pending` waits for the head script's measurement to resolve;
-         `lite` is left to ZoomParallax's per-image approach observer.
-         Promotion is idempotent — ZoomParallax re-runs the same copy when the
-         tier resolves, and a second pass over promoted markup is a no-op. -->
+         would. `lite` is left to ZoomParallax's per-image approach observer.
+         Promotion is idempotent — a second pass over promoted markup is a no-op. -->
     <script is:inline>
       (function () {
         var root = document.documentElement;
@@ -259,16 +257,11 @@ Astro.response.headers.set("Cache-Control", "no-store");
           }
         }
 
-        // Polarity matches the CSS and the other consumers: only an explicit
-        // `lite` or `pending` defers. A missing attribute means the head script
-        // never ran, and D4 requires that case to degrade to today's full
-        // behavior — not to a collage that silently never loads.
+        // Polarity matches the CSS and other consumers: only an explicit `lite`
+        // defers. A missing attribute means the head script never ran (rollback,
+        // script blocker), degrading to full rather than an unpromoted collage.
         var tier = root.getAttribute('data-tier');
-        if (tier === 'pending') {
-          window.addEventListener('net-tier:change', function () {
-            if (root.getAttribute('data-tier') !== 'lite') promote();
-          });
-        } else if (tier !== 'lite') {
+        if (tier !== 'lite') {
           promote();
         }
       })();
@@ -314,61 +307,31 @@ Astro.response.headers.set("Cache-Control", "no-store");
 <script is:inline>
   // Background music — tier-conditional (media-tiering).
   //
-  // The element ships at preload="none", so the 3.1 MB soundtrack is not
-  // fetched until the verdict says the link can afford it. `full` restores
-  // eager preloading the moment the tier is known and starts playback at the
-  // welcome gate's commit gesture, exactly as before. `lite` never downloads
-  // it: no preload, no commit playback, and no gesture-armed fallback — the
-  // armed events include touchend, so "first gesture" would mean "first scroll
-  // swipe silently starts a 3.1 MB download".
+  // The element ships at preload="none". On `full`, eager preloading begins
+  // after an initial 1200ms delay (so LCP hero image and fonts have exclusive bandwidth)
+  // and starts playback at the welcome gate's commit gesture. `lite` never downloads
+  // it: no preload, no commit playback, and no gesture-armed fallback.
   const heroMusic = document.getElementById('hero-music');
   let hasStarted = false;
   let gestureArmed = false;
-  // Set when the gate's reveal gesture runs, whatever the tier. A `pending`
-  // verdict can still be unresolved at commit time; when it later resolves to
-  // `full` the music is armed on the next gesture instead of never.
-  let gateCommitted = false;
   // A swipe-up ends in `touchend`, which browsers accept as a user gesture for
   // audio. Desktop wheel/trackpad scroll does NOT count, so click/key are armed too.
   const gestureEvents = ['touchend', 'pointerup', 'click', 'keydown'];
 
   function tierIsFull() {
-    // Absent attribute counts as `full`, matching the CSS: the collapse rules
-    // key on the explicit `lite`/`pending` values, so a build without the head
-    // script — or one whose inline script a blocker stripped — must degrade to
-    // today's full experience rather than silently dropping the parallax, the
-    // soundtrack and play-in-view while the pinned runway stays in place
-    // (media-tiering D4 and Migration Plan).
-    const tier = document.documentElement.getAttribute('data-tier');
-    return tier !== 'lite' && tier !== 'pending';
+    // Missing attribute degrades to `full` (failsafe).
+    return document.documentElement.getAttribute('data-tier') !== 'lite';
   }
 
   function enableSoundtrack() {
-    if (!heroMusic || heroMusic.preload === 'auto') return;
+    if (!heroMusic || hasStarted || heroMusic.preload === 'auto') return;
     heroMusic.preload = 'auto';
     // Changing `preload` alone does not restart resource selection on an
     // element that never started loading; load() does.
     heroMusic.load();
   }
 
-  // The other direction matters too. `full` starts this download at parse time,
-  // so a measurement that contradicts the API (the congested-hotspot case D2
-  // exists for) has to give the bytes back — the requirement is "no soundtrack
-  // bytes on lite", not "no new bytes". Dropping the <source> children and
-  // calling load() is the only reliable abort: an in-flight media fetch cannot
-  // be cancelled by setting preload back to "none".
-  function disableSoundtrack() {
-    if (!heroMusic) return;
-    heroMusic.pause();
-    heroMusic.querySelectorAll('source').forEach((source) => source.remove());
-    heroMusic.load(); // resource selection with no source -> NETWORK_NO_SOURCE
-    disarmMusicGesture();
-  }
-
   function startMusic() {
-    gateCommitted = true;
-    // Not `full`: no playback and no arming, so nothing can start a download
-    // later in the pageview either.
     if (!tierIsFull()) return;
     if (!hasStarted && heroMusic) {
       heroMusic.volume = 0.3;
@@ -378,13 +341,6 @@ Astro.response.headers.set("Cache-Control", "no-store");
           disarmMusicGesture();
         })
         .catch(err => {
-          // A downgrade aborts playback on purpose: disableSoundtrack()'s
-          // pause() rejects the pending play() with AbortError, and that
-          // rejection is a microtask, so it lands AFTER the disarm already
-          // ran. Without this guard the abort would re-arm four gesture
-          // listeners on a tier the welcome-gate delta says must never arm
-          // one — and log a failure that was actually intentional.
-          if (!tierIsFull()) return;
           console.log('Audio playback failed:', err);
           armMusicGesture();
         });
@@ -410,25 +366,6 @@ Astro.response.headers.set("Cache-Control", "no-store");
       document.removeEventListener(event, startMusicFromGesture);
     }
   }
-
-  function onTierChange() {
-    if (!tierIsFull()) {
-      disableSoundtrack();
-      return;
-    }
-    enableSoundtrack();
-    // The gate can commit before a `pending` verdict resolves (the loader's
-    // minimum dwell is short). Arm the fallback then, so the reveal is not
-    // silently un-scored for the rest of the pageview. Note what that means:
-    // on a `full` tier the first scroll swipe may start a 3.1 MB download. D5
-    // rejected that only for lite, where the spend was never chosen.
-    if (gateCommitted && !hasStarted) armMusicGesture();
-  }
-
-  window.addEventListener('net-tier:change', onTierChange);
-  // An API-derived `full` never fires an event — that verdict was synchronous.
-  if (tierIsFull()) enableSoundtrack();
-
 
   // Loading screen logic
   //
@@ -491,17 +428,24 @@ Astro.response.headers.set("Cache-Control", "no-store");
     }
   };
 
-  const initLoadingScreen = async () => {
-    // First-view media only: the hero image, fetched and decoded. The collage,
-    // the timeline photos, the video and the soundtrack are all below-fold or
-    // tier-deferred, and none of them may hold the phrases up — so a collage
-    // request that fails outright cannot touch this timeline either
-    // (media-tiering: "Loader gates on first-view media only").
-    const deadline = new Promise((resolve) => setTimeout(resolve, LOADER_MAX_WAIT_MS));
-    await Promise.race([waitForHeroZoomLoaded(), deadline]);
-    hideLoadingScreen();
-  };
+  // Delay soundtrack preloading so the hero LCP image and fonts have exclusive
+  // initial bandwidth, while ensuring at least 1.4s of buffering before the
+  // loading screen's 2.6s minimum dwell finishes and the gate arms.
+  const SOUNDTRACK_START_MS = 1200;
+  setTimeout(() => {
+    if (tierIsFull()) enableSoundtrack();
+  }, SOUNDTRACK_START_MS);
 
+  const initLoadingScreen = async () => {
+    const deadline = new Promise((resolve) => setTimeout(resolve, LOADER_MAX_WAIT_MS));
+    try {
+      await Promise.race([waitForHeroZoomLoaded(), deadline]);
+    } catch {
+      // Ignore errors.
+    } finally {
+      hideLoadingScreen();
+    }
+  };
   initLoadingScreen();
 
 </script>

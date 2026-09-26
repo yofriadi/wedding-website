@@ -40,7 +40,7 @@ Already present and usable: `sharp@^0.35.4` in `apps/web/package.json`; a hero v
 
 **Non-Goals:**
 
-- Changing tier _detection_ — the 220 KB/s floor, the one-way ratchet, `net-tier:change`, the burst window, and the locality inference all stand.
+- Changing tier _detection_ — tier detection is handled by the media-tiering specification.
 - Changing `public/` cache headers or `Caddyfile.example`. Deferred to a follow-up (see Open Questions).
 - Video and soundtrack strategy. `lamaran.mp4` (697 KB) and the 3.1 MB mp3 keep their current tier behavior.
 - Replacing the bespoke collage promotion observer with native `loading="lazy"` on the collage. The observer stays because the tier still decides _which candidate_ loads.
