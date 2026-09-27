@@ -369,6 +369,7 @@ const SIZES_OUTER = "min(33vw, 390px)";
   // `rebuild` indicates whether the geometry the bindings were measured against
   // has changed — a width-changing resize, or a client navigation.
   function applyTier(rebuild: boolean) {
+    if (document.documentElement.hasAttribute("data-desktop")) return;
     if (!isCollapsedTier()) {
       stopWatchingDeferredImages();
       promoteAll();
@@ -525,6 +526,7 @@ const SIZES_OUTER = "min(33vw, 390px)";
   // rather than passed directly so the Event object is not read as `rebuild`.
   document.addEventListener("astro:page-load", () => initZoomParallax(true));
   window.addEventListener('resize', handleResize);
+  window.addEventListener('desktop-gate:release', () => initZoomParallax(true));
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => initZoomParallax());
   } else {

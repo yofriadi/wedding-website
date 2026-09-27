@@ -13,6 +13,7 @@ import ClaimMemberGate from "../components/ClaimMemberGate.astro";
 import RsvpSection from "../components/RsvpSection.astro";
 import VenueMap from "../components/VenueMap.astro";
 import EventTimes from "../components/EventTimes.astro";
+import DesktopGate from "../components/DesktopGate.astro";
 import { db } from "@wedding-website/db";
 import { invites, rsvps } from "@wedding-website/db/schema";
 import { eq } from "drizzle-orm";
@@ -127,6 +128,12 @@ Astro.response.headers.set("Cache-Control", "no-store");
     imagesizes={HERO_SIZES}
     fetchpriority="high"
   />
+  {/* Predicate kept in sync with DesktopGate.astro and DESKTOP_MEDIA_QUERY */}
+  <script is:inline slot="head">
+    if (window.matchMedia('(min-width: 768px) and (min-height: 600px)').matches) {
+      document.documentElement.setAttribute('data-desktop', '');
+    }
+  </script>
   {/*
     Basemap tile hints for `<VenueMap />`, rendered unconditionally further down
     this page. They live here rather than inside the component because a
@@ -208,6 +215,8 @@ Astro.response.headers.set("Cache-Control", "no-store");
     <source src="/Lee Soo Young - ONE - ENGLISH Version.mp3" type="audio/mpeg" />
   </audio>
 
+  <DesktopGate />
+
   <main class="relative">
     <HeroZoom />
     <FamiliesReveal />
@@ -220,6 +229,7 @@ Astro.response.headers.set("Cache-Control", "no-store");
     <script is:inline>
       (function () {
         var root = document.documentElement;
+        if (root.hasAttribute('data-desktop')) return;
         var PENDING = '#zoom-parallax-container img[data-src]:not([data-promoted])';
 
         function promote() {
@@ -271,9 +281,9 @@ Astro.response.headers.set("Cache-Control", "no-store");
     <!-- Public memories, with an invitation-only posting control. Keep the
          stage unclipped so native sticky positioning can park the CTA below
          the trail instead of following visitors into unrelated sections. -->
-    <section id="memories-section" class="relative pt-12 md:pt-16" aria-labelledby="memories-heading">
-      <div class="mx-auto max-w-7xl px-6 mb-6 md:mb-8 text-center" data-scroll-fade>
-        <h2 id="memories-heading" class="font-serif text-3xl font-light text-[color:var(--memories-heading)] md:text-4xl text-balance">
+    <section id="memories-section" class="relative pt-12" aria-labelledby="memories-heading">
+      <div class="mx-auto max-w-7xl px-6 mb-6 text-center" data-scroll-fade>
+        <h2 id="memories-heading" class="font-serif text-3xl font-light text-[color:var(--memories-heading)] text-balance">
           Show Our Memories Together
         </h2>
       </div>
@@ -290,7 +300,7 @@ Astro.response.headers.set("Cache-Control", "no-store");
     <EventTimes />
 
     <!-- Event Details -->
-    <div id="rsvp-section" class="relative z-10 px-6 py-12 md:py-16">
+    <div id="rsvp-section" class="relative z-10 px-6 py-12">
       <div class="mx-auto max-w-2xl text-center space-y-10">
         <RsvpSection
           inviteDisplayName={inviteDisplayName}
@@ -303,6 +313,61 @@ Astro.response.headers.set("Cache-Control", "no-store");
 
     <WeddingFAQ />
   </main>
+
+  <script is:inline>
+    (function () {
+      // Viewport predicate kept in sync with DesktopGate.astro and head script
+      var DESKTOP_MEDIA_QUERY = '(min-width: 768px) and (min-height: 600px)';
+      var wasGated = false;
+
+      function setElementInert(el, inert) {
+        if (!el) return;
+        if (inert) {
+          el.setAttribute('inert', '');
+        } else {
+          el.removeAttribute('inert');
+        }
+      }
+
+      function applyInert(matches) {
+        var root = document.documentElement;
+        var main = document.querySelector('main');
+        var claimGate = document.getElementById('claim-gate');
+        var welcomeGate = document.getElementById('welcome-gate');
+
+        if (matches) {
+          wasGated = true;
+          root.setAttribute('data-desktop', '');
+          root.style.overflow = 'hidden';
+          setElementInert(main, true);
+          setElementInert(claimGate, true);
+          setElementInert(welcomeGate, true);
+        } else {
+          var unGating = wasGated;
+          wasGated = false;
+          root.removeAttribute('data-desktop');
+          if (!welcomeGate || !welcomeGate.isConnected) {
+            root.style.overflow = '';
+            setElementInert(main, false);
+          }
+          setElementInert(claimGate, false);
+          setElementInert(welcomeGate, false);
+          if (typeof window.welcomeGateTryArm === 'function') {
+            window.welcomeGateTryArm();
+          }
+          if (unGating) {
+            window.dispatchEvent(new CustomEvent('desktop-gate:release'));
+          }
+        }
+      }
+
+      var mql = window.matchMedia(DESKTOP_MEDIA_QUERY);
+      applyInert(mql.matches);
+      mql.addEventListener('change', function (e) {
+        applyInert(e.matches);
+      });
+    })();
+  </script>
 
 <script is:inline>
   // Background music — tier-conditional (media-tiering).
@@ -324,6 +389,7 @@ Astro.response.headers.set("Cache-Control", "no-store");
   }
 
   function enableSoundtrack() {
+    if (document.documentElement.hasAttribute('data-desktop')) return;
     if (!heroMusic || hasStarted || heroMusic.preload === 'auto') return;
     heroMusic.preload = 'auto';
     // Changing `preload` alone does not restart resource selection on an
@@ -332,6 +398,7 @@ Astro.response.headers.set("Cache-Control", "no-store");
   }
 
   function startMusic() {
+    if (document.documentElement.hasAttribute('data-desktop')) return;
     if (!tierIsFull()) return;
     if (!hasStarted && heroMusic) {
       heroMusic.volume = 0.3;
@@ -435,6 +502,9 @@ Astro.response.headers.set("Cache-Control", "no-store");
   setTimeout(() => {
     if (tierIsFull()) enableSoundtrack();
   }, SOUNDTRACK_START_MS);
+  window.addEventListener('desktop-gate:release', () => {
+    if (tierIsFull()) enableSoundtrack();
+  });
 
   const initLoadingScreen = async () => {
     const deadline = new Promise((resolve) => setTimeout(resolve, LOADER_MAX_WAIT_MS));

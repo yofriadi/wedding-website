@@ -1,0 +1,86 @@
+---
+import { renderSVG } from "uqr";
+import { inviteIdFromCookies, INVITE_ID_RE } from "../lib/invite-session";
+import { firstForwardedValue } from "../lib/same-origin";
+
+const rawInviteId = inviteIdFromCookies(Astro.cookies);
+const inviteId = rawInviteId && INVITE_ID_RE.test(rawInviteId) ? rawInviteId : null;
+
+const proto = firstForwardedValue(Astro.request.headers.get("x-forwarded-proto"));
+const host = firstForwardedValue(Astro.request.headers.get("x-forwarded-host"));
+
+let origin = Astro.url.origin;
+if (proto && host) {
+  origin = `${proto}://${host}`;
+} else if (host) {
+  origin = `${Astro.url.protocol}//${host}`;
+} else if (proto) {
+  origin = `${proto}://${Astro.url.host}`;
+}
+
+const targetUrl = inviteId ? `${origin}/${inviteId}` : `${origin}/`;
+
+const qrSvg = renderSVG(targetUrl, {
+  pixelSize: 1,
+  whiteColor: "#ffffff",
+  blackColor: "#171717",
+  border: 2,
+});
+---
+
+<div
+  id="desktop-gate"
+  class="fixed inset-0 z-[100] items-center justify-center overflow-y-auto p-6 bg-neutral-950/95 text-neutral-100 backdrop-blur-md"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="desktop-gate-heading"
+  data-qr-target={targetUrl}
+>
+  <div
+    class="relative flex w-full max-w-sm my-auto flex-col items-center text-center"
+  >
+    <div class="mb-4 flex flex-col items-center">
+      <span class="font-serif text-3xl font-normal tracking-widest text-neutral-100">
+        A <span class="font-light italic text-neutral-400">&</span> Y
+      </span>
+      <span class="mt-1 font-sans text-xs uppercase tracking-[0.25em] text-neutral-400">
+        Wedding Invitation
+      </span>
+    </div>
+
+    <div
+      class="my-6 rounded-2xl bg-white p-3 shadow-inner"
+      role="img"
+      aria-label={`QR code linking to ${targetUrl}`}
+    >
+      <div
+        class="h-52 w-52 [&>svg]:block [&>svg]:h-full [&>svg]:w-full"
+        set:html={qrSvg}
+      />
+    </div>
+
+    <h2
+      id="desktop-gate-heading"
+      class="font-serif text-xl font-medium tracking-tight text-neutral-100"
+    >
+      Please Open on Mobile
+    </h2>
+    <p class="mt-2 max-w-xs text-sm leading-relaxed text-neutral-400">
+      This wedding invitation is designed exclusively for mobile devices. Scan the QR code with your smartphone camera to view your invitation.
+    </p>
+  </div>
+</div>
+
+<style>
+  #desktop-gate {
+    display: none;
+  }
+
+  /* Viewport predicate kept in sync with index.astro head script and DESKTOP_MEDIA_QUERY */
+  @media (min-width: 768px) and (min-height: 600px) {
+    #desktop-gate {
+      display: flex;
+      align-items: safe center;
+    }
+  }
+</style>

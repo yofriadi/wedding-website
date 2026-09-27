@@ -40,20 +40,20 @@ const EVENTS = [
 const SIZES_FULL_BLEED = "100vw";
 ---
 
-<section id="event-times" class="relative z-10 w-full overflow-hidden py-12 md:py-16" aria-label="Rangkaian Acara">
+<section id="event-times" class="relative z-10 w-full overflow-hidden py-12" aria-label="Rangkaian Acara">
   {/* Section header: Rangkaian Acara in Venue font */}
-  <div class="mx-auto max-w-2xl px-6 text-center mb-10 md:mb-14" data-event-header data-scroll-fade>
-    <h2 class="font-serif text-3xl font-light text-[color:var(--times-heading)] md:text-4xl">
+  <div class="mx-auto max-w-2xl px-6 text-center mb-10" data-event-header data-scroll-fade>
+    <h2 class="font-serif text-3xl font-light text-[color:var(--times-heading)]">
       Rangkaian Acara
     </h2>
   </div>
 
   {/* Stacked cards (above and below) */}
-  <div class="flex flex-col gap-6 md:gap-8 w-full">
+  <div class="flex flex-col gap-6 w-full">
     {
       EVENTS.map((event, i) => (
         <article
-          class="event-card relative h-[172px] sm:h-[208px] md:h-[245px] w-full overflow-hidden border-y text-center"
+          class="event-card relative h-[172px] sm:h-[208px] w-full overflow-hidden border-y text-center"
           data-event-card
           data-scroll-fade="card"
           data-index={i}
@@ -91,13 +91,13 @@ const SIZES_FULL_BLEED = "100vw";
 
           {/* Centered white text with text shadow */}
           <div class="times-center-text pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-1.5 sm:gap-2 p-4 sm:p-6 text-center text-white">
-            <h3 class="font-serif text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white leading-tight times-text-shadow whitespace-nowrap">
+            <h3 class="font-serif text-3xl sm:text-4xl font-bold tracking-tight text-white leading-tight times-text-shadow whitespace-nowrap">
               {event.name}
             </h3>
-            <span class="font-serif text-xl sm:text-2xl md:text-3xl font-medium tabular-nums text-white times-text-shadow">
+            <span class="font-serif text-xl sm:text-2xl font-medium tabular-nums text-white times-text-shadow">
               {event.time}
             </span>
-            <p class="font-serif text-base sm:text-lg md:text-xl text-white times-text-shadow">
+            <p class="font-serif text-base sm:text-lg text-white times-text-shadow">
               {event.audience}
             </p>
           </div>

@@ -94,7 +94,7 @@ export function isSameOriginRequest(request: Request): boolean {
 }
 
 // A proxy chain yields a comma-separated list; the client-facing value is first.
-function firstForwardedValue(value: string | null): string | null {
+export function firstForwardedValue(value: string | null): string | null {
   if (value === null) return null;
   const head = value.split(",")[0]?.trim();
   return head ? head : null;

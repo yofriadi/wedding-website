@@ -5,17 +5,16 @@ import { variantSrcset } from "../lib/media-candidates";
 // from a transform: unlike the collage, these photos come to rest at scale(1),
 // so the layout box IS the presentation box.
 //
-// The portrait is height-driven — `h-[360px] sm:h-[400px] md:h-[480px] w-auto
-// aspect-[591/1280]` — so its rendered width is that height times 591/1280:
-// 166 / 185 / 222 px. The `max-w-[calc(100vw-32px)]` clamp never bites at those
-// numbers on any viewport this site supports.
-const SIZES_PORTRAIT = "(min-width: 768px) 222px, (min-width: 640px) 185px, 166px";
+// The portrait is height-driven — `h-[360px] sm:h-[400px] w-auto aspect-[591/1280]` —
+// so its rendered width is that height times 591/1280: 166 / 185 px.
+// The `max-w-[calc(100vw-32px)]` clamp never bites at those numbers on any viewport
+// this site supports.
+const SIZES_PORTRAIT = "(min-width: 640px) 185px, 166px";
 
-// The two landscape cards are width-driven — `w-[340px] sm:w-[400px] md:w-[560px]
-// max-w-[calc(100vw-32px)]` — and here the clamp does bite on a narrow phone,
-// so it stays in the expression.
+// The two landscape cards are width-driven — `w-[340px] sm:w-[400px] max-w-[calc(100vw-32px)]` —
+// and here the clamp does bite on a narrow phone, so it stays in the expression.
 const SIZES_CARD =
-  "(min-width: 768px) min(calc(100vw - 32px), 560px), (min-width: 640px) min(calc(100vw - 32px), 400px), min(calc(100vw - 32px), 340px)";
+  "(min-width: 640px) min(calc(100vw - 32px), 400px), min(calc(100vw - 32px), 340px)";
 ---
 
 <section id="timeline-section" class="timeline-section relative w-full bg-[color:var(--timeline-bg)]">
@@ -27,7 +26,7 @@ const SIZES_CARD =
 
        The photos DO carry device-matched candidate sets now (responsive-media):
        `keluarga-acik` is a 2048px, 463 KB master in a card capped at
-       `md:w-[560px]`, and a 390px phone used to download all of it. They are
+       `sm:w-[400px]`, and a 390px phone used to download all of it. They are
        also `loading="lazy"` — this track sits far below the fold and is
        scrolled horizontally, so the browser, not a tier observer, should decide
        when to spend the connection. Neither is tier deferral: the real `src`
@@ -46,7 +45,7 @@ const SIZES_CARD =
       <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
         <div class="relative h-4 w-4">
           <div class="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 whitespace-nowrap text-center">
-            <h2 class="max-w-[18ch] text-center font-serif tracking-wide text-[color:var(--timeline-ink)] text-4xl md:text-6xl px-6">
+            <h2 class="max-w-[18ch] text-center font-serif tracking-wide text-[color:var(--timeline-ink)] text-4xl px-6">
               Awal mula
             </h2>
           </div>
@@ -85,7 +84,7 @@ const SIZES_CARD =
             id="node-1-label"
             class="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 whitespace-nowrap text-center text-[color:var(--timeline-ink)]"
           >
-            <h2 class="max-w-[18ch] text-center font-serif tracking-wide text-inherit text-4xl md:text-6xl px-6">Awal mula</h2>
+            <h2 class="max-w-[18ch] text-center font-serif tracking-wide text-inherit text-4xl px-6">Awal mula</h2>
           </div>
         </div>
       </div>
@@ -113,7 +112,7 @@ const SIZES_CARD =
           <!-- Photo and Text below the node -->
           <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+24px)] flex flex-col items-center">
             <div data-node2-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
-              <div class="h-[360px] sm:h-[400px] md:h-[480px] w-auto max-w-[calc(100vw-32px)] aspect-[591/1280] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
+              <div class="h-[360px] sm:h-[400px] w-auto max-w-[calc(100vw-32px)] aspect-[591/1280] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
                 <picture>
                   <source
                     srcset={variantSrcset("awal-perkenalan", "avif", 591)}
@@ -157,7 +156,7 @@ const SIZES_CARD =
           <!-- Photo and Date above the node -->
           <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)] flex flex-col items-center">
             <div data-node3-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
-              <div class="w-[340px] sm:w-[400px] md:w-[560px] max-w-[calc(100vw-32px)] h-auto aspect-[1280/591] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl mb-4 ring-1 ring-[color:var(--timeline-photo-ring)]">
+              <div class="w-[340px] sm:w-[400px] max-w-[calc(100vw-32px)] h-auto aspect-[1280/591] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl mb-4 ring-1 ring-[color:var(--timeline-photo-ring)]">
                 <picture>
                   <source
                     srcset={variantSrcset("keluarga-yofri", "avif", 1280)}
@@ -207,7 +206,7 @@ const SIZES_CARD =
         <div data-node4-pin class="absolute inset-0">
           <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)]">
             <div data-node4-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
-              <div class="w-[340px] sm:w-[400px] md:w-[560px] max-w-[calc(100vw-32px)] h-auto aspect-[2048/945] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
+              <div class="w-[340px] sm:w-[400px] max-w-[calc(100vw-32px)] h-auto aspect-[2048/945] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
                 <picture>
                   <source
                     srcset={variantSrcset("keluarga-acik", "avif", 2048)}
@@ -257,9 +256,9 @@ const SIZES_CARD =
           </div>
 
           <!-- Photo and Text stay on the authored right side of the dot. -->
-          <div class="absolute left-[50vw] -translate-x-1/2 -top-8 flex flex-col items-center w-[280px] md:w-[340px]">
+          <div class="absolute left-[50vw] -translate-x-1/2 -top-8 flex flex-col items-center w-[280px]">
             <div data-node5-photo style="opacity: 0; transform: scale(0.6); transform-origin: 0% 0%;">
-              <div class="h-[320px] md:h-[420px] w-auto aspect-[2/3] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl mb-4 ring-1 ring-[color:var(--timeline-photo-ring)]">
+              <div class="h-[320px] w-auto aspect-[2/3] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl mb-4 ring-1 ring-[color:var(--timeline-photo-ring)]">
                 <!-- No `autoplay`: that attribute defeated preload="none" and
                      pulled 714 KB at parse time on every network. Playback is
                      tier-driven — see applyVideoTier() at the foot of this
@@ -295,8 +294,8 @@ const SIZES_CARD =
         <div class="relative h-5 w-5">
           <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+24px)] whitespace-nowrap text-center">
             <div data-node6-date-bottom style="opacity: 0; transform: scale(0.9); transform-origin: 50% 0%;">
-              <div class="max-w-[18ch] font-serif tracking-wide text-[color:var(--timeline-ink)] text-4xl md:text-6xl px-6 text-center">10 Oktober 2026</div>
-              <div class="max-w-[18ch] font-serif tracking-wide text-[color:var(--timeline-ink)] text-4xl md:text-6xl px-6 text-center">Menikah</div>
+              <div class="max-w-[18ch] font-serif tracking-wide text-[color:var(--timeline-ink)] text-4xl px-6 text-center">10 Oktober 2026</div>
+              <div class="max-w-[18ch] font-serif tracking-wide text-[color:var(--timeline-ink)] text-4xl px-6 text-center">Menikah</div>
             </div>
           </div>
         </div>
@@ -313,7 +312,7 @@ const SIZES_CARD =
       <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
         <div class="relative h-4 w-4">
           <div class="absolute bottom-[calc(100%+12px)] left-1/2 -translate-x-1/2 whitespace-nowrap text-center">
-            <h2 class="max-w-[18ch] text-center font-serif tracking-wide text-[color:var(--timeline-overlay-ink)] text-4xl md:text-6xl px-6">
+            <h2 class="max-w-[18ch] text-center font-serif tracking-wide text-[color:var(--timeline-overlay-ink)] text-4xl px-6">
               Awal mula
             </h2>
           </div>
@@ -340,8 +339,8 @@ const SIZES_CARD =
       <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
         <div class="relative h-5 w-5">
           <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+24px)] whitespace-nowrap text-center">
-            <div class="max-w-[18ch] font-serif tracking-wide text-[color:var(--timeline-overlay-ink)] text-4xl md:text-6xl px-6 text-center">10 Oktober 2026</div>
-            <div class="max-w-[18ch] font-serif tracking-wide text-[color:var(--timeline-overlay-ink)] text-4xl md:text-6xl px-6 text-center">Menikah</div>
+            <div class="max-w-[18ch] font-serif tracking-wide text-[color:var(--timeline-overlay-ink)] text-4xl px-6 text-center">10 Oktober 2026</div>
+            <div class="max-w-[18ch] font-serif tracking-wide text-[color:var(--timeline-overlay-ink)] text-4xl px-6 text-center">Menikah</div>
           </div>
         </div>
       </div>

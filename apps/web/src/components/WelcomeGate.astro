@@ -440,12 +440,15 @@ const gateBg = await resolveGateBg();
     // locks scroll and a guest could scroll the raw page behind the loader.
     // Arming (gesture binding, inert, failsafe cancel) still waits for the
     // loader's removal.
-    lockScroll();
+    if (!document.documentElement.hasAttribute('data-desktop')) {
+      lockScroll();
+    }
 
     // The failsafe is a dismissal path too: release the lock it exits under, or a
     // gate that never arms leaves the page permanently unscrollable.
     gate.addEventListener('animationend', function (e) {
       if (e.target !== gate || e.animationName !== 'gate-failsafe') return;
+      if (document.documentElement.hasAttribute('data-desktop')) return;
       setMainInert(false);
       unlockScroll();
       gate.remove();
@@ -1003,6 +1006,7 @@ const gateBg = await resolveGateBg();
 
     function arm() {
       if (armed) return;
+      if (document.documentElement.hasAttribute('data-desktop')) return;
       armed = true;
 
       // The gesture is live: cancel the CSS failsafe auto-dismiss.
@@ -1060,6 +1064,7 @@ const gateBg = await resolveGateBg();
     }
 
     function tryArm() {
+      if (!gate || !gate.isConnected) return;
       if (armed) return;
       var loader = document.getElementById('loading-screen');
       if (loader && loader.isConnected) return;
@@ -1073,6 +1078,8 @@ const gateBg = await resolveGateBg();
         gate.style.animation = 'gate-failsafe 600ms ease-out 15s forwards';
       }
     }
+
+    window.welcomeGateTryArm = tryArm;
 
     var claimGate = document.getElementById('claim-gate');
     if (isClaimGateActive()) {
