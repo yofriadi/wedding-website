@@ -4,6 +4,39 @@
 #
 # Caddy obtains and renews the TLS certificate automatically. The DNS A record
 # for this name must already point at the host.
+#
+# Caching policy (static assets only — HTML stays `no-store`, `/api/*` untouched):
+#   /_astro/*                 content-hashed  -> 1y + immutable
+#   public media, /generated, /map  stable but NOT fingerprinted -> 7d, no
+#                             `immutable`, because tools/restore-private-media.sh
+#                             swaps those files under the same URLs
+#   /api/photos/*             the app already sends `immutable` + `Vary: Accept`
+#                             (codec-negotiated) — must not be overridden here
+# The `handle` + `header_down` form is required: a site-level
+# `header <matcher> Cache-Control ...` runs *before* the proxy and `reverse_proxy`
+# then ADDS the upstream value, producing two conflicting Cache-Control headers
+# (`header ... defer` silently no-ops). `header_down` replaces.
 wedding.example.com {
-	reverse_proxy web:4321
+	# Compress everything textual (HTML, JS, CSS, JSON, SVG, MD). Already-compressed
+	# media and fonts are excluded by extension — never re-encode those.
+	@compress not path_regexp \.(webp|avif|jpe?g|png|gif|mp3|mp4|woff2?|ttf|ico)$
+	encode @compress zstd gzip
+
+	@astro path /_astro/*
+	handle @astro {
+		reverse_proxy web:4321 {
+			header_down Cache-Control "public, max-age=31536000, immutable"
+		}
+	}
+
+	@media path_regexp ^/(generated/|map/)?[^/]+\.(webp|avif|jpe?g|png|svg|mp3|mp4)$
+	handle @media {
+		reverse_proxy web:4321 {
+			header_down Cache-Control "public, max-age=604800"
+		}
+	}
+
+	handle {
+		reverse_proxy web:4321
+	}
 }
