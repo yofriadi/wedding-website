@@ -9,7 +9,7 @@ test.describe("scroll-fade animation on key sections", () => {
     // 1. "Show Our Memories..."
     const memoriesHeading = page.locator("#memories-section [data-scroll-fade]");
     await expect(memoriesHeading).toBeAttached();
-    await expect(memoriesHeading).toContainText("Show Our Memories Together");
+    await expect(memoriesHeading).toContainText("Bagikan Momen Bersama Kami");
     await expect(memoriesHeading.locator("h2")).toHaveClass(/font-serif/);
 
     // 2. "Venue, Graha 58..., Surakarta..."
@@ -21,11 +21,11 @@ test.describe("scroll-fade animation on key sections", () => {
     // 3. "Number ticker, confirmed text"
     const tickerBlock = page.locator("#rsvp-section [role='status'][data-scroll-fade]");
     await expect(tickerBlock).toBeAttached();
-    await expect(tickerBlock).toContainText("confirmed");
+    await expect(tickerBlock).toContainText("terkonfirmasi");
 
     // 4. "confirmation button" / RSVP link block
     const rsvpAction = page.locator("#rsvp-section [data-scroll-fade]").filter({
-      hasText: /RSVP through your personal invitation link|Confirm Reservation/i,
+      hasText: /RSVP through your personal invitation link|Konfirmasi Kehadiran/i,
     });
     await expect(rsvpAction).toBeAttached();
 

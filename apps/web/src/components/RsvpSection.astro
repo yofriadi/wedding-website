@@ -39,8 +39,8 @@ const isConfirmed = rsvpAttending === true;
 // The invitee control is one button that always submits
 // { attending: true }: there is no decline path, so the label carries the
 // whole state.
-const LABEL_FRESH = "Confirm Reservation";
-const LABEL_CONFIRMED = "Reservation Confirmed";
+const LABEL_FRESH = "Konfirmasi Kehadiran";
+const LABEL_CONFIRMED = "Kehadiran Terkonfirmasi";
 
 // The counter must never break the homepage: on aggregate failure render 0
 // and skip the poll script entirely.
@@ -59,7 +59,7 @@ const countDigits = String(confirmedCount);
 <div
   class="pt-8 space-y-4"
   role="status"
-  aria-label={`${confirmedCount} reservations confirmed`}
+  aria-label={`${confirmedCount} kehadiran terkonfirmasi`}
   data-rsvp-count-status
   data-scroll-fade
 >
@@ -70,7 +70,7 @@ const countDigits = String(confirmedCount);
     >{countDigits}</number-ticker
   >
   <p class="text-xs tracking-widest uppercase text-[color:var(--rsvp-muted)]">
-    reservations confirmed
+    kehadiran terkonfirmasi
   </p>
 </div>
 
@@ -170,7 +170,7 @@ const countDigits = String(confirmedCount);
         const current = ticker.getAttribute("value") ?? ticker.textContent?.trim();
         if (next !== current) {
           ticker.setAttribute("value", next);
-          countStatus?.setAttribute("aria-label", `${next} reservations confirmed`);
+          countStatus?.setAttribute("aria-label", `${next} kehadiran terkonfirmasi`);
         }
       }
     } catch {
@@ -260,7 +260,7 @@ const countDigits = String(confirmedCount);
         // The morph — black flood, parked rim, handle check, confetti — is
         // owned by SlideToConfirm and began when the slide armed, before the fetch
         // resolved. This side only swaps the words and locks the control.
-        const confirmedText = confirmBtn.dataset.labelConfirmed || "Reservation Confirmed";
+        const confirmedText = confirmBtn.dataset.labelConfirmed || "Kehadiran Terkonfirmasi";
         setLabel(confirmedText);
         confirmBtn.disabled = true;
 

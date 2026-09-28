@@ -129,7 +129,7 @@ for (const inView of [false, true]) {
     await expect(button).toHaveAttribute("data-slide-entrance", "revealing");
     await expect(button).toHaveCSS("opacity", "1");
     await expect(button.locator("[data-slide-to-confirm-text]")).toHaveCSS("opacity", "1");
-    await expect(button).toHaveAccessibleName("Confirm Reservation");
+    await expect(button).toHaveAccessibleName("Konfirmasi Kehadiran");
 
     // Going past the section keeps the pill expanded and visible (matching AddImageButton)
     await page.evaluate(() =>
@@ -388,7 +388,7 @@ test("when confirmed: circle rises, black pill expands, checkmark glides to far 
   await expect(button).toHaveAttribute("data-slide-entrance", "revealing");
   await expect(button).toHaveCSS("opacity", "1");
   await expect(button.locator("[data-slide-to-confirm-text]")).toHaveCSS("opacity", "1");
-  await expect(button).toHaveAccessibleName("Reservation Confirmed");
+  await expect(button).toHaveAccessibleName("Kehadiran Terkonfirmasi");
 });
 
 test("when confirmed: scrolling back collapses the pill before lowering it", async ({ page }) => {

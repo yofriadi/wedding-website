@@ -363,7 +363,7 @@ class DirectionsControl extends Control {
     anchor.target = "_blank";
     anchor.rel = "noopener noreferrer";
     anchor.className = "venue-map-control-button venue-map-directions-control";
-    anchor.textContent = "Open in Google Maps";
+    anchor.textContent = "Buka di Google Maps";
     DomEvent.disableClickPropagation(anchor);
     this.anchor = anchor;
     return anchor;

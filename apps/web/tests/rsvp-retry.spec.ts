@@ -93,7 +93,7 @@ test("a failed save rolls the pill back; the retry that lands sticks across a re
 }) => {
   test.setTimeout(180_000);
   const btn = await openRsvp(page);
-  await expect(btn).toHaveText(/Confirm Reservation/);
+  await expect(btn).toHaveText(/Konfirmasi Kehadiran/);
 
   // --- First slide: the RSVP POST fails like a storage outage (503). ---
   await page.route("**/api/rsvp", async (route) => {
@@ -113,13 +113,13 @@ test("a failed save rolls the pill back; the retry that lands sticks across a re
   const rolledBack = await pillState(page);
   expect(rolledBack.confirmedClass).toBe(false);
   expect(rolledBack.fillR).toBe("0px");
-  expect(rolledBack.label).toMatch(/Confirm Reservation/);
+  expect(rolledBack.label).toMatch(/Konfirmasi Kehadiran/);
   expect(rolledBack.disabled).toBe(false);
 
   // --- Second slide: the save lands. ---
   await page.unroute("**/api/rsvp");
   await slide(page, btn);
-  await expect(btn).toHaveText(/Reservation Confirmed/);
+  await expect(btn).toHaveText(/Kehadiran Terkonfirmasi/);
   await expect(btn).toBeDisabled();
   const confirmed = await pillState(page);
   expect(confirmed.confirmedClass).toBe(true);
@@ -136,7 +136,7 @@ test("a failed save rolls the pill back; the retry that lands sticks across a re
   await page.goto(server.baseUrl + "/", { waitUntil: "domcontentloaded", timeout: 60_000 });
   await dismissWelcomeGate(page);
   await btn.scrollIntoViewIfNeeded();
-  await expect(btn).toHaveText(/Reservation Confirmed/);
+  await expect(btn).toHaveText(/Kehadiran Terkonfirmasi/);
   await expect(btn).toBeDisabled();
 
   // A returning guest's full slide does nothing: pointerdown is barred by
@@ -152,5 +152,5 @@ test("a failed save rolls the pill back; the retry that lands sticks across a re
   const after = await pillState(page);
   expect(after.confirmedClass).toBe(true);
   expect(after.disabled).toBe(true);
-  expect(after.label).toMatch(/Reservation Confirmed/);
+  expect(after.label).toMatch(/Kehadiran Terkonfirmasi/);
 });

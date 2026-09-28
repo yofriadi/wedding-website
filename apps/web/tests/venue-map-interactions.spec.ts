@@ -173,7 +173,7 @@ test("no route is selected initially; the first selection takes over", async ({ 
   // Initial state: nothing selected and NO route path is rendered at all.
   // The directions control points at the venue's place page.
   await expect(section.locator(".venue-map-route-option[aria-pressed='true']")).toHaveCount(0);
-  await expect(control).toHaveText("Open in Google Maps");
+  await expect(control).toHaveText("Buka di Google Maps");
   // Default colorScheme (light): the control is a translucent-white card like
   // the zoom circles + route chips beside it, not a fixed black pill.
   await expect(control).toHaveCSS("background-color", "rgba(255, 255, 255, 0.94)");
@@ -188,7 +188,7 @@ test("no route is selected initially; the first selection takes over", async ({ 
     "aria-pressed",
     "true",
   );
-  await expect(control).toHaveText("Open in Google Maps");
+  await expect(control).toHaveText("Buka di Google Maps");
   await expect(control).toHaveAttribute(
     "href",
     /origin=-7\.5162608,110\.7560184&destination=-7\.5682749,110\.8053926&travelmode=driving/,
@@ -262,7 +262,7 @@ test("map follows device theme and renders no manual theme control", async ({ pa
   await expect(container).toHaveClass(/theme-light/);
   await expect(section.locator("img.leaflet-tile[src*='light_all']").first()).toBeVisible();
   await expect(section.getByRole("button", { name: /Switch to .* map/ })).toHaveCount(0);
-  // The one remaining "Open in Google Maps" surface flips with the theme.
+  // The one remaining "Buka di Google Maps" surface flips with the theme.
   await expect(control).toHaveCSS("background-color", "rgba(255, 255, 255, 0.94)");
   await expect(control).toHaveCSS("color", "rgb(38, 38, 38)");
 
@@ -382,7 +382,7 @@ test("route options and compact directions link are keyboard-accessible", async 
   const directions = section.getByRole("link", {
     name: "Open route from Stasiun Purwosari in Google Maps",
   });
-  await expect(directions).toHaveText("Open in Google Maps");
+  await expect(directions).toHaveText("Buka di Google Maps");
   await directions.focus();
   await expect(directions).toBeFocused();
 });

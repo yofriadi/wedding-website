@@ -354,7 +354,7 @@ test.describe("slide-to-confirm", () => {
     // the spec's reduced-motion scenario asks for the confirmed state to apply
     // "identical to the pre-animation behavior". The celebration survives in
     // the channels reduced motion keeps: the pill is black, the glyph is a
-    // check, and the label reads "Reservation Confirmed".
+    // check, and the label reads "Kehadiran Terkonfirmasi".
     await page.emulateMedia({ colorScheme: "dark", reducedMotion: "reduce" });
     await page.setViewportSize({ width: 900, height: 600 });
     await openFixture(page);
@@ -387,7 +387,7 @@ test.describe("slide-to-confirm", () => {
     ).toBeCloseTo(58, 0);
     await expect(page.locator(FRESH)).toHaveCSS("border-top-width", "1px");
     await expect(
-      page.getByRole("button", { name: "Confirm Reservation", exact: true }),
+      page.getByRole("button", { name: "Konfirmasi Kehadiran", exact: true }),
     ).toBeVisible();
     await ctx.close();
   });
@@ -449,13 +449,13 @@ test.describe("slide-to-confirm", () => {
 
     // One label layer, so the name is not doubled.
     await expect(
-      page.getByRole("button", { name: "Confirm Reservation", exact: true }),
+      page.getByRole("button", { name: "Konfirmasi Kehadiran", exact: true }),
     ).toHaveCount(1);
     await expect(
-      page.getByRole("button", { name: /Confirm Reservation.*Confirm Reservation/ }),
+      page.getByRole("button", { name: /Konfirmasi Kehadiran.*Konfirmasi Kehadiran/ }),
     ).toHaveCount(0);
     await expect(
-      page.getByRole("button", { name: "Reservation Confirmed", exact: true }),
+      page.getByRole("button", { name: "Kehadiran Terkonfirmasi", exact: true }),
     ).toHaveCount(1);
   });
 

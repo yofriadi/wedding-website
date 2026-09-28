@@ -30,7 +30,7 @@ test.describe("rsvp section", () => {
 
     // Venue copy in venue map, placeholder gone.
     await expect(page.locator("#venue-map")).toContainText("Graha 58 Gedung Serbaguna UMS");
-    await expect(page.locator("#venue-map")).toContainText("Surakarta, Central Java");
+    await expect(page.locator("#venue-map")).toContainText("Surakarta, Jawa Tengah");
     await expect(page.getByText("The Grand Estate")).toHaveCount(0);
 
     // SSR count is truthful plain text in the markup (no-JS safe).
@@ -53,7 +53,7 @@ test.describe("rsvp section", () => {
     await page.goto("/");
     await scrollToRsvp(page);
     const status = page.locator(`${SECTION} [role="status"]`);
-    await expect(status).toHaveAttribute("aria-label", /reservations confirmed/);
+    await expect(status).toHaveAttribute("aria-label", /kehadiran terkonfirmasi/);
   });
 
   test("poll rolls the ticker when the count changes", async ({ page }) => {
@@ -94,7 +94,7 @@ test.describe("rsvp section", () => {
     await expect(ticker).toHaveAttribute("value", "12", { timeout: 10_000 });
     await expect(page.locator(`${SECTION} [role="status"]`)).toHaveAttribute(
       "aria-label",
-      "12 reservations confirmed",
+      "12 kehadiran terkonfirmasi",
     );
   });
 
