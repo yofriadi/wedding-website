@@ -25,7 +25,7 @@
   --ease-out-standard: cubic-bezier(0, 0, 0.2, 1);
   /* HeroZoom — the scroll-scrubbed image zoom. */
   --ease-out-zoom: cubic-bezier(0.33, 1, 0.68, 1);
-  /* EventTimes — the event-time panels' blur reveal. */
+  /* QuranVerse & EventTimes — the panels and verse blur reveal. */
   --ease-blur-reveal: cubic-bezier(0.25, 0.1, 0.25, 1);
 
   --animate-shimmer: shimmer 2s linear infinite;

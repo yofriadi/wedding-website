@@ -1,6 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import HeroZoom from "../components/HeroZoom.astro";
+import QuranVerse from "../components/QuranVerse.astro";
 import FamiliesReveal from "../components/FamiliesReveal.astro";
 import ZoomParallax from "../components/ZoomParallax.astro";
 import TimelineScroll from "../components/TimelineScroll.astro";
@@ -219,6 +220,7 @@ Astro.response.headers.set("Cache-Control", "no-store");
 
   <main class="relative">
     <HeroZoom />
+    <QuranVerse />
     <FamiliesReveal />
     <ZoomParallax />
     <!-- Collage promoter (media-tiering). Inline and here, not in a module:
