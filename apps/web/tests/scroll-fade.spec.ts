@@ -9,13 +9,13 @@ test.describe("scroll-fade animation on key sections", () => {
     // 1. "Show Our Memories..."
     const memoriesHeading = page.locator("#memories-section [data-scroll-fade]");
     await expect(memoriesHeading).toBeAttached();
-    await expect(memoriesHeading).toContainText("Bagikan Momen Bersama Kami");
+    await expect(memoriesHeading).toContainText("Bagikan kenanganmu bersama kami");
     await expect(memoriesHeading.locator("h2")).toHaveClass(/font-serif/);
 
-    // 2. "Venue, Graha 58..., Surakarta..."
+    // 2. "Lokasi, Graha 58..., Surakarta..."
     const venueHeader = page.locator("#venue-map [data-scroll-fade]");
     await expect(venueHeader).toBeAttached();
-    await expect(venueHeader).toContainText("Venue");
+    await expect(venueHeader).toContainText("Lokasi");
     await expect(venueHeader).toContainText("Graha 58 Gedung Serbaguna UMS");
 
     // 3. "Number ticker, confirmed text"
