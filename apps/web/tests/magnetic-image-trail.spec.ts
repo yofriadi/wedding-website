@@ -171,5 +171,116 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
         expect(draw.ratio).toBeCloseTo(fixture.width / fixture.height, 6);
       }
     });
+
+    test("displays default placeholder when no photos are uploaded, and hides it when photos exist", async ({
+      page,
+    }) => {
+      await page.emulateMedia({ reducedMotion });
+      await page.route("**/api/guest-photos", (route) =>
+        route.fulfill({
+          json: {
+            mineId: null,
+            inviteValid: false,
+            photos: [],
+          },
+        }),
+      );
+      await page.goto("/");
+      await dismissWelcomeGate(page);
+
+      const trail = page.locator("[data-trail]");
+      const placeholder = trail.locator("[data-trail-placeholder]");
+      await trail.scrollIntoViewIfNeeded();
+
+      await expect(trail).toHaveAttribute("data-empty", "true");
+      await expect(placeholder).toBeVisible();
+      await expect(placeholder.locator(".magnetic-trail__placeholder-title")).toHaveText(
+        "Belum ada foto yang dibagikan",
+      );
+      await expect(placeholder.locator(".magnetic-trail__placeholder-desc")).toContainText(
+        "Jadilah yang pertama mengabadikan dan membagikan momen bahagia ini bersama kami.",
+      );
+
+      // Canvas remains transparent with 0 photos
+      const canvas = trail.locator("[data-trail-canvas]");
+      expect(
+        await canvas.evaluate((node) => {
+          const el = node as HTMLCanvasElement;
+          const { width, height } = el;
+          return el
+            .getContext("2d")!
+            .getImageData(0, 0, width, height)
+            .data.some((v) => v !== 0);
+        }),
+      ).toBe(false);
+
+      // Now supply photos via setImages on the custom element
+      const filler = await sharp({
+        create: { width: 100, height: 100, channels: 3, background: "#a87963" },
+      })
+        .png()
+        .toBuffer();
+      await page.route("**/trail-dyn-*.png", (route) =>
+        route.fulfill({ contentType: "image/png", body: filler }),
+      );
+
+      await page.evaluate(async () => {
+        const el = document.querySelector<
+          HTMLElement & { setImages(imgs: string[]): Promise<string[]> }
+        >("[data-trail]");
+        await el?.setImages(["/trail-dyn-1.png"]);
+      });
+
+      await expect(trail).toHaveAttribute("data-empty", "false");
+      await expect(placeholder).toBeHidden();
+    });
+
+    test("clicking placeholder delegates to add-image button when actionable", async ({
+      page,
+      context,
+    }) => {
+      await page.emulateMedia({ reducedMotion });
+      await context.addCookies([
+        { name: "ww_invite_id", value: "ValidInv1", domain: "localhost", path: "/" },
+      ]);
+      await page.route("**/api/guest-photos", (route) =>
+        route.fulfill({
+          json: {
+            mineId: null,
+            inviteValid: true,
+            photos: [],
+          },
+        }),
+      );
+      await page.route("**/api/invite/me", (route) =>
+        route.fulfill({
+          json: {
+            kind: "individual",
+          },
+        }),
+      );
+      await page.goto("/");
+      await dismissWelcomeGate(page);
+
+      const trail = page.locator("[data-trail]");
+      const placeholder = trail.locator("[data-trail-placeholder]");
+      await trail.scrollIntoViewIfNeeded();
+
+      const addBtn = page.locator("[data-add-image]");
+      await expect(addBtn).toBeVisible();
+
+      let clicked = false;
+      await page.exposeFunction("__onAddClick", () => {
+        clicked = true;
+      });
+      await page.evaluate(() => {
+        document.querySelector("[data-add-image]")?.addEventListener("click", () => {
+          (window as unknown as { __onAddClick(): void }).__onAddClick();
+        });
+      });
+
+      await placeholder.click();
+      expect(clicked).toBe(true);
+    });
   });
 }
