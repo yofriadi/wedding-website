@@ -66,11 +66,11 @@ exposed; the certificate renews itself.
 `Caddyfile.example` ships the caching policy; `Caddyfile` is gitignored (it holds
 your real domain), so keep the two in sync when you change either:
 
-| Path | `Cache-Control` | Why |
-| --- | --- | --- |
-| `/_astro/*` | `public, max-age=31536000, immutable` | content-hashed filenames |
-| public media, `/generated/*`, `/map/*` | `public, max-age=604800` | stable but **not** fingerprinted — `tools/restore-private-media.sh` replaces those files under the same URLs, so no `immutable` |
-| HTML, `/api/*` | untouched (`no-store`; `/api/photos/*` keeps the app's `immutable` + `Vary: Accept`) | per-guest or codec-negotiated |
+| Path                                   | `Cache-Control`                                                                      | Why                                                                                                                             |
+| -------------------------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| `/_astro/*`                            | `public, max-age=31536000, immutable`                                                | content-hashed filenames                                                                                                        |
+| public media, `/generated/*`, `/map/*` | `public, max-age=604800`                                                             | stable but **not** fingerprinted — `tools/restore-private-media.sh` replaces those files under the same URLs, so no `immutable` |
+| HTML, `/api/*`                         | untouched (`no-store`; `/api/photos/*` keeps the app's `immutable` + `Vary: Accept`) | per-guest or codec-negotiated                                                                                                   |
 
 Textual responses (HTML, JS, CSS, JSON, SVG, MD) are served with `zstd`/`gzip`;
 already-compressed media and fonts are excluded by extension. The homepage HTML
@@ -78,7 +78,7 @@ alone drops from ~139 KB to ~34 KB per visit, and it is `no-store` — so that
 saving applies to every visit, not just cold ones.
 
 Use the `handle` + `header_down` form shown there. A site-level
-`header <matcher> Cache-Control …` runs *before* the proxy, and `reverse_proxy`
+`header <matcher> Cache-Control …` runs _before_ the proxy, and `reverse_proxy`
 then **adds** the upstream's `public, max-age=0`, so the client receives two
 conflicting `Cache-Control` headers (`header … defer` silently no-ops).
 `header_down` replaces.
