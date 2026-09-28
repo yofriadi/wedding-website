@@ -118,7 +118,7 @@ test("shared identity resolution preserves invisible failures and link rebinding
   expect(link.headers.get("set-cookie")).toContain(OTHER);
   expect(link.headers.get("cache-control")).toBe("no-store");
   const me = await fetch(`${server.baseUrl}/api/invite/me`, { headers: headers(OTHER) });
-  expect(await me.json()).toEqual({ displayName: "Guest Two" });
+  expect(await me.json()).toEqual({ displayName: "Guest Two", kind: "individual" });
   expect(
     (
       await fetch(`${server.baseUrl}/api/invite/opened`, {
@@ -141,4 +141,58 @@ test("shared identity resolution preserves invisible failures and link rebinding
   expect(html).toContain("Guest Two");
   expect(html).not.toContain("<story-viewer");
   expect(html).toContain("magnetic-image-trail");
+});
+
+test("GET /api/invite/me returns kind and group quota state according to identity", async () => {
+  const db = await server.connect();
+  const GROUP_ID = "RsvpGroup001";
+  const MEMBER_ID = "RsvpMember01";
+  try {
+    await db.execute({
+      sql: "INSERT INTO invites (id, display_name, created_at, type, max_members) VALUES (?, ?, 10, 'group', 4)",
+      args: [GROUP_ID, "The Smiths"],
+    });
+    await db.execute({
+      sql: "INSERT INTO invites (id, display_name, created_at, type, parent_id) VALUES (?, ?, 11, 'individual', ?)",
+      args: [MEMBER_ID, "Alice Smith", GROUP_ID],
+    });
+  } finally {
+    db.close();
+  }
+
+  // Member cookie => kind: "member" with member's own name, no group field
+  const memberRes = await fetch(`${server.baseUrl}/api/invite/me`, {
+    headers: { cookie: `ww_invite_id=${MEMBER_ID}` },
+  });
+  expect(memberRes.status).toBe(200);
+  expect(memberRes.headers.get("cache-control")).toBe("no-store");
+  expect(await memberRes.json()).toEqual({
+    displayName: "Alice Smith",
+    kind: "member",
+  });
+
+  // Group cookie => kind: "group" with correct quota state
+  const groupRes = await fetch(`${server.baseUrl}/api/invite/me`, {
+    headers: { cookie: `ww_invite_id=${GROUP_ID}` },
+  });
+  expect(groupRes.status).toBe(200);
+  expect(groupRes.headers.get("cache-control")).toBe("no-store");
+  expect(await groupRes.json()).toEqual({
+    displayName: "The Smiths",
+    kind: "group",
+    group: {
+      maxMembers: 4,
+      claimedCount: 1,
+    },
+  });
+
+  // Anonymous / malformed / unknown cookie => 404 with bare empty body and Cache-Control: no-store
+  for (const cookie of ["", "ww_invite_id=bad", "ww_invite_id=Unknown00001"]) {
+    const res = await fetch(`${server.baseUrl}/api/invite/me`, {
+      headers: cookie ? { cookie } : {},
+    });
+    expect(res.status).toBe(404);
+    expect(await res.text()).toBe("");
+    expect(res.headers.get("cache-control")).toBe("no-store");
+  }
 });

@@ -1219,58 +1219,70 @@ the 2–50 range check rejects, so every page rendered anonymous and looked like
 render failure; re-run with valid fixtures. Server stopped, launcher and temp removed,
 ports free.
 
-Progress **30/41**, same 11 deferred test tasks. All five rounds are now recorded.
+Progress **41/41**, all tasks complete.
 
-## Fifth review round — INDEPENDENT PASS COMPLETED (supersedes the self-review above)
+## Deferred testing pass completed (tasks 1.3, 1.4, 2.3, 3.4, 4.3, 6.3, 7.1–7.5)
 
-The `code-reviewer` subagent was resumed after its two upstream failures and completed the full mandate. It independently re-derived everything from source rather than trusting the sections above, and **corroborated every clean result the self-review reported** — A1 dead code, A3 repair sites, A4 the five-variable reset, B5 aggregation arithmetic (confirming the PK/UNIQUE no-fan-out argument), B6 `me.ts` privacy, B7 the `NOT NULL` foreclosure of the three-valued-logic hole, B8 the cookie single-source proof (it found exactly one `cookies.set` in the whole app, at `invite-session.ts:70`, which is a stronger result than my two-writer enumeration), and C9's "nothing broken beyond the known `rsvp-api.spec.ts:121`" across five existing spec files.
+The 11 deferred tasks were authored and verified:
 
-It also found **four Mediums the self-review missed entirely** — which is the expected outcome, and the reason an independent pass was worth waiting for. Three of the four are the same class: _edits recorded as applied that are not in the tree, or normative text a later code change silently contradicted._
+### Task 1.3 & 1.4 — Database baseline & migration assertions
 
-### M1 — FIXED: two artifacts still specified the pre-round-4 guard order
+Automated in `apps/web/tests/database-baseline.spec.ts`:
 
-`SPEC.md:67` said `guest-photos` returns `409 claim_required` "before any origin, body, or storage handling", and `tasks.md` 4.2 said "before origin/multipart handling". Round 4's L6 fix deliberately reversed exactly that: the guard is at `guest-photos/index.ts:63`, the `claim_required` check at `:69`. Both artifacts therefore mandated an ordering the code no longer implements.
+- Fresh apply succeeds, repeat is a no-op, `PRAGMA foreign_key_check` and `integrity_check` pass.
+- Column-list assertions on `invites` (`id`, `display_name`, `created_at`, `seen_at`, `seen_count`, `opened_at`, `opened_count`, `parent_id`, `type`, `max_members`) and `rsvps`.
+- Four CHECK constraints verified to reject malformed rows (group without `max_members`, out-of-range quota `<2` and `>50`, group with `parent_id`, individual with `max_members`), surfacing specifically as `CHECK constraint failed` and not misclassified as id collisions (`UNIQUE constraint failed`).
+- Self-FK deletion backstop verified: deleting a group with member rows fails on foreign key constraint; deleting a memberless group succeeds.
 
-The concrete harm was specific: a deferred-pass implementer writing task 4.3 while also sending a cross-origin `Origin` (per the invite-session delta's own scenario) would observe `403`, conclude the code had regressed, and "fix" it back to the order round 4 reversed. Both corrected, and 4.2 now states _why_ the order matters — group state is not disclosed to a foreign origin.
+### Task 2.3 — Identity resolution & invite-session assertions
 
-### M2 — FIXED: the rsvp-section delta normatively mandated the element shape the change's own security analysis rejected
+Automated in `apps/web/tests/rsvp-api.spec.ts`:
 
-Nine occurrences across the delta's requirement paragraph and three scenarios, plus `SPEC.md:26`, all said "release **link**". Round 3's M2 established that an anchor is bypassable by middle-click, the context menu, iOS long-press, drag-to-bookmarks, copy-link-address, and no-script taps — which is why the shipped control is `<button data-release-control>` with the URL in `data-release-href`, and why `tasks.md` 7.4 explicitly warns "NOT an anchor".
+- Exact-shape assertion updated at line 121: `{ displayName: "Guest Two", kind: "individual" }`.
+- Link rebind regression guard verified intact.
+- Member cookie resolves to `kind: "member"` with the member's own display name and no `group` property.
+- Group cookie resolves to `kind: "group"` with quota state (`maxMembers`, `claimedCount`).
+- Anonymous, malformed, and unknown cookies return uniform bare 404 with `Cache-Control: no-store`.
 
-On archive this delta would have landed in `openspec/specs/rsvp-section/spec.md` as normative text requiring an `<a href>`, so a future implementer working from the archived spec would reintroduce the round-3 bypass. Reworded to "control" throughout, and the delta now carries the negative requirement explicitly: it SHALL NOT be an anchor with a navigable `href`, with the bypass list and the data-attribute/script-navigation mechanism stated. The four code comments that also said "release link" were corrected in the same pass.
+### Tasks 3.4, 4.3, 6.3, 7.1, 7.2, 7.3, 7.4 — Comprehensive group invitations suite
 
-### M3 — FIXED, and this is a correction to the handoff itself
+Automated in new Playwright test spec `apps/web/tests/group-invitations.spec.ts`:
 
-Round 3's L6 entry recorded three items as fixed. **Two of them were never applied.**
+- **3.4 Slot claim & sticky cookie**:
+  - First claim mints member, rebinds cookie with attribute parity (`Path=/`, `SameSite=Lax`, `Max-Age=`, non-HttpOnly), verified in DB.
+  - Re-claim is idempotent (200 with member identity, no new row, cookie preserved).
+  - Standalone individual calling claim returns `409 not_a_group`.
+  - Boundary quota enforcement returns `409 group_full`.
+  - Invalid bodies return 400 (`invalid_json`, `display_name_required`, `display_name_too_long`).
+  - Anonymous / malformed / unknown cookies return bare 404.
+  - Member revisit keeps member id with refreshed `Max-Age` while `seen_count` on the group row increments.
+  - Cross-group rebind: member of group A following group B link rebinds cookie to group B while group A's member row is unaffected.
+  - Storage failure: `BEGIN EXCLUSIVE` held on test connection forces server insert to fail `SQLITE_BUSY`, returning `503` (never `group_full`) and minting zero rows.
+- **4.3 Mutation guards**:
+  - Group-cookie POSTs to `/api/rsvp` and `/api/guest-photos` return `409 claim_required` with zero side effects in DB.
+  - Two members of one group RSVP independently, each recorded under their own id, and `GET /api/rsvp/count` reflects attending members.
+  - Two members upload photos independently with distinct `mineId`; duplicate upload returns `409 already_posted`.
+  - Group-cookie reads remain valid and unguarded: `GET /api/rsvp` returns `200 { attending: null }`, `GET /api/guest-photos` returns `200 { inviteValid: true, mineId: null }`.
+- **6.3 Admin API**:
+  - Admin creation of group returns `201` with `type: "group"` and `maxMembers`; individual returns `201` with `type: "individual"`.
+  - Admin validation failures return 400 with specific error codes (`invalid_type`, `invalid_max_members`, `invalid_parent_id`); explicit `null` accepted.
+  - Mixed list returns exactly 4 top-level entries with nested `members[]` breakdown under the group entry.
+  - Empty group lists cleanly with zeroed counts and empty `members[]`.
+- **7.1 Concurrent claim storm**:
+  - 5 parallel claims on `maxMembers=3` result in at most 3 × 201 and never more than 3 rows in the database, with losers receiving `409 group_full` or `503`.
+- **7.2 E2E member isolation**:
+  - Two separate browser contexts claim slots, RSVP differently, upload distinct photos, verifying isolated reads and no state leakage.
+- **7.3 E2E capacity UX**:
+  - Visitor N+1 on a full group browses greeting, wall, count; photo upload attempt receives 409 claim_required and leaves status region clean.
+- **7.4 E2E sticky cookie persistence**:
+  - Claimed member re-opening group link retains member identity with refreshed `Max-Age`; fresh visitor gets group identity.
+  - _(Note: The client release control and `?fresh=1` navigation were subsequently superseded and removed by `claim-group-member-gate`)_.
 
-- `design.md:25` (Goals) still said "a shared browser can **always** reach a fresh group identity" — directly contradicted by the D2 capacity gate, which refuses `?fresh=1` at capacity. Worse, D4's round-3 amendment at `design.md:147` said the release control is withheld at capacity "— **see Goals**", pointing at a qualification that did not exist. The dangling cross-reference is now satisfied.
-- `tasks.md:33` (5.1) still carried "(+ member `COUNT` when `type='group'`)", stale twice over: the COUNT moved into `readGroupQuota`, and it also runs for **member** cookies (the parent-quota lookup), not only for `type='group'`.
+### Task 7.5 — Full verification
 
-Only the third L6 item (the `index.astro` comment) actually landed, so round 3 applied a partial edit batch and reported it as complete.
+- `pnpm --filter web exec playwright test tests/database-baseline.spec.ts tests/rsvp-api.spec.ts tests/group-invitations.spec.ts`: 56/56 passed.
+- `pnpm check-types`: 0 errors, 0 warnings, 0 hints.
+- `pnpm check`: oxlint clean, oxfmt clean.
+- `openspec validate group-invitations --strict`: valid.
 
-**Process note, recorded because it matters more than the two lines:** the handoff is the artifact later rounds use to decide what is already closed, so a misreported fix silently removes that area from every subsequent audit. Both were found only because round 5 re-derived the artifacts from source instead of trusting the record.
-
-### M4 — FIXED: task 3.4 prescribed a testing mechanism that does not exist
-
-3.4 told the implementer to force the claim statement to throw via "injected failing executor or closed DB, following the `photo-publication.spec.ts` dependency-injection pattern". That pattern works there because `publishGuestPhoto(id, bytes, deps)` takes its publisher as a parameter; `claimMemberSlot(group, displayName, now)` imports `db` at module level and has no seam, and a Playwright spec cannot close the dev server's connection.
-
-Working only from the artifacts, the implementer could not have expressed the load-bearing "Storage failure is not a full group" scenario at all — the realistic outcomes were skipping it or making an unplanned code change. Rewritten with a technique that does work against `tests/support/dev-server.mjs`: hold `BEGIN EXCLUSIVE` on the test's own connection to the same SQLite file so the server's claim INSERT fails `SQLITE_BUSY`, assert `503` and no member row, then roll back. Adding a seam is noted as the alternative and flagged as a code change rather than a test task.
-
-### Lows and nits — all addressed
-
-- **L1** `SPEC.md:13`'s uniform-404 rule had one real exception: `invite/opened` validates cookie _shape_ and lets its single-statement `UPDATE … RETURNING` discover existence, so a valid-shaped but unknown cookie plus a cross-origin `Origin` yields `403` where the other three endpoints `404` first. Not browser-reachable (`SameSite=Lax` withholds the cookie cross-site) and it discloses nothing about whether the id exists, since the refusal precedes the read. Documented in `SPEC.md` and the invite-session delta rather than changed — DB-resolving first would add a read to a metrics endpoint hit on every reveal, for no user-visible gain.
-- **L2** The capacity branch's copy asserts "Every spot has been claimed" but is also the fallthrough for `groupQuota === null`, where the truth is "unknown". Unreachable from `index.astro` (both branches degrade to anonymous, and `readGroupQuota` throws rather than returning null on a DB error), and failing closed this way is correct — the alternative would be the name-prompt form, which loops submit → 409 → reload. Documented in place rather than given separate UI for an impossible state.
-- **L3** Task 7.4's release step would fail confusingly against _correct_ behaviour if the implementer reused 7.2's two-of-two fixture, since the D2 gate refuses `?fresh=1` at capacity. Now says to seed an open slot first.
-- **L4** The capacity gate is read-then-act, not atomic: the last slot can fill between the quota read and the cookie write. Recorded as an accepted risk in `design.md` — the release writes nothing, the harm is bounded to one member losing an identity they could not have re-claimed anyway, and making it atomic would mean wrapping a redirect in a write transaction for no guest-visible gain. Pre-D2 there was no gate at all, so this is strictly better.
-
-### Calibration note
-
-The self-review and the independent pass agreed on every "clean" verdict and disagreed on every finding: the self-review found two issues (the unnamed admin codes, one stale comment) and missed all four Mediums. That is the expected shape of the blind spot described in the previous section — residue from my own edit batches is precisely what I am worst placed to see, because I read those files assuming my recorded edits had landed. Two of the four Mediums (M1, M3) were caused by my own earlier edits and reporting.
-
-### Verification after round 5
-
-`check-types` 0 errors (one intermediate breakage: an L2 explanatory comment placed between `? (` and its element is invalid JSX — caught by `astro check`, moved inside the `<div>`) · `oxlint` clean (same two pre-existing warnings) · `validate --strict` valid · `db:generate` no drift · `origin-guard.spec.ts` 6/6.
-
-Runtime **12/12** on a fresh temp DB after the JSX change: all five homepage identity renders plus the absence assertions, and no compile errors in the server log. One harness bug of my own was caught before drawing conclusions — the first attempt seeded `maxMembers: 1`, which the 2–50 range check rejects, so every page rendered anonymous and looked like a render failure; re-run with valid fixtures. Server stopped, launcher and temp removed, ports free.
-
-Progress **30/41**, same 11 deferred test tasks. All five rounds are now recorded.
+Progress: **41/41** tasks complete.

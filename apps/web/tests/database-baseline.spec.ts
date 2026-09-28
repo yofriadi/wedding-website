@@ -27,6 +27,24 @@ test("actual migrator creates one current baseline and a repeat preserves rows",
     expect(
       (await db.execute("PRAGMA table_info(guest_photos)")).rows.map((row) => row.name),
     ).toEqual(["id", "invite_id", "key", "created_at"]);
+    expect((await db.execute("PRAGMA table_info(invites)")).rows.map((row) => row.name)).toEqual([
+      "id",
+      "display_name",
+      "created_at",
+      "seen_at",
+      "seen_count",
+      "opened_at",
+      "opened_count",
+      "parent_id",
+      "type",
+      "max_members",
+    ]);
+    expect((await db.execute("PRAGMA table_info(rsvps)")).rows.map((row) => row.name)).toEqual([
+      "invite_id",
+      "attending",
+      "responded_at",
+      "updated_at",
+    ]);
     expect(
       (await db.execute("PRAGMA index_list(guest_photos)")).rows.map((row) => row.name),
     ).toEqual(
@@ -68,6 +86,51 @@ test("actual migrator creates one current baseline and a repeat preserves rows",
         "INSERT INTO guest_photos VALUES ('PhotoTest004', 'Baseline0002', 'guest-photos/PhotoTest001/photo.webp', 3)",
       ),
     ).rejects.toThrow(/UNIQUE/i);
+
+    // Four CHECK constraints reject bad rows, surfacing as CHECK failures (not id collisions)
+    for (const sql of [
+      // group without max_members
+      "INSERT INTO invites (id, display_name, created_at, type, max_members) VALUES ('BadGroup1', 'Bad', 10, 'group', NULL)",
+      // out-of-range max_members (< 2)
+      "INSERT INTO invites (id, display_name, created_at, type, max_members) VALUES ('BadGroup2', 'Bad', 11, 'group', 1)",
+      // out-of-range max_members (> 50)
+      "INSERT INTO invites (id, display_name, created_at, type, max_members) VALUES ('BadGroup3', 'Bad', 12, 'group', 51)",
+      // group with parent_id
+      "INSERT INTO invites (id, display_name, created_at, type, max_members, parent_id) VALUES ('BadGroup4', 'Bad', 13, 'group', 5, 'Baseline0001')",
+      // individual with max_members
+      "INSERT INTO invites (id, display_name, created_at, type, max_members) VALUES ('BadIndiv1', 'Bad', 14, 'individual', 5)",
+    ]) {
+      let err: any;
+      try {
+        await db.execute(sql);
+      } catch (e) {
+        err = e;
+      }
+      expect(err).toBeDefined();
+      expect(err.message).toMatch(/CHECK constraint failed/i);
+      expect(err.message).not.toMatch(/UNIQUE constraint failed/i);
+    }
+
+    // Self-FK deletion backstop: group with members cannot be deleted
+    await db.execute(
+      "INSERT INTO invites (id, display_name, created_at, type, max_members) VALUES ('GroupDelTest', 'Group', 20, 'group', 5)",
+    );
+    await db.execute(
+      "INSERT INTO invites (id, display_name, created_at, type, parent_id) VALUES ('MemberDelTest', 'Member', 21, 'individual', 'GroupDelTest')",
+    );
+    await expect(db.execute("DELETE FROM invites WHERE id = 'GroupDelTest'")).rejects.toThrow(
+      /FOREIGN KEY constraint failed/i,
+    );
+
+    // Deleting a memberless group succeeds
+    await db.execute(
+      "INSERT INTO invites (id, display_name, created_at, type, max_members) VALUES ('MemberlessGroup', 'Group', 22, 'group', 5)",
+    );
+    await db.execute("DELETE FROM invites WHERE id = 'MemberlessGroup'");
+    expect(
+      (await db.execute("SELECT COUNT(*) AS n FROM invites WHERE id = 'MemberlessGroup'")).rows[0]
+        ?.n,
+    ).toBe(0);
     expect((await db.execute("PRAGMA foreign_key_check")).rows).toEqual([]);
     expect((await db.execute("PRAGMA integrity_check")).rows[0]?.integrity_check).toBe("ok");
   } finally {
