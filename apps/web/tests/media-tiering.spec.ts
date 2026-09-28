@@ -155,7 +155,7 @@ test.describe("media tiering", () => {
       const placeholderCount = await page.evaluate(
         () => document.querySelectorAll('#zoom-parallax-container img[src$="-lqip.webp"]').length,
       );
-      expect(placeholderCount).toBe(10);
+      expect(placeholderCount).toBe(11);
       expect(mp3s).toEqual([]);
       expect(videos).toEqual([]);
 
@@ -171,7 +171,7 @@ test.describe("media tiering", () => {
       await scrollCollageIntoView(page);
       await expect
         .poll(async () => (await containerInfo(page)).promoted, { timeout: 20_000 })
-        .toBe(10);
+        .toBe(11);
       // And the whole pageview stayed byte-free where it must be.
       expect(mp3s).toEqual([]);
       expect(videos).toEqual([]);
@@ -192,7 +192,7 @@ test.describe("media tiering", () => {
 
       // Every collage source promoted synchronously during the parse.
       const info = await containerInfo(page);
-      expect(info.promoted).toBe(10);
+      expect(info.promoted).toBe(11);
 
       // Pinned runway: 400lvh of travel, sticky stage.
       expect(info.height).toBeGreaterThan(3.5 * info.viewport);
@@ -226,7 +226,7 @@ test.describe("media tiering", () => {
       expect(await currentTier(page)).toBe("full");
 
       const info = await containerInfo(page);
-      expect(info.promoted).toBe(10);
+      expect(info.promoted).toBe(11);
       expect(info.height).toBeGreaterThan(3.5 * info.viewport);
       expect(info.stagePosition).toBe("sticky");
       expect(info.videoControls).toBe(false);
@@ -245,7 +245,7 @@ test.describe("media tiering", () => {
       expect(await currentTier(page)).toBe("full");
 
       const info = await containerInfo(page);
-      expect(info.promoted).toBe(10);
+      expect(info.promoted).toBe(11);
       expect(info.height).toBeGreaterThan(3.5 * info.viewport);
       expect(info.stagePosition).toBe("sticky");
       expect(info.videoControls).toBe(false);
@@ -271,7 +271,7 @@ test.describe("media tiering", () => {
 
         expect(await currentTier(page)).toBe("full");
         const info = await containerInfo(page);
-        expect(info.promoted).toBe(10);
+        expect(info.promoted).toBe(11);
         expect(info.height).toBeGreaterThan(3.5 * info.viewport);
         expect(info.stagePosition).toBe("sticky");
         expect(info.videoControls).toBe(false);
@@ -302,7 +302,7 @@ test.describe("media tiering", () => {
 
       expect(await currentTier(page)).toBe("full");
       const info = await containerInfo(page);
-      expect(info.promoted).toBe(10);
+      expect(info.promoted).toBe(11);
       expect(info.height).toBeGreaterThan(3.5 * info.viewport);
     });
   });
@@ -328,7 +328,7 @@ test.describe("media tiering", () => {
 
       // Collage promoted, pin bound, video plays in view, soundtrack preloads.
       expect(await containerInfo(page)).toMatchObject({
-        promoted: 10,
+        promoted: 11,
         videoControls: false,
       });
       const info = await containerInfo(page);
@@ -386,7 +386,7 @@ test.describe("media tiering", () => {
         await waitForLoaderDismissed(page);
 
         const info = await containerInfo(page);
-        expect(info.promoted).toBe(10);
+        expect(info.promoted).toBe(11);
         expect(info.height).toBeGreaterThan(3.5 * info.viewport);
         expect(info.videoControls).toBe(false);
         await expect.poll(() => mp3s.length, { timeout: 30_000 }).toBeGreaterThan(0);

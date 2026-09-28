@@ -64,7 +64,7 @@ const FORMATS = ["avif", "webp"];
  * list), so the source files are the only authoritative input.
  */
 const BASES = [
-  // ZoomParallax collage, ten slots (src/components/ZoomParallax.astro).
+  // ZoomParallax collage, eleven slots (src/components/ZoomParallax.astro).
   "square-top-right",
   "square-upper-right",
   "landscape-top-left",
@@ -72,6 +72,7 @@ const BASES = [
   "square-mid-left",
   "center-focus",
   "square-mid-right",
+  "square-lower-left",
   "portrait-bottom-left",
   "landscape-mid-bottom",
   "landscape-bottom-right",

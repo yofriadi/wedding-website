@@ -69,15 +69,14 @@ const pictures = [
     iw: 473, ih: 1024
   },
   // 6. CENTER HERO - the focus slot. NOT 9:16 portrait: `center-focus` is
-  //    1920x1280 (ar 1.50, landscape) and the widest master in the collage,
-  //    which is why it is the only slot with a 1280w rung.
+  //    2592x1728 (ar 1.50, landscape) and the widest master in the collage.
   { 
     src: "/center-focus.webp", 
     alt: "CENTER FOCUS",
     isCenter: true,
     grid: { col: 1, row: 2, w: 1, h: 1 }, 
     scale: 4,
-    iw: 1920, ih: 1280
+    iw: 2592, ih: 1728
   },
   // 7. Mid right cell. The legacy `square-` base name is wrong: 1024x768 is a
   //    landscape (ar 1.33), identical in shape to slot 4.
@@ -88,15 +87,23 @@ const pictures = [
     scale: 8, // Fast (Side edge)
     iw: 1024, ih: 768
   },
-  // 8. Bottom Left Portrait
+  // 8. Lower Left Square (on top of bottom left)
+  { 
+    src: "/square-lower-left.webp", 
+    alt: "Square Lower Left",
+    grid: { col: 0, row: 3, w: 1, h: 1 },
+    scale: 8, // Fast (Side edge)
+    iw: 960, ih: 960
+  },
+  // 9. Bottom Left Square
   { 
     src: "/portrait-bottom-left.webp", 
-    alt: "Portrait Bottom Left",
-    grid: { col: 0, row: 3, w: 1, h: 2 },
+    alt: "Square Bottom Left",
+    grid: { col: 0, row: 4, w: 1, h: 1 },
     scale: 9, // Fast (Corner)
-    iw: 768, ih: 1024
+    iw: 768, ih: 768
   },
-  // 9. Mid Bottom Landscape
+  // 10. Mid Bottom Landscape
   { 
     src: "/landscape-mid-bottom.webp", 
     alt: "Landscape Mid Bottom",
@@ -104,7 +111,7 @@ const pictures = [
     scale: 5, // Slow (Inner ring)
     iw: 1024, ih: 473
   },
-  // 10. Bottom Right Landscape
+  // 11. Bottom Right Landscape
   { 
     src: "/landscape-bottom-right.webp", 
     alt: "Landscape Bottom Right",
@@ -123,8 +130,9 @@ const COL_W = 33.333; // 33.333vw
 // `.zoom-wrapper` 4–9× and transforms are invisible to candidate selection, so
 // a `sizes` derived from the layout box alone would serve these images from
 // their smallest candidate. The centre slot ends the sequence covering the whole
-// stage — `centerScaleFactor` exists precisely to make it do that — so it is
-// sized to the viewport and capped at its 1280w generated candidate.
+// stage — `centerScaleFactor` exists precisely to make it do that. In portrait
+// (mobile), covering the full height means its 1.50 landscape ratio spans 150vh;
+// in landscape it covers the viewport width (100vw).
 //
 // The nine outer slots are underserved DELIBERATELY, and this is a perceptual
 // judgement rather than a geometric one. Geometrically they want MORE
@@ -134,7 +142,7 @@ const COL_W = 33.333; // 33.333vw
 // the config comments call them "Fast (Outer edge)", "Fast (Side edge)", "Fast
 // (Corner)" — and motion masks resolution loss. 33vw is the grid column. Do not
 // "correct" these values upward on geometric grounds alone.
-const SIZES_CENTER = "min(100vw, 1280px)";
+const SIZES_CENTER = "(orientation: portrait) 150vh, 100vw";
 const SIZES_OUTER = "min(33vw, 390px)";
 ---
 
@@ -564,9 +572,10 @@ const SIZES_OUTER = "min(33vw, 390px)";
   [data-slot="4"] .zoom-inner { top: 40vh; top: 40lvh; height: 20vh; height: 20lvh; }
   [data-slot="5"] .zoom-inner { top: 40vh; top: 40lvh; height: 20vh; height: 20lvh; }
   [data-slot="6"] .zoom-inner { top: 40vh; top: 40lvh; height: 20vh; height: 20lvh; }
-  [data-slot="7"] .zoom-inner { top: 60vh; top: 60lvh; height: 40vh; height: 40lvh; }
-  [data-slot="8"] .zoom-inner { top: 60vh; top: 60lvh; height: 20vh; height: 20lvh; }
-  [data-slot="9"] .zoom-inner { top: 80vh; top: 80lvh; height: 20vh; height: 20lvh; }
+  [data-slot="7"] .zoom-inner { top: 60vh; top: 60lvh; height: 20vh; height: 20lvh; }
+  [data-slot="8"] .zoom-inner { top: 80vh; top: 80lvh; height: 20vh; height: 20lvh; }
+  [data-slot="9"] .zoom-inner { top: 60vh; top: 60lvh; height: 20vh; height: 20lvh; }
+  [data-slot="10"] .zoom-inner { top: 80vh; top: 80lvh; height: 20vh; height: 20lvh; }
 
   .zoom-inner {
     /* Subtle border for separation in bento state */

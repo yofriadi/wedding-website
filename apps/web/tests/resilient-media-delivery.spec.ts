@@ -206,11 +206,11 @@ test.describe("resilient media delivery: throttled baseline & responsive media",
         "lite",
       );
 
-      // Verify all 10 collage slots display low-fidelity blurred LQIP placeholders
+      // Verify all 11 collage slots display low-fidelity blurred LQIP placeholders
       const lqipCount = await page.evaluate(() => {
         return document.querySelectorAll('#zoom-parallax-container img[src$="-lqip.webp"]').length;
       });
-      expect(lqipCount).toBe(10);
+      expect(lqipCount).toBe(11);
 
       // Verify no non-lqip collage candidate is loaded at load before approach
       const promotedCount = await page.evaluate(() => {
