@@ -149,14 +149,9 @@ Map popups SHALL use dark surfaces with light text when the device prefers dark 
 
 ---
 
-### Requirement: Map load failure degrades to a static fallback
+### Requirement: Tile CDN unreachable degradation
 
-If the Leaflet bundle fails to load (offline, chunk 404), the map section SHALL render a static fallback with non-duplicating directions copy, the address, and an "Open in Google Maps" link instead of a permanent loading placeholder. That static link SHALL follow the section's own device theme (white pill with dark ink on the light surface, black pill with white text on the dark one). If only the tile CDN is unreachable, map overlays remain usable on the neutral container background.
-
-#### Scenario: Leaflet import fails
-
-- **WHEN** the dynamic Leaflet import rejects
-- **THEN** the placeholder swaps to the non-duplicating static fallback (directions copy, address, Google Maps link) and no retry loop runs
+If tile requests fail, map overlays SHALL remain usable on the neutral container background.
 
 #### Scenario: Tile CDN unreachable
 
@@ -223,15 +218,6 @@ The map SHALL place Leaflet's `+ / −` zoom control at the top-right rather tha
 - **THEN** the map fits that route's origin and destination, instantly under reduced motion
 
 ---
-
-### Requirement: Static fallback for no-JS visitors
-
-With JavaScript disabled, the map section SHALL render its static fallback (non-duplicating directions copy and a plain static Google Maps venue link) instead of the permanent "Map loading…" spinner — the lazy-init observer never runs without JS. The dynamic top-left "Open in Google Maps" control is JS-built and therefore absent without JS; the fallback's static venue link is the only venue-Google-Maps path for no-JS visitors.
-
-#### Scenario: No-JS visitor reaches the map section
-
-- **WHEN** a visitor with JavaScript disabled scrolls to the map section
-- **THEN** the static fallback (directions copy + static Google Maps venue link) is visible, the "Map loading…" spinner copy is hidden (e.g. via a `<noscript><style>` rule), and the dynamic top-left control is absent
 
 ---
 

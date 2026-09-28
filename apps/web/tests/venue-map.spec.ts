@@ -83,7 +83,6 @@ test("map initializes lazily once the section enters the viewport", async ({ pag
   });
 
   // The static fallback stays hidden while the map works.
-  await expect(section.locator("[data-venue-map-fallback]")).toBeHidden();
 });
 
 test("leaflet stylesheet is injected at mount, not eager in <head>", async ({ page }) => {
@@ -127,26 +126,6 @@ test("venue name appears exactly once in the rendered page", async ({ page }) =>
   // destination popup would add a second — but popups are only built on
   // click, so at rest the count must be exactly one.
   expect(count).toBe(1);
-});
-
-test("no-JS visitors see the static fallback, not a spinner", async ({ browser }) => {
-  const context = await browser.newContext({ javaScriptEnabled: false });
-  const page = await context.newPage();
-  await page.goto("/");
-
-  const section = page.locator("#venue-map");
-
-  // The noscript style block reveals the fallback and hides the spinner copy.
-  await expect(section.locator("[data-venue-map-fallback]")).toBeVisible();
-  await expect(section.locator("[data-venue-map-placeholder]")).toBeHidden(); // noscript: instant, no crossfade
-
-  // The fallback must carry the Google Maps link (the only venue-maps path
-  // for no-JS visitors — design D18).
-  await expect(
-    section.locator("[data-venue-map-fallback] a[href*='google.com/maps']"),
-  ).toBeVisible();
-
-  await context.close();
 });
 
 test("map geometry ends at the shared venue constants", async ({ page }) => {

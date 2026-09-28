@@ -130,7 +130,6 @@ const VENUE_MAP_DATA = {
   routes: ROUTE_META,
 };
 
-const VENUE_MAPS_LINK = `https://www.google.com/maps/search/?api=1&query=${VENUE_LAT},${VENUE_LNG}`;
 ---
 
 <section id="venue-map" class="relative z-10 overflow-hidden py-12 md:py-16 bg-[color:var(--venue-bg)]">
@@ -174,44 +173,9 @@ const VENUE_MAPS_LINK = `https://www.google.com/maps/search/?api=1&query=${VENUE
         Directions to the venue&hellip;
       </p>
     </div>
-
-    <div
-      data-venue-map-fallback
-      data-fallback-hidden
-      class="absolute inset-0 hidden bg-[color:var(--venue-surface)] px-6 py-8 text-center"
-    >
-      <p class="text-xs tracking-widest uppercase text-[color:var(--venue-eyebrow)]">Directions to the venue</p>
-      <p class="pt-4 text-sm text-[color:var(--venue-city)]">
-        {VENUE_ADDRESS}<br />
-        {VENUE_CITY}
-      </p>
-      <a
-        href={VENUE_MAPS_LINK}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="mt-6 inline-block rounded-lg border border-[color:var(--venue-fallback-btn-border)] bg-[color:var(--venue-fallback-btn-bg)] px-4 py-2 text-sm font-medium text-[color:var(--venue-fallback-btn-text)] shadow-lg hover:bg-[color:var(--venue-fallback-btn-hover)]"
-      >
-        Open in Google Maps
-      </a>
-    </div>
   </div>
 </section>
 
-<!--
-  No-JS: without scripting the observer never runs, so the placeholder would
-  be a permanent spinner. Hide it and reveal the static fallback (repo idiom:
-  WelcomeGate.astro noscript style).
--->
-<noscript>
-  <style>
-    #venue-map [data-venue-map-placeholder] {
-      display: none;
-    }
-    #venue-map [data-venue-map-fallback] {
-      display: block;
-    }
-  </style>
-</noscript>
 
 <style>
   /* Section chrome tokens (WeddingFAQ precedent: tokens on the component
@@ -220,15 +184,11 @@ const VENUE_MAPS_LINK = `https://www.google.com/maps/search/?api=1&query=${VENUE
      heading/background chrome around the full-bleed map. */
   #venue-map {
     --venue-bg: #0a0a0a; /* neutral-950 */
-    --venue-eyebrow: #737373; /* neutral-500: eyebrow + loading/fallback labels */
+    --venue-eyebrow: #737373; /* neutral-500: eyebrow + loading labels */
     --venue-heading: #f5f5f5; /* neutral-100 */
     --venue-city: #a3a3a3; /* neutral-400 */
-    --venue-surface: #171717; /* neutral-900: placeholder + no-JS fallback */
+    --venue-surface: #171717; /* neutral-900: placeholder */
     --venue-map-frame: #e5e5e5; /* neutral-200: behind tiles pre-mount */
-    --venue-fallback-btn-bg: #0a0a0a;
-    --venue-fallback-btn-text: #ffffff;
-    --venue-fallback-btn-hover: #262626; /* neutral-800 */
-    --venue-fallback-btn-border: transparent; /* black pill on neutral-900: shadow carries the edge */
   }
 
   @media (prefers-color-scheme: light) {
@@ -239,10 +199,6 @@ const VENUE_MAPS_LINK = `https://www.google.com/maps/search/?api=1&query=${VENUE
       --venue-city: #525252; /* neutral-600 */
       --venue-surface: #f5f5f5; /* neutral-100 */
       --venue-map-frame: #e5e5e5; /* neutral-200 — unchanged, sits behind tiles */
-      --venue-fallback-btn-bg: #ffffff;
-      --venue-fallback-btn-text: #171717; /* neutral-900: flips with the section */
-      --venue-fallback-btn-hover: #e5e5e5; /* neutral-200 */
-      --venue-fallback-btn-border: rgb(0 0 0 / 0.12); /* a white pill on #f5f5f5 needs an edge */
     }
   }
 
@@ -773,8 +729,7 @@ const VENUE_MAPS_LINK = `https://www.google.com/maps/search/?api=1&query=${VENUE
   }
 
   /* Placeholder crossfade (D14): dims out over ~250ms as the live map fades
-     in beneath it — one hand-off, no same-frame swap. Instant under reduced */
-  /* motion and on the no-JS fallback path. */
+     in beneath it — one hand-off, no same-frame swap. Instant under reduced motion. */
   [data-venue-map-placeholder] {
     transition: opacity 250ms ease;
   }
@@ -832,17 +787,7 @@ const VENUE_MAPS_LINK = `https://www.google.com/maps/search/?api=1&query=${VENUE
         const { mountVenueMap } = await import("./venue-map");
         await mountVenueMap(section);
       } catch (err) {
-        // Leaflet chunk failed (offline / 404): swap to the static fallback,
-        // never a permanent spinner (design D7). The fallback markup lives in
-        // this same document, so it can be driven directly without another
-        // import of the chunk that just failed.
         console.error("[venue-map] map failed to load:", err);
-        const placeholder = section.querySelector("[data-venue-map-placeholder]");
-        const fallback = section.querySelector("[data-venue-map-fallback]");
-        // Tailwind's `hidden` is a class rule; clearing inline display does
-        // not beat it, so drop the class itself.
-        if (placeholder instanceof HTMLElement) placeholder.classList.add("hidden");
-        if (fallback instanceof HTMLElement) fallback.classList.remove("hidden");
       }
     };
 

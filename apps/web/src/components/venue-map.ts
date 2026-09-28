@@ -78,7 +78,6 @@ export interface VenueMapData {
 const CONTAINER_SELECTOR = "[data-venue-map-container]";
 const JSON_TAG = "script[type='application/json'][data-venue-map]";
 const PLACEHOLDER_SELECTOR = "[data-venue-map-placeholder]";
-const FALLBACK_SELECTOR = "[data-venue-map-fallback]";
 
 const ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>';
@@ -880,13 +879,4 @@ export async function mountVenueMap(section: HTMLElement): Promise<void> {
   ]);
   injectLeafletCss(leafletCss.default);
   initVenueMap(section, routes.ROUTE_GEOMETRY);
-}
-
-/** Swaps the placeholder for the static fallback (Leaflet import failure). */
-export function showVenueMapFallback(section: HTMLElement): void {
-  const placeholder = section.querySelector<HTMLElement>(PLACEHOLDER_SELECTOR);
-  const fallback = section.querySelector<HTMLElement>(FALLBACK_SELECTOR);
-  // `hidden` is a Tailwind class rule — clear the class, not inline display.
-  placeholder?.classList.add("hidden");
-  fallback?.classList.remove("hidden");
 }

@@ -387,21 +387,6 @@ test("route options and compact directions link are keyboard-accessible", async 
   await expect(directions).toBeFocused();
 });
 
-test("Leaflet chunk failure swaps to the static fallback", async ({ page }) => {
-  await page.route(
-    /\/src\/components\/venue-map\.ts|_astro\/venue-map\.|node_modules\/leaflet|_astro\/leaflet\./,
-    (route) => route.abort(),
-  );
-  await page.goto("/");
-  await dismissWelcomeGate(page);
-
-  const section = page.locator("#venue-map");
-  await section.scrollIntoViewIfNeeded();
-  await page.waitForTimeout(1_500);
-  await expect(section.locator("[data-venue-map-fallback]")).toBeVisible();
-  await expect(section.locator("[data-venue-map-placeholder]")).toBeHidden({ timeout: 10_000 }); // fallback path: instant
-});
-
 test("mobile: map container allows page scroll pass-through and is full-bleed", async ({
   page,
   isMobile,
