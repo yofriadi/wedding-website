@@ -31,6 +31,7 @@ async function createInvite(body: {
 }
 
 test.describe("claim member gate", () => {
+  test.use({ viewport: { width: 390, height: 844 } });
   test.beforeEach(({ page }) => {
     pinFullTier(page);
   });
@@ -51,7 +52,19 @@ test.describe("claim member gate", () => {
     await expect(welcomeGate).toHaveAttribute("aria-hidden", "true");
 
     const input = page.locator("#claim-gate-input");
+    await expect(input).not.toBeFocused();
+
+    // Placeholder "Nama Anda" is visible initially and cursor is not shown
+    const placeholder = page.locator("#claim-gate-placeholder");
+    await expect(placeholder).toBeVisible();
+    await expect(placeholder).toHaveText("Nama Anda");
+
+    // Focusing reveals cursor at center and hides placeholder
+    await input.focus();
     await expect(input).toBeFocused();
+    await expect(placeholder).toBeHidden();
+    const cursor = page.locator(".claim-char-track .claim-cursor");
+    await expect(cursor).toBeVisible();
 
     // Photo upload control remains hidden for unclaimed group visitors
     await expect(page.locator("[data-add-image]")).toBeHidden();
@@ -87,6 +100,8 @@ test.describe("claim member gate", () => {
     await input.fill("A");
     await expect(submitBtn).toHaveAttribute("data-visible", "true");
     await expect(submitBtn).toBeVisible();
+    // Ghost button styling: transparent border
+    await expect(submitBtn).toHaveCSS("border-color", "rgba(0, 0, 0, 0)");
 
     // Multiple chars: still revealed
     await input.fill("Ali");

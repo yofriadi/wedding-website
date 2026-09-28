@@ -21,13 +21,13 @@
       class="w-full flex flex-col items-center"
       novalidate
     >
-      <!-- Prompt label above underline input -->
+      <!-- Accessible name for modal dialog and native input -->
       <label
         for="claim-gate-input"
         id="claim-gate-label"
-        class="mb-5 text-sm font-medium tracking-tight text-[color:var(--claim-muted)] text-center select-none"
+        class="sr-only"
       >
-        Tulis nama Anda
+        Nama Anda
       </label>
 
       <div class="claim-input-box relative w-full flex flex-col items-center">
@@ -40,13 +40,19 @@
           maxlength="120"
           autocomplete="name"
           spellcheck="false"
+          placeholder="Nama Anda"
           required
         />
 
         <!-- Underline baseline with animated character track -->
-        <div class="claim-visual-line w-full pb-2 border-b flex items-center justify-start overflow-x-auto overflow-y-hidden cursor-text no-scrollbar" aria-hidden="true">
-          <div class="claim-char-track inline-flex items-center text-xl sm:text-2xl font-medium tracking-tight">
-            <span class="claim-cursor" aria-hidden="true">|</span>
+        <div class="claim-visual-line relative w-full pb-2 border-b flex items-center justify-center overflow-x-auto overflow-y-hidden cursor-text no-scrollbar" aria-hidden="true">
+          <span
+            id="claim-gate-placeholder"
+            class="claim-placeholder pointer-events-none select-none text-2xl sm:text-3xl font-medium tracking-tight"
+          >
+            Nama Anda
+          </span>
+          <div class="claim-char-track inline-flex items-center text-2xl sm:text-3xl font-medium tracking-tight">
           </div>
         </div>
       </div>
@@ -107,6 +113,7 @@
     --claim-bg: #0a0a0a;
     --claim-fg: #ededed;
     --claim-muted: #a1a1aa;
+    --claim-placeholder: #9ca3af;
     --claim-line: rgba(237, 237, 237, 0.4);
     --claim-cursor: #ededed;
     --claim-error: #f87171;
@@ -117,6 +124,7 @@
       --claim-bg: #ffffff;
       --claim-fg: #0a0a0a;
       --claim-muted: #71717a;
+      --claim-placeholder: #6b7280;
       --claim-line: rgba(10, 10, 10, 0.3);
       --claim-cursor: #0a0a0a;
       --claim-error: #b91c1c;
@@ -128,6 +136,7 @@
     --claim-bg: #ffffff;
     --claim-fg: #0a0a0a;
     --claim-muted: #71717a;
+    --claim-placeholder: #6b7280;
     --claim-line: rgba(10, 10, 10, 0.3);
     --claim-cursor: #0a0a0a;
     --claim-error: #b91c1c;
@@ -164,12 +173,12 @@
   }
 
   .claim-input-box {
-    max-width: 280px;
+    max-width: 300px;
   }
 
   @media (min-width: 640px) {
     .claim-input-box {
-      max-width: 320px;
+      max-width: 340px;
     }
   }
 
@@ -183,17 +192,39 @@
     cursor: text;
     z-index: 2;
     font-size: 16px; /* Prevents iOS auto-zoom on focus */
+    text-align: center;
     -webkit-user-select: text;
     user-select: text;
   }
 
   .claim-visual-line {
-    border-color: var(--claim-line);
-    min-height: 2.5rem;
+    border-bottom: 1px solid var(--claim-line);
+    min-height: 2.75rem;
     position: relative;
     z-index: 1;
+    justify-content: center;
   }
 
+  .claim-placeholder {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 0;
+    bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--claim-placeholder);
+    opacity: 0.4;
+    line-height: 1;
+    pointer-events: none;
+    transition: opacity 150ms ease, visibility 150ms ease;
+  }
+
+  .claim-placeholder[data-hidden="true"] {
+    opacity: 0;
+    visibility: hidden;
+  }
   .claim-char-track {
     white-space: pre;
     color: var(--claim-fg);
@@ -238,8 +269,11 @@
     display: inline-block;
     color: var(--claim-cursor);
     font-weight: 300;
-    margin-left: 1px;
     animation: cursor-blink 1s step-end infinite;
+  }
+
+  .claim-char-track :global(.claim-char + .claim-cursor) {
+    margin-left: 1px;
   }
 
   @keyframes cursor-blink {
@@ -252,17 +286,17 @@
   }
 
   .claim-action-container {
-    height: 2.75rem;
+    height: 3.25rem;
   }
 
-  /* Action button: outlined curved pill */
+  /* Action button: ghost pill */
   .claim-button {
-    padding: 0.625rem 2rem;
-    border: 1px solid color-mix(in srgb, var(--claim-fg) 30%, transparent);
+    padding: 0.625rem 2.25rem;
+    border: 1px solid transparent;
     border-radius: 999px;
     background: transparent;
     color: var(--claim-fg);
-    font-size: 0.9375rem;
+    font-size: 1.125rem;
     font-weight: 500;
     letter-spacing: -0.015em;
     cursor: pointer;
@@ -270,7 +304,14 @@
     visibility: hidden;
     transform: translateY(8px);
     pointer-events: none;
-    transition: opacity 250ms ease, transform 250ms ease, visibility 250ms ease, background-color 160ms ease;
+    transition: opacity 250ms ease, transform 250ms ease, visibility 250ms ease, background-color 160ms ease, color 160ms ease;
+  }
+
+  @media (min-width: 640px) {
+    .claim-button {
+      font-size: 1.25rem;
+      padding: 0.75rem 2.5rem;
+    }
   }
 
   .claim-button[data-visible="true"] {
@@ -282,6 +323,10 @@
 
   .claim-button:hover:not(:disabled) {
     background: color-mix(in srgb, var(--claim-fg) 10%, transparent);
+  }
+
+  .claim-button:active:not(:disabled) {
+    background: color-mix(in srgb, var(--claim-fg) 15%, transparent);
   }
 
   .claim-button:disabled {
@@ -318,6 +363,9 @@
     .claim-button {
       transition: none !important;
     }
+    .claim-placeholder {
+      transition: none !important;
+    }
   }
 </style>
 
@@ -352,6 +400,7 @@
     var isSubmitting = false;
     var isDismissed = false;
     var isAmbiguousError = false;
+    var isFocused = false;
     var previousValue = '';
     var deleteTimeout = null;
 
@@ -393,12 +442,21 @@
       var val = input.value;
       var selStart = input.selectionStart != null ? input.selectionStart : val.length;
 
-      // Render character spans with cursor at selectionStart
+      var placeholderEl = gate.querySelector('.claim-placeholder');
+      if (placeholderEl) {
+        if (val.length === 0 && !isFocused) {
+          placeholderEl.removeAttribute('data-hidden');
+        } else {
+          placeholderEl.setAttribute('data-hidden', 'true');
+        }
+      }
+
+      // Render character spans with cursor at selectionStart (only when focused)
       var chars = val.split('');
       var frag = document.createDocumentFragment();
 
       for (var i = 0; i < chars.length; i++) {
-        if (i === selStart) {
+        if (i === selStart && isFocused) {
           var cursorMid = document.createElement('span');
           cursorMid.className = 'claim-cursor';
           cursorMid.setAttribute('aria-hidden', 'true');
@@ -421,7 +479,7 @@
         frag.appendChild(outSpan);
       }
 
-      if (selStart >= chars.length) {
+      if (selStart >= chars.length && isFocused) {
         var cursorEnd = document.createElement('span');
         cursorEnd.className = 'claim-cursor';
         cursorEnd.setAttribute('aria-hidden', 'true');
@@ -434,14 +492,19 @@
 
       // Keep active cursor visible in scrollable track
       if (visualLine) {
-        var activeCursor = charTrack.querySelector('.claim-cursor');
-        if (activeCursor) {
-          var offset = activeCursor.offsetLeft;
-          var maxScroll = visualLine.scrollWidth - visualLine.clientWidth;
-          visualLine.scrollLeft = Math.max(0, Math.min(offset - visualLine.clientWidth + 24, maxScroll));
+        if (charTrack.scrollWidth > visualLine.clientWidth) {
+          visualLine.style.justifyContent = 'flex-start';
+          var activeCursor = charTrack.querySelector('.claim-cursor');
+          if (activeCursor) {
+            var offset = activeCursor.offsetLeft;
+            var maxScroll = visualLine.scrollWidth - visualLine.clientWidth;
+            visualLine.scrollLeft = Math.max(0, Math.min(offset - visualLine.clientWidth + 24, maxScroll));
+          }
+        } else {
+          visualLine.style.justifyContent = 'center';
+          visualLine.scrollLeft = 0;
         }
       }
-
       if (deletedChar && !reducedMotion) {
         deleteTimeout = setTimeout(function () {
           if (input.value === val) {
@@ -468,6 +531,7 @@
 
     // Input event handler
     input.addEventListener('input', function () {
+      isFocused = true;
       if (!isAmbiguousError) showError('', false, false);
       var current = input.value;
       var isSingleAppend = current.length === previousValue.length + 1 && current.startsWith(previousValue);
@@ -478,15 +542,26 @@
 
     // Caret navigation synchronization
     input.addEventListener('keyup', function (e) {
+      isFocused = true;
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'Home' || e.key === 'End') {
         syncVisualTrack(false);
       }
     });
 
-    input.addEventListener('click', function () {
+    input.addEventListener('focus', function () {
+      isFocused = true;
       syncVisualTrack(false);
     });
 
+    input.addEventListener('blur', function () {
+      isFocused = false;
+      syncVisualTrack(false);
+    });
+
+    input.addEventListener('click', function () {
+      isFocused = true;
+      syncVisualTrack(false);
+    });
     // Enter key submits form
     input.addEventListener('keydown', function (e) {
       if (e.key === 'Enter') {
@@ -646,24 +721,6 @@
       });
     }
 
-    // Input focus: applied only after #loading-screen is dismissed
-    function focusInputWhenReady() {
-      var loader = document.getElementById('loading-screen');
-      if (!loader) {
-        input.focus();
-        return;
-      }
-      var observer = new MutationObserver(function () {
-        if (!loader.isConnected) {
-          observer.disconnect();
-          input.focus();
-        }
-      });
-      observer.observe(loader.parentNode || document.documentElement, {
-        childList: true,
-      });
-    }
-
     // Focus containment loop for Tab key inside modal claim gate
     gate.addEventListener('keydown', function (e) {
       if (e.key === 'Tab') {
@@ -686,7 +743,7 @@
       }
     });
 
-    focusInputWhenReady();
+    // No autofocus on load — cursor starts unfocused
     syncVisualTrack(false);
   })();
 </script>
