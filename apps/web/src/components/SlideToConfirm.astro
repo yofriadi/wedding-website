@@ -834,9 +834,6 @@ const CHECK_LONG_ARM = "M9 17 14.5 11.5 20 6";
     }
 
     const finishEntrance = setupEntrance(btn);
-    // Set by a threshold-crossing release so that gesture's own click is
-    // allowed through to the submit (see the click listener).
-    let armedViaDrag = false;
     let x = 0;
     // The settle/confirm spring, kept so a new gesture can stop it — motion's
     // default when overlapping animations on one value race (stop wins).
@@ -997,11 +994,11 @@ const CHECK_LONG_ARM = "M9 17 14.5 11.5 20 6";
     const confirm = () => {
       if (confirmed) return;
       finishEntrance();
-      confirmed = true;
       // The fill's origin depends on the handle's parked center, so the
       // geometry has to be current before the circle is seeded (a keyboard
       // confirm may never have gone through pointerdown's measure()).
       measure();
+      confirmed = true;
       btn.classList.add("slide-to-confirm--confirmed");
       btn.classList.remove("slide-to-confirm--dragging");
 
@@ -1047,7 +1044,7 @@ const CHECK_LONG_ARM = "M9 17 14.5 11.5 20 6";
     };
 
     btn.addEventListener("pointerdown", (event) => {
-      if (confirmed || btn.disabled) return;
+      if (confirmed || btn.disabled || dragging) return;
       // Left button / touch / pen only.
       if (event.pointerType === "mouse" && event.button !== 0) return;
       finishEntrance();
@@ -1090,10 +1087,16 @@ const CHECK_LONG_ARM = "M9 17 14.5 11.5 20 6";
       pointerId = null;
       btn.classList.remove("slide-to-confirm--dragging");
       if (range > 0 && x >= range * ARM_THRESHOLD) {
-        // The pointerup's own click follows immediately; mark it as this
-        // gesture's so the click listener lets it through to the submit.
-        armedViaDrag = true;
+        // Reached arm threshold: complete slide and dispatch form submit directly.
+        // A touch drag moving past tap-slop produces no compatibility click event
+        // in Chromium/WebKit; requestSubmit ensures submission regardless of pointer type.
         confirm();
+        const form = btn.form ?? btn.closest("form");
+        if (typeof form?.requestSubmit === "function") {
+          form.requestSubmit(btn);
+        } else {
+          form?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+        }
       } else {
         rideTo(0);
       }
@@ -1120,8 +1123,7 @@ const CHECK_LONG_ARM = "M9 17 14.5 11.5 20 6";
     // mid-gesture.
     btn.addEventListener("click", (event) => {
       if (confirmed) {
-        if (!armedViaDrag) event.preventDefault(); // confirmed and idle: inert
-        armedViaDrag = false;
+        event.preventDefault(); // already confirmed / armed via drag: inert
         return;
       }
       if (btn.disabled || event.detail !== 0 || x > 0) {
@@ -1129,9 +1131,7 @@ const CHECK_LONG_ARM = "M9 17 14.5 11.5 20 6";
         return;
       }
       confirm();
-      // No preventDefault on the arming paths: a submit button's click
-      // dispatches the form's submit event, which RsvpSection turns into the
-      // RSVP POST.
+      // No preventDefault on keyboard activation (detail === 0): native click submits form
     });
 
     // The host page owns the truth. This control arms its celebration on the
@@ -1153,7 +1153,6 @@ const CHECK_LONG_ARM = "M9 17 14.5 11.5 20 6";
     btn.addEventListener("slide-to-confirm:reset", () => {
       if (!confirmed) return;
       confirmed = false;
-      armedViaDrag = false;
       fillAnimation?.stop();
       fillAnimation = null;
       popAnimation?.stop();

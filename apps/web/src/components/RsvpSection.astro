@@ -162,7 +162,10 @@ const countDigits = String(confirmedCount);
   const poll = async () => {
     if (!pollEnabled || !ticker) return;
     try {
-      const res = await fetch("/api/rsvp/count", { cache: "no-store" });
+      const res = await fetch("/api/rsvp/count", {
+        credentials: "same-origin",
+        cache: "no-store",
+      });
       if (!res.ok) return; // keep last known value
       const data = (await res.json()) as { count?: unknown };
       if (typeof data.count === "number" && Number.isFinite(data.count)) {
@@ -198,6 +201,7 @@ const countDigits = String(confirmedCount);
 
     // One-way by design: a confirmed invitee has no UI path back to declined.
     let confirmed = confirmBtn?.disabled === true;
+    let inFlight = false;
 
     // SlideToConfirm marks its label span [data-slide-to-confirm-text]; the
     // swap correct if the component ever paints the label on more than one layer.
@@ -218,7 +222,13 @@ const countDigits = String(confirmedCount);
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
-      if (!confirmBtn || confirmed) return;
+      if (!confirmBtn || confirmed || inFlight) {
+        if (inFlight) {
+          confirmBtn?.dispatchEvent(new CustomEvent("slide-to-confirm:reset"));
+        }
+        return;
+      }
+      inFlight = true;
       if (errorEl) {
         errorEl.textContent = "";
         errorEl.classList.add("hidden");
@@ -228,6 +238,7 @@ const countDigits = String(confirmedCount);
         const res = await fetch("/api/rsvp", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
+          credentials: "same-origin",
           cache: "no-store",
           body: JSON.stringify({ attending: true }),
         });
@@ -276,6 +287,8 @@ const countDigits = String(confirmedCount);
         // celebration may already be running.
         confirmBtn.dispatchEvent(new CustomEvent("slide-to-confirm:reset"));
         showError("Couldn't save your RSVP. Please try again.");
+      } finally {
+        inFlight = false;
       }
     });
     window.addEventListener("claim:success", () => {

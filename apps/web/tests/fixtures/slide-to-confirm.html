@@ -643,9 +643,6 @@
           window.addEventListener("resize", measure);
         }
         const finishEntrance = setupEntrance(btn);
-        // Set by a threshold-crossing release so that gesture's own click is
-        // allowed through to the submit (see the click listener).
-        let armedViaDrag = false;
         let x = 0;
         // The settle/confirm spring, kept so a new gesture can stop it — motion's
         // default when overlapping animations on one value race (stop wins).
@@ -811,11 +808,11 @@
         const confirm = () => {
           if (confirmed) return;
           finishEntrance();
-          confirmed = true;
           // The fill's origin depends on the handle's parked center, so the
           // geometry has to be current before the circle is seeded (a keyboard
           // confirm may never have gone through pointerdown's measure()).
           measure();
+          confirmed = true;
           btn.classList.add("slide-to-confirm--confirmed");
           btn.classList.remove("slide-to-confirm--dragging");
           // The label was faded by the slide; the confirmed words rise back in
@@ -872,7 +869,7 @@
           }
         };
         btn.addEventListener("pointerdown", (event) => {
-          if (confirmed || btn.disabled) return;
+          if (confirmed || btn.disabled || dragging) return;
           // Left button / touch / pen only.
           if (event.pointerType === "mouse" && event.button !== 0) return;
           finishEntrance();
@@ -911,10 +908,13 @@
           pointerId = null;
           btn.classList.remove("slide-to-confirm--dragging");
           if (range > 0 && x >= range * ARM_THRESHOLD) {
-            // The pointerup's own click follows immediately; mark it as this
-            // gesture's so the click listener lets it through to the submit.
-            armedViaDrag = true;
             confirm();
+            const form = btn.form ?? btn.closest("form");
+            if (typeof form?.requestSubmit === "function") {
+              form.requestSubmit(btn);
+            } else {
+              form?.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+            }
           } else {
             rideTo(0);
           }
@@ -940,8 +940,7 @@
         // mid-gesture.
         btn.addEventListener("click", (event) => {
           if (confirmed) {
-            if (!armedViaDrag) event.preventDefault();
-            armedViaDrag = false;
+            event.preventDefault();
             return;
           }
           if (btn.disabled || event.detail !== 0 || x > 0) {
@@ -972,7 +971,6 @@
         btn.addEventListener("slide-to-confirm:reset", () => {
           if (!confirmed) return;
           confirmed = false;
-          armedViaDrag = false;
           fillAnimation?.stop();
           fillAnimation = null;
           popAnimation?.stop();
