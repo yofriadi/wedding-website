@@ -101,15 +101,20 @@ const SIZES_CARD =
           style="transform: scale(0.6); transform-origin: center;"
         ></div>
 
-        <!-- Date above the node -->
+        <!-- Text and Date above the node -->
         <div data-node2-pin class="absolute inset-0">
-          <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+16px)] whitespace-nowrap text-center">
-            <div data-node2-date style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
-              <div class="font-serif text-2xl text-[color:var(--timeline-ink)] text-center">Februari 2025</div>
+          <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+16px)] flex flex-col items-center w-[320px] max-w-[calc(100vw-32px)] text-center">
+            <div data-node2-desc class="mb-2 text-center" style="opacity: 0; transform: scale(0.6); transform-origin: 50% 100%;">
+              <p class="text-sm leading-relaxed text-[color:var(--timeline-muted)] text-center text-pretty">
+                Perkenalan. Pertemuan yang awalnya hanya saling bertegur sapa, menjadi saling bertukar kabar dan cerita.
+              </p>
+            </div>
+            <div data-node2-date style="opacity: 0; transform: scale(0.6); transform-origin: 50% 100%;">
+              <div class="whitespace-nowrap font-serif text-2xl text-[color:var(--timeline-ink)] text-center">Februari 2025</div>
             </div>
           </div>
 
-          <!-- Photo and Text below the node -->
+          <!-- Photo below the node -->
           <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+24px)] flex flex-col items-center">
             <div data-node2-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
               <div class="h-[360px] sm:h-[400px] w-auto max-w-[calc(100vw-32px)] aspect-[591/1280] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
@@ -132,12 +137,6 @@ const SIZES_CARD =
                   />
                 </picture>
               </div>
-            </div>
-
-            <div data-node2-desc class="mt-4 w-[320px] text-center" style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
-              <p class="text-sm leading-relaxed text-[color:var(--timeline-muted)] text-center text-pretty">
-                Awal perkenalan
-              </p>
             </div>
           </div>
         </div>
@@ -185,9 +184,9 @@ const SIZES_CARD =
           </div>
 
           <!-- Text below the node -->
-          <div data-node3-desc class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+24px)] w-[320px] text-center" style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
+          <div data-node3-desc class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+24px)] w-[320px] max-w-[calc(100vw-32px)] text-center" style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
             <p class="text-sm leading-relaxed text-[color:var(--timeline-muted)] text-center text-pretty">
-              Aisha diperkenalkan ke keluarga Yofri
+              Setelah saling mengenal lebih jauh, tanpa banyak kata, Yofri membawa Aisha ke rumah. Aisha diperkenalkan ke keluarga Yofri sebagai "calon" yang selama ini ditunggu-tunggu kedatangannya. Kabar ini membawa kebahagiaan bagi keluarga Yofri.
             </p>
           </div>
         </div>
@@ -229,13 +228,13 @@ const SIZES_CARD =
             </div>
           </div>
 
-          <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+22px)] w-[320px] flex flex-col items-center">
+          <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+22px)] w-[320px] max-w-[calc(100vw-32px)] flex flex-col items-center">
             <div data-node4-date style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
               <div class="font-serif text-2xl text-[color:var(--timeline-ink)] text-center">November 2025</div>
             </div>
             <div data-node4-desc class="text-center" style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
               <p class="mt-2 text-sm leading-relaxed text-[color:var(--timeline-muted)] text-center text-pretty">
-                Yofri bertemu keluarga Aisha
+                Mengenal satu pihak saja rasanya tidak cukup. Kali ini Aisha yang membawa Yofri ke kampung halaman, bertemu dengan keluarga besar Aisha. Kedatangannya disambut hangat.
               </p>
             </div>
           </div>
@@ -754,7 +753,7 @@ const SIZES_CARD =
     // Content remains in each node's authored coordinate space. Only the reveal
     // transforms animate; no node or wrapper follows/counters the viewport.
     const ORIGIN_Y: Record<number, Record<string, "top" | "bottom">> = {
-      2: { date: "bottom", photo: "top", desc: "top" },
+      2: { date: "bottom", photo: "top", desc: "bottom" },
       3: { photo: "bottom", date: "bottom", desc: "top" },
       4: { photo: "bottom", date: "top", desc: "top" },
       5: { date: "bottom", photo: "top", desc: "top" }
