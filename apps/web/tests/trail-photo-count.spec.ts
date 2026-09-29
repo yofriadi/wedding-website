@@ -4,14 +4,15 @@ import { dismissWelcomeGate } from "./helpers";
 // The trail renders exactly what GET /api/guest-photos returns. Point the
 // mocked photo URLs at real public assets so no extra image routing is needed.
 const ASSETS = ["/keluarga-yofri.webp", "/awal-perkenalan.webp", "/keluarga-acik.webp"];
-// Lane offsets of MagneticImageTrail's 18 slots, used to detect duplication:
-// with a pool no larger than the frame count each photo stays in one lane, so
-// a photo drawn in two lanes means it was duplicated across frames.
+// Lane offsets of MagneticImageTrail's 18 slots: used to verify that no two
+// distinct photos ever collide in the same lane within any render frame.
 const LANE_OFFSETS = [
   0, -30, 30, -60, 60, -94, 94, -122, 122, -18, 18, -52, 52, -78, 78, -134, 134, 10,
 ];
 
-type Draw = { source: string; lane: number; time: number };
+test.use({ viewport: { width: 390, height: 844 } });
+
+type Draw = { source: string; lane: number; frame: number };
 type ProbeWindow = Window & { trailDraws: Draw[] };
 
 async function prepareWithPhotos(page: Page, count: number) {
@@ -29,8 +30,19 @@ async function prepareWithPhotos(page: Page, count: number) {
     }),
   );
   await page.addInitScript((laneOffsets: number[]) => {
-    const draws: { source: string; lane: number; time: number }[] = [];
+    const draws: { source: string; lane: number; frame: number }[] = [];
     Object.assign(window, { trailDraws: draws });
+    let currentFrame = 0;
+    const origClear = CanvasRenderingContext2D.prototype.clearRect;
+    CanvasRenderingContext2D.prototype.clearRect = function (
+      this: CanvasRenderingContext2D,
+      ...args: [number, number, number, number]
+    ) {
+      if (this.canvas.matches("[data-trail-canvas]")) {
+        currentFrame++;
+      }
+      return Reflect.apply(origClear, this, args);
+    };
     const original = CanvasRenderingContext2D.prototype.drawImage;
     CanvasRenderingContext2D.prototype.drawImage = function (
       image: CanvasImageSource,
@@ -56,7 +68,7 @@ async function prepareWithPhotos(page: Page, count: number) {
             error = distance;
           }
         });
-        draws.push({ source: new URL(image.src).pathname, lane, time: performance.now() });
+        draws.push({ source: new URL(image.src).pathname, lane, frame: currentFrame });
       }
       Reflect.apply(original, this, [image, ...args]);
     };
@@ -97,17 +109,20 @@ for (const count of [0, 1, 2, 3]) {
       .toEqual(expected);
 
     // Photos rotate dynamically across lanes, but no photo may ever be drawn
-    // concurrently in multiple lanes within the same render tick.
+    // concurrently in multiple lanes within the same render tick (frame),
+    // and no two distinct photos may ever share the same lane in the same frame.
     const allDraws = await draws(page);
-    const byTick = new Map<number, string[]>();
+    const byFrame = new Map<number, Draw[]>();
     for (const d of allDraws) {
-      const tick = Math.round(d.time / 8);
-      const list = byTick.get(tick) ?? [];
-      list.push(d.source);
-      byTick.set(tick, list);
+      const list = byFrame.get(d.frame) ?? [];
+      list.push(d);
+      byFrame.set(d.frame, list);
     }
-    for (const sources of byTick.values()) {
+    for (const frameDraws of byFrame.values()) {
+      const sources = frameDraws.map((d) => d.source);
       expect(new Set(sources).size).toBe(sources.length);
+      const lanes = frameDraws.map((d) => d.lane);
+      expect(new Set(lanes).size).toBe(lanes.length);
     }
     expect([...new Set(allDraws.map((d) => d.source))].sort()).toEqual(expected);
   });

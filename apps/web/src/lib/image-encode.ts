@@ -5,7 +5,11 @@ import type { PhotoType } from "./photo-storage";
 // Normalize before persistence: cap dimensions, apply orientation, and strip
 // camera metadata. WebP is canonical for older browsers; AVIF is optional
 // background work negotiated from the same immutable URL.
-export const MAX_PHOTO_EDGE = 2048;
+// Guest photos only appear as moving cards in MagneticImageTrail (peaking
+// around ~250px on standard mobile screens, ~500 physical px at DPR 2).
+// Capping at 640px slashes network payload and decoded bitmap RAM by ~80%
+// while maintaining crisp fidelity for continuously drifting frames.
+export const MAX_PHOTO_EDGE = 640;
 
 export const WEBP_QUALITY = 80;
 export const AVIF_QUALITY = 55;

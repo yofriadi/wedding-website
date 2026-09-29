@@ -219,12 +219,12 @@ Canonical files SHALL be stored outside the web root under `guest-photos/<photo-
 
 ### Requirement: Canonical photos retain normalization and privacy guarantees
 
-Before persistence, every accepted image SHALL have orientation applied, its longest edge capped at 2048 pixels without enlargement, EXIF/XMP/IPTC metadata stripped, and a WebP canonical produced at quality 80. Decoder input SHALL retain the existing 64-million-pixel limit. Only an uploaded WebP that is within the cap, orientation 1 or absent, metadata-free, and no larger than the server's re-encode SHALL pass through unchanged. JPEG, PNG, and AVIF inputs SHALL always be re-encoded to WebP. No thumbnail or archival original SHALL be generated or required for acceptance.
+Before persistence, every accepted image SHALL have orientation applied, its longest edge capped at 640 pixels without enlargement, EXIF/XMP/IPTC metadata stripped, and a WebP canonical produced at quality 80. Decoder input SHALL retain the existing 64-million-pixel limit. Only an uploaded WebP that is within the cap, orientation 1 or absent, metadata-free, and no larger than the server's re-encode SHALL pass through unchanged. JPEG, PNG, and AVIF inputs SHALL always be re-encoded to WebP. No thumbnail or archival original SHALL be generated or required for acceptance. Canonicals written before this normalization cap change retain their original 2048-pixel dimensions absent an offline backfill.
 
 #### Scenario: Large phone image is normalized
 
 - **WHEN** an allowed photo exceeds the output dimension cap
-- **THEN** its canonical preserves aspect ratio within 2048 pixels on the long edge, with applied orientation and no EXIF/XMP/IPTC
+- **THEN** its canonical preserves aspect ratio within 640 pixels on the long edge, with applied orientation and no EXIF/XMP/IPTC
 
 #### Scenario: Small image is not enlarged
 

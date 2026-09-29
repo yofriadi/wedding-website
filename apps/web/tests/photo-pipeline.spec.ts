@@ -149,14 +149,14 @@ test("normalization caps dimensions, reduces bytes, and creates no thumbnails", 
   const stored = readFileSync(canonicalPath(uploaded));
   expect(await sharp(stored).metadata()).toMatchObject({
     format: "webp",
-    width: 2048,
-    height: 1365,
+    width: 640,
+    height: 427,
   });
   expect(stored.length).toBeLessThan(bigJpeg.length);
-  const small = await upload(await makeTestPhoto(1000, 704));
+  const small = await upload(await makeTestPhoto(500, 352));
   expect(await sharp(readFileSync(canonicalPath(small))).metadata()).toMatchObject({
-    width: 1000,
-    height: 704,
+    width: 500,
+    height: 352,
   });
   for (const photo of [uploaded, small]) {
     const names = readdirSync(join(server.photosDir, "guest-photos", photo.id));
@@ -172,7 +172,7 @@ test("normalization caps dimensions, reduces bytes, and creates no thumbnails", 
 });
 
 test("orientation is applied and camera EXIF/GPS never reaches public output", async () => {
-  const original = await sharp(await makeTestPhoto(1200, 800))
+  const original = await sharp(await makeTestPhoto(600, 400))
     .jpeg({ quality: 90 })
     .withMetadata({ orientation: 6 })
     .withExif({
@@ -183,7 +183,7 @@ test("orientation is applied and camera EXIF/GPS never reaches public output", a
   expect((await sharp(original).metadata()).exif?.length).toBeGreaterThan(0);
   const photo = await upload(original);
   const meta = await sharp(readFileSync(canonicalPath(photo))).metadata();
-  expect(meta).toMatchObject({ width: 800, height: 1200, format: "webp" });
+  expect(meta).toMatchObject({ width: 400, height: 600, format: "webp" });
   expect(meta.exif).toBeUndefined();
   expect(meta.xmp).toBeUndefined();
   expect(meta.iptc).toBeUndefined();
@@ -191,7 +191,7 @@ test("orientation is applied and camera EXIF/GPS never reaches public output", a
 });
 
 test("WebP pass-through requires every size, dimension, orientation and privacy condition", async () => {
-  const source = await makeTestPhoto(1504, 1000);
+  const source = await makeTestPhoto(500, 332);
   const optimal = await sharp(source).webp({ quality: 20 }).toBuffer();
   const original = await upload(optimal);
   expect(readFileSync(canonicalPath(original))).toEqual(optimal);
@@ -207,13 +207,13 @@ test("WebP pass-through requires every size, dimension, orientation and privacy 
       .webp({ quality: 20 })
       .toBuffer(),
   );
-  expect((await sharp(readFileSync(canonicalPath(oversized))).metadata()).width).toBe(2048);
+  expect((await sharp(readFileSync(canonicalPath(oversized))).metadata()).width).toBe(640);
   const rotated = await upload(
     await sharp(source).webp({ quality: 20 }).withMetadata({ orientation: 6 }).toBuffer(),
   );
   expect(await sharp(readFileSync(canonicalPath(rotated))).metadata()).toMatchObject({
-    width: 1000,
-    height: 1504,
+    width: 332,
+    height: 500,
   });
   const expensive = await sharp(source).webp({ lossless: true }).toBuffer();
   const smaller = await upload(expensive);

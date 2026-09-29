@@ -21,7 +21,7 @@ photos/guest-photos/<12-character-photo-id>/photo.webp  # required canonical
 photos/guest-photos/<12-character-photo-id>/photo.avif  # optional derived variant
 ```
 
-The canonical is orientation-corrected, capped at a 2048-pixel long edge without enlargement, and stripped of EXIF/XMP/IPTC. WebP quality is 80; already optimal safe WebP can pass through. JPEG, PNG, and AVIF uploads are converted to WebP. Originals, thumbnails, story groups, and position files are not stored.
+The canonical is orientation-corrected, capped at a 640-pixel long edge without enlargement, and stripped of EXIF/XMP/IPTC. WebP quality is 80; already optimal safe WebP can pass through. JPEG, PNG, and AVIF uploads are converted to WebP. Originals, thumbnails, story groups, and position files are not stored. Canonicals written before this normalization cap change retain their original 2048-pixel dimensions absent an offline backfill.
 
 ## Fresh installation versus an existing environment
 

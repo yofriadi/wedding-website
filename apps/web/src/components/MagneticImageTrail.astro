@@ -473,6 +473,8 @@ const {
     (a, b) => Math.abs(SLOTS[a]!.y) - Math.abs(SLOTS[b]!.y),
   );
   const bySlotIndex = (a: { slotIndex: number }, b: { slotIndex: number }) => a.slotIndex - b.slotIndex;
+  const holdsContent = (state: TrailFrame) =>
+    Boolean(state.image || state.pendingImage || state.pendingSource || state.source);
 
   // Faster + tighter motion. SPEED is the original's base rate — with no
   // pointer there is no speed boost, so the trail flows at a constant pace.
@@ -732,20 +734,48 @@ const {
       };
 
       const pickNewSlot = (state: TrailFrame) => {
-        // A slot is eligible if no other visible frame in that slot is near the entrance (phase < 0.35)
-        const busySlots = new Set(
-          frames
-            .filter((other) => other !== state && (other.image || other.pendingImage || other.source))
-            .filter((other) => other.gap === 0 && other.phase < 0.35)
-            .map((other) => other.slotIndex),
+        const activeFrames = frames.filter(holdsContent);
+        const windowSize = Math.min(
+          SLOT_BY_CENTRALITY.length,
+          Math.max(3, activeFrames.length + Math.ceil(activeFrames.length / 2)),
         );
-        const eligible = SLOTS
-          .map((_, idx) => idx)
-          .filter((idx) => !busySlots.has(idx) && idx !== state.slotIndex);
-        const candidates = eligible.length > 0 ? eligible : SLOTS.map((_, idx) => idx).filter((idx) => idx !== state.slotIndex);
-        if (candidates.length > 0) {
-          state.slotIndex = candidates[Math.floor(Math.random() * candidates.length)]!;
+        const candidateSlots = SLOT_BY_CENTRALITY.slice(0, windowSize);
+        const owner = new Map(
+          frames
+            .filter((other) => other !== state && holdsContent(other))
+            .map((other) => [other.slotIndex, other] as [number, TrailFrame]),
+        );
+
+        // Prefer candidate slots that are not held by any other active frame
+        const free = candidateSlots.filter((idx) => idx !== state.slotIndex && !owner.has(idx));
+        if (free.length > 0) {
+          const target = free[Math.floor(Math.random() * free.length)]!;
+          // Swap with the occupant frame to strictly preserve the 1:1 slotIndex permutation
+          const occupant = frames.find((f) => f.slotIndex === target);
+          if (occupant) occupant.slotIndex = state.slotIndex;
+          state.slotIndex = target;
+          return;
         }
+
+        // When all candidate slots are held by active frames, swap with a frame that is currently
+        // truly invisible: parked in its gap (gap > 0), not yet decoded, or waiting to be revealed.
+        const hidden = candidateSlots.filter((idx) => {
+          const other = owner.get(idx);
+          return (
+            idx !== state.slotIndex &&
+            other &&
+            (other.gap > 0 || !other.image || elapsed < other.revealAt)
+          );
+        });
+
+        if (hidden.length > 0) {
+          const target = hidden[Math.floor(Math.random() * hidden.length)]!;
+          const other = owner.get(target);
+          if (other) other.slotIndex = state.slotIndex;
+          state.slotIndex = target;
+        }
+        // If no safe swap target is currently invisible, retaining state.slotIndex seamlessly
+        // continues in the current lane without visual teleportation or duplicate booking.
       };
 
       const resize = () => {
@@ -774,7 +804,6 @@ const {
         const cy = H / 2;
 
         const cards = frames.map((state) => {
-          const slot = SLOTS[state.slotIndex] ?? SLOTS[0]!;
           if (!reducedMotion.matches && state.image && elapsed >= state.revealAt) {
             if (state.gap > 0) {
               state.gap = Math.max(0, state.gap - dt);
@@ -794,6 +823,7 @@ const {
             // At most one prefetch attempt per orbit, even if every URL fails.
             if (state.phase > 0.75 && !state.pendingSource && !state.prefetched) void prepareNext(state);
           }
+          const slot = SLOTS[state.slotIndex] ?? SLOTS[0]!;
           const t = state.phase;
           const entrance = revealEase(clamp((elapsed - state.revealAt) / FADE_MS, 0, 1));
           const edge = revealEase(clamp(Math.min(t, 1 - t) / EDGE_FADE, 0, 1));
@@ -955,22 +985,17 @@ const {
           // Expand the candidate window with gallery size so small galleries vary across
           // prominent central lanes while larger galleries open the full 18-lane spread.
           const takenSlots = new Set(
-            frames
-              .filter((state) => state.image || state.pendingImage || state.source)
-              .map((state) => state.slotIndex),
+            frames.filter(holdsContent).map((state) => state.slotIndex),
           );
           const freeCentrality = SLOT_BY_CENTRALITY.filter((idx) => !takenSlots.has(idx));
           const windowSize = Math.min(
             freeCentrality.length,
             Math.max(3, active + Math.ceil(active / 2)),
           );
-          const freeSlots = [
-            ...shuffleTrail(freeCentrality.slice(0, windowSize)),
-            ...freeCentrality.slice(windowSize),
-          ];
+          const freeSlots = shuffleTrail(freeCentrality.slice(0, windowSize));
           let freeIdx = 0;
           frames.slice(0, active).forEach((state) => {
-            if (!state.image && !state.pendingImage && !state.source && freeIdx < freeSlots.length) {
+            if (!holdsContent(state) && freeIdx < freeSlots.length) {
               state.slotIndex = freeSlots[freeIdx++]!;
             }
           });
