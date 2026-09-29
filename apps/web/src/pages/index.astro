@@ -21,6 +21,8 @@ import { eq } from "drizzle-orm";
 
 import { inviteIdFromCookies, readGroupQuota } from "../lib/invite-session";
 import { HERO_SIZES, HERO_SRCSET_AVIF } from "../lib/hero-media";
+import { shuffleTrail } from "../lib/trail-sequence";
+import { LOADING_PHRASES } from "../lib/loading-phrases";
 
 // Personalized greeting + RSVP controls (server-rendered; read-only — metrics
 // stay exclusive to /{id}).
@@ -99,30 +101,7 @@ const canClaimAtEntry =
 // Homepage HTML is personalized per invite; never let a shared cache serve it.
 Astro.response.headers.set("Cache-Control", "no-store");
 
-const LOADING_PHRASES = [
-  "nyari titik koma yang ilang…",
-  "konsultasi sama kerang ajaib…",
-  "nyenyenyenyenye…",
-  "ndasmu…",
-  "Di desa ngga pakai dolar…",
-  "sorry yee…",
-  "sodara-sodara…",
-  "Kompilasi 1 dan 0 jadi cerita kami…",
-  "Dikit lagi beres, siap-siap takjub…",
-] as const;
-
-function shufflePhrases<T>(items: readonly T[]): T[] {
-  const array = [...items];
-  for (let i = array.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    const temp = array[i];
-    array[i] = array[j];
-    array[j] = temp;
-  }
-  return array;
-}
-
-const loadingPhrases = shufflePhrases(LOADING_PHRASES);
+const loadingPhrases = shuffleTrail(LOADING_PHRASES);
 
 ---
 
@@ -219,7 +198,7 @@ const loadingPhrases = shufflePhrases(LOADING_PHRASES);
   </noscript>
 
   {/* Entry claim gate: presented before WelcomeGate for eligible group invites */}
-  {canClaimAtEntry && <ClaimMemberGate />}
+  {canClaimAtEntry && <ClaimMemberGate loadingPhrases={loadingPhrases} />}
 
   <!-- Welcome gate: the loader fade reveals it; swipe up opens the site. -->
   <WelcomeGate displayName={inviteDisplayName} />

@@ -148,6 +148,12 @@ test.describe("claim member gate", () => {
 
     await submitBtn.click();
 
+    // Immediately shows loading phrases and hides form container
+    const loadingView = page.locator("#claim-gate-loading");
+    await expect(loadingView).toBeVisible();
+    await expect(page.locator("#claim-gate-content")).toBeHidden();
+    await expect(loadingView.locator("text-shimmer")).toBeVisible();
+
     // Claim gate fades out and detaches
     const claimGate = page.locator("#claim-gate");
     await claimGate.waitFor({ state: "detached", timeout: 10_000 });

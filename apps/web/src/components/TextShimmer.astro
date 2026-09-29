@@ -2,7 +2,7 @@
 interface Props {
   class?: string;
   duration?: number;
-  phrases?: string[];
+  phrases?: readonly string[] | string[];
   phraseIntervalMs?: number;
 }
 const { class: className, duration = 2, phrases, phraseIntervalMs = (duration * 1000 + 800) } = Astro.props;
@@ -136,40 +136,58 @@ const shimmerBaseClasses = [
         let index = 0;
         const CROSSFADE_MS = 200;
 
-        this.interval = window.setInterval(() => {
-          index = (index + 1) % phrases.length;
+        const startInterval = () => {
+          if (this.interval) clearInterval(this.interval);
+          this.interval = window.setInterval(() => {
+            index = (index + 1) % phrases.length;
 
-          if (!outEl) {
+            if (!outEl) {
+              textEl.textContent = phrases[index];
+              startShimmer();
+              return;
+            }
+
+            // Crossfade: capture outgoing phrase and blur-fade it out while incoming phrase fades in
+            outEl.getAnimations().forEach((anim) => anim.cancel());
+            outEl.textContent = textEl.textContent;
+            outEl.style.backgroundPosition = '-200% 0';
+            outEl.animate(
+              reducedMotion
+                ? [{ opacity: 1 }, { opacity: 0 }]
+                : [
+                    { opacity: 1, filter: 'blur(0px)' },
+                    { opacity: 0, filter: 'blur(2px)' }
+                  ],
+              { duration: CROSSFADE_MS, easing: 'ease-out' }
+            ).finished.then(() => {
+              outEl.textContent = '';
+            }, () => { /* cancelled by a newer crossfade */ });
+
             textEl.textContent = phrases[index];
+            textEl.animate(
+              [{ opacity: 0 }, { opacity: 1 }],
+              { duration: CROSSFADE_MS, easing: 'ease-out' }
+            );
+
+            // Synchronously restart the shimmer animation on the new phrase
             startShimmer();
-            return;
-          }
+          }, intervalMs);
+        };
 
-          // Crossfade: capture outgoing phrase and blur-fade it out while incoming phrase fades in
-          outEl.getAnimations().forEach((anim) => anim.cancel());
-          outEl.textContent = textEl.textContent;
-          outEl.style.backgroundPosition = '-200% 0';
-          outEl.animate(
-            reducedMotion
-              ? [{ opacity: 1 }, { opacity: 0 }]
-              : [
-                  { opacity: 1, filter: 'blur(0px)' },
-                  { opacity: 0, filter: 'blur(2px)' }
-                ],
-            { duration: CROSSFADE_MS, easing: 'ease-out' }
-          ).finished.then(() => {
+        startInterval();
+
+        this.restart = () => {
+          index = 0;
+          if (outEl) {
             outEl.textContent = '';
-          }, () => { /* cancelled by a newer crossfade */ });
-
-          textEl.textContent = phrases[index];
-          textEl.animate(
-            [{ opacity: 0 }, { opacity: 1 }],
-            { duration: CROSSFADE_MS, easing: 'ease-out' }
-          );
-
-          // Synchronously restart the shimmer animation on the new phrase
+            outEl.getAnimations().forEach((anim) => anim.cancel());
+          }
+          textEl.getAnimations().forEach((anim) => anim.cancel());
+          textEl.textContent = phrases[0];
+          textEl.style.opacity = '1';
           startShimmer();
-        }, intervalMs);
+          startInterval();
+        };
       }
 
       disconnectedCallback() {

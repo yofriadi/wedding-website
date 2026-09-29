@@ -1,9 +1,14 @@
 ---
-/**
- * Entry claim gate for unclaimed group invitations.
- * Stacked at z-45 between #loading-screen (z-50) and #welcome-gate (z-40).
- * Presents an underline input with character scale animations and dynamic "Mulai" pill.
- */
+import TextShimmer from "./TextShimmer.astro";
+import { shuffleTrail } from "../lib/trail-sequence";
+import { LOADING_PHRASES } from "../lib/loading-phrases";
+
+interface Props {
+  loadingPhrases?: readonly string[] | string[];
+}
+
+const { loadingPhrases = shuffleTrail(LOADING_PHRASES) } = Astro.props;
+const phrases = Array.from(loadingPhrases);
 ---
 
 <div
@@ -13,7 +18,7 @@
   aria-modal="true"
   aria-labelledby="claim-gate-label"
 >
-  <div class="w-full max-w-sm px-6 flex flex-col items-center">
+  <div id="claim-gate-content" class="w-full max-w-sm px-6 flex flex-col items-center">
     <form
       id="claim-gate-form"
       method="post"
@@ -97,6 +102,23 @@
 
       <p id="claim-gate-status" class="sr-only" aria-live="polite"></p>
     </form>
+  </div>
+
+  <!-- Loading state shown immediately after clicking "Mulai" -->
+  <div
+    id="claim-gate-loading"
+    class="hidden absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none"
+    aria-hidden="true"
+  >
+    <div class="flex flex-col items-center">
+      <TextShimmer
+        class="text-xl font-medium tracking-tight font-[sans-serif]"
+        duration={2}
+        phrases={phrases}
+      >
+        {phrases[0]}
+      </TextShimmer>
+    </div>
   </div>
 </div>
 
@@ -367,6 +389,30 @@
       transition: none !important;
     }
   }
+
+  #claim-gate-loading {
+    font-family: sans-serif;
+  }
+
+  #claim-gate-loading :global(text-shimmer [data-text]),
+  #claim-gate-loading :global(text-shimmer [data-text-out]) {
+    background-image: linear-gradient(110deg, #4b5563, 45%, #ffffff, 55%, #4b5563);
+    font-family: sans-serif;
+  }
+
+  @media (prefers-color-scheme: light) {
+    #claim-gate-loading :global(text-shimmer [data-text]),
+    #claim-gate-loading :global(text-shimmer [data-text-out]) {
+      background-image: linear-gradient(110deg, #a8a29e, 45%, #292524, 55%, #a8a29e);
+    }
+  }
+
+  :global(.light) #claim-gate-loading :global(text-shimmer [data-text]),
+  :global(.light) #claim-gate-loading :global(text-shimmer [data-text-out]),
+  :global([data-theme="light"]) #claim-gate-loading :global(text-shimmer [data-text]),
+  :global([data-theme="light"]) #claim-gate-loading :global(text-shimmer [data-text-out]) {
+    background-image: linear-gradient(110deg, #a8a29e, 45%, #292524, 55%, #a8a29e);
+  }
 </style>
 
 <script is:inline>
@@ -386,6 +432,19 @@
     var statusEl = document.getElementById('claim-gate-status');
 
     if (!form || !input || !charTrack || !submitBtn) return;
+
+    var contentEl = document.getElementById('claim-gate-content');
+    var loadingEl = document.getElementById('claim-gate-loading');
+    var shimmerEl = loadingEl ? loadingEl.querySelector('text-shimmer') : null;
+    var CLAIM_MIN_DWELL_MS = 1000;
+
+    function restoreForm() {
+      if (contentEl && loadingEl) {
+        loadingEl.classList.add('hidden');
+        loadingEl.setAttribute('aria-hidden', 'true');
+        contentEl.classList.remove('hidden');
+      }
+    }
 
     // Cancel the 10s CSS failsafe only after confirming all required elements are present
     gate.style.animation = 'none';
@@ -625,6 +684,21 @@
       showError('', false);
       if (statusEl) statusEl.textContent = 'Menyimpan nama Anda…';
 
+      // Dismiss mobile virtual keyboard
+      input.blur();
+
+      // Immediately show loading phrases so user gets instant visual confirmation
+      if (contentEl && loadingEl) {
+        contentEl.classList.add('hidden');
+        loadingEl.classList.remove('hidden');
+        loadingEl.removeAttribute('aria-hidden');
+        if (shimmerEl && typeof shimmerEl.restart === 'function') {
+          shimmerEl.restart();
+        }
+      }
+
+      var startTime = performance.now();
+
       try {
         var res = await fetch('/api/invite/claim', {
           method: 'POST',
@@ -641,9 +715,17 @@
         if (res.status === 201 || res.status === 200) {
           // Success: smooth handoff to welcome gate with claimed name
           var finalName = (body && body.displayName) || displayName;
-          dismissGateSmoothly(finalName);
+          var elapsed = performance.now() - startTime;
+          var minDwell = reducedMotion ? 0 : CLAIM_MIN_DWELL_MS;
+          var remaining = Math.max(0, minDwell - elapsed);
+          setTimeout(function () {
+            dismissGateSmoothly(finalName);
+          }, remaining);
           return;
         }
+
+        // On errors: restore the form so the error message and retry inputs are visible
+        restoreForm();
 
         if (res.status === 409) {
           var code = body && body.error;
@@ -695,12 +777,15 @@
         showError('Terjadi kesalahan. Silakan coba lagi.', false);
       } catch (err) {
         // Network drop: treat as ambiguous outcome
+        restoreForm();
         showError(AMBIGUOUS_CLAIM_COPY, true, true);
       } finally {
-        isSubmitting = false;
-        submitBtn.disabled = false;
-        submitBtn.removeAttribute('aria-busy');
-        if (statusEl) statusEl.textContent = '';
+        if (!isDismissed) {
+          isSubmitting = false;
+          submitBtn.disabled = false;
+          submitBtn.removeAttribute('aria-busy');
+          if (statusEl) statusEl.textContent = '';
+        }
       }
     }
 
