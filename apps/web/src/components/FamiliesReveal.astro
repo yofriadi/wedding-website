@@ -16,6 +16,7 @@
 const FAMILY_SECTIONS = [
 	{
 		patternId: "wave-pattern-bride",
+		bismillah: "Bismillahirrahmanirrahim",
 		street: "Ya Allah, izinkanlah putra-putri kami menikah",
 		lines: [
 			"Aisha Astri Amalia",
@@ -45,6 +46,15 @@ const isName = (w: string) => !NON_NAMES.has(w);
 
 			{FAMILY_SECTIONS.map((section) => (
 				<article class="families-block flex flex-col items-start text-left">
+					{section.bismillah && (
+						<p class="families-row families-street-text mb-3 sm:mb-4 flex flex-wrap justify-start">
+							{splitWords(section.bismillah).map((word, i, arr) => (
+								<span class="fw" style={`--s: ${i / arr.length}; --n: ${arr.length}`}>
+									{word}
+								</span>
+							))}
+						</p>
+					)}
 					<p class="families-row families-street-text mb-3 sm:mb-4 flex flex-wrap justify-start">
 						{splitWords(section.street).map((word, i, arr) => (
 							<span class="fw" style={`--s: ${i / arr.length}; --n: ${arr.length}`}>
