@@ -1108,18 +1108,12 @@ test.describe("7.3 E2E capacity UX", () => {
     await page.keyboard.press("Escape");
     await page.locator("#welcome-gate").waitFor({ state: "detached", timeout: 10_000 });
 
-    // RSVP capacity notice is visible, no interactive RSVP form
-    await expect(page.locator("[data-group-capacity]")).toBeVisible();
-    await expect(page.locator("[data-group-capacity]")).toContainText(
-      "This group invitation is at capacity",
-    );
+    // RSVP section: no interactive RSVP form
     await expect(page.locator("[data-rsvp-form]")).toHaveCount(0);
 
-    // Photo CTA indicates full capacity
+    // Photo CTA hidden at full capacity
     const addBtn = page.locator("[data-add-image]");
-    await addBtn.scrollIntoViewIfNeeded();
-    await expect(addBtn).toBeVisible();
-    await expect(addBtn).toHaveText(/penuh/i);
+    await expect(addBtn).toBeHidden();
 
     // Direct POST with group cookie yields 409 claim_required
     const uploadAttempt = await fetch(`${server.baseUrl}/api/guest-photos`, {

@@ -106,24 +106,7 @@ const countDigits = String(confirmedCount);
 }
 
 {
-  isGroupIdentity ? (
-    <>
-      <div class="pt-12 space-y-3" data-scroll-fade data-group-capacity hidden={groupAtCapacity ? undefined : true}>
-        <p class="text-xs tracking-widest uppercase text-[color:var(--rsvp-muted)]">
-          This group invitation is at capacity
-        </p>
-        <p class="text-sm leading-relaxed text-[color:var(--rsvp-muted)] max-w-md mx-auto text-pretty">
-          Every spot has been claimed. You are still very welcome to browse and enjoy the
-          memories — thank you for being part of our story.
-        </p>
-      </div>
-      <div class="pt-12 space-y-3" data-scroll-fade data-claim-guidance hidden={groupAtCapacity ? true : undefined}>
-        <p class="text-sm leading-relaxed text-[color:var(--rsvp-muted)] max-w-md mx-auto text-pretty">
-          Buka kembali tautan undangan untuk mengklaim tempat.
-        </p>
-      </div>
-    </>
-  ) : !isInvitee ? (
+  !hasIdentity ? (
     <div class="pt-12" data-scroll-fade>
       <p class="text-xs tracking-widest uppercase text-[color:var(--rsvp-muted)]">
         RSVP through your personal invitation link
@@ -145,7 +128,7 @@ const countDigits = String(confirmedCount);
   data-scroll-fade
   class="pt-8 sm:pt-12 text-sm sm:text-base leading-relaxed text-[color:var(--rsvp-muted)] max-w-md mx-auto text-pretty"
 >
-  Kami yang berbahagia<br />
+  Kami yang berbahagia,<br />
   Keluarga Bapak Ch. Fuad Ery Pribadi - Ibu Siti Mufrodah<br />
   Ibu Hj. Alfiah Salamun (Eyang)
 </p>
@@ -292,18 +275,12 @@ const countDigits = String(confirmedCount);
     });
     window.addEventListener("claim:success", () => {
       form.removeAttribute("hidden");
-      const guidance = document.querySelector("[data-claim-guidance]");
-      if (guidance) guidance.setAttribute("hidden", "");
     });
   }
 
   window.addEventListener("claim:capacity", () => {
     const rsvpFormEl = document.querySelector("[data-rsvp-form]");
     if (rsvpFormEl) rsvpFormEl.setAttribute("hidden", "");
-    const guidance = document.querySelector("[data-claim-guidance]");
-    if (guidance) guidance.setAttribute("hidden", "");
-    const capacityNotice = document.querySelector("[data-group-capacity]");
-    if (capacityNotice) capacityNotice.removeAttribute("hidden");
   });
 
 </script>

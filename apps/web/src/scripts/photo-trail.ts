@@ -25,12 +25,11 @@ const PHOTO_ERRORS: Record<string, string> = {
 };
 const SYNC_ERROR =
   "Gambar sudah diunggah, tetapi galeri belum diperbarui. Coba lagi untuk memuatnya.";
-const GROUP_FULL_LABEL = "Grup sudah penuh";
 
 /**
  * "none"    — standalone individual or claimed member: the normal uploader rules.
  * "claim"   — group cookie with slots open: the pill stays hidden until claimed at entry.
- * "full"    — group cookie at quota: show the read-only capacity state.
+ * "full"    — group cookie at quota: the pill stays hidden.
  * "unknown" — the identity probe could not answer. Treated as INELIGIBLE (the
  *             guest-photo-trail spec bars "unresolved/error states" from opening
  *             a chooser) but not as a group, so the pill stays hidden instead of
@@ -162,13 +161,12 @@ export function initPhotoTrail(controls: HTMLElement): () => void {
   };
 
   const render = () => {
-    // An at-capacity group identity reveals the pill as the capacity affordance;
-    // an unclaimed group identity hides it until claimed at entry.
-    const groupAffordance = groupState === "full";
+    // Group identities (unclaimed or full) keep the pill hidden.
     button.hidden =
       !inviteValid ||
       groupState === "claim" ||
-      (!canPost && !committed && !uncertain && !groupAffordance);
+      groupState === "full" ||
+      (!canPost && !committed && !uncertain);
     button.dataset.state = state;
     button.setAttribute("aria-busy", String(state === "uploading"));
     // Keep keyboard focus on the status button, but guard every activation.
@@ -176,7 +174,6 @@ export function initPhotoTrail(controls: HTMLElement): () => void {
     input.disabled = !canPost || state !== "idle";
     if (state === "uploading") label.textContent = "Mengunggah…";
     else if (state === "success") label.textContent = "Foto ditambahkan";
-    else if (groupState === "full") label.textContent = GROUP_FULL_LABEL;
     else if (selectedFile || committed || uncertain) label.textContent = "Coba lagi";
     else label.textContent = "Tambah punyamu";
     indicator?.setUploading(state === "uploading");
@@ -378,13 +375,9 @@ export function initPhotoTrail(controls: HTMLElement): () => void {
 
   const open = () => {
     if (disposed || state !== "idle") return;
-    // Group identities never reach the file chooser. Slots open ⇒ the pill
-    // stays hidden; quota exhausted ⇒ the read-only capacity state.
-    if (groupState === "claim") return;
-    if (groupState === "full") {
-      showError(PHOTO_ERRORS.group_full);
-      return;
-    }
+    // Group identities never reach the file chooser. Slots open or quota
+    // exhausted ⇒ the pill stays hidden.
+    if (groupState === "claim" || groupState === "full") return;
     if (!inviteValid) return;
     if (committed || uncertain || selectedFile) {
       void submit();

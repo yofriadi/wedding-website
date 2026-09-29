@@ -69,9 +69,8 @@ test.describe("claim member gate", () => {
     // Photo upload control remains hidden for unclaimed group visitors
     await expect(page.locator("[data-add-image]")).toBeHidden();
 
-    // In RSVP section: entry guidance is visible and capacity notice is hidden
-    await expect(page.locator("[data-claim-guidance]")).toBeVisible();
-    await expect(page.locator("[data-group-capacity]")).toBeHidden();
+    // In RSVP section: form is hidden for unclaimed group
+    await expect(page.locator("[data-rsvp-form]")).toBeHidden();
   });
 
   test("Mulai button dynamic visibility: hidden when empty, revealed at 1+ chars, and hidden on clear", async ({
@@ -293,17 +292,13 @@ test.describe("claim member gate", () => {
     await expect(greeting).toBeVisible();
     await expect(greeting).toHaveText("The Full Family");
 
-    // Dismiss welcome gate and verify photo upload CTA reveals capacity label
+    // Dismiss welcome gate and verify photo upload CTA is hidden at capacity
     await otherPage.keyboard.press("Escape");
     await otherPage.locator("#welcome-gate").waitFor({ state: "detached", timeout: 10_000 });
     const addBtn = otherPage.locator("[data-add-image]");
-    await addBtn.scrollIntoViewIfNeeded();
-    await expect(addBtn).toBeVisible();
-    await expect(addBtn).toHaveText(/penuh/i);
-    // In RSVP section: no RSVP form rendered, capacity notice is visible, guidance is hidden
+    await expect(addBtn).toBeHidden();
+    // In RSVP section: no RSVP form rendered
     await expect(otherPage.locator("[data-rsvp-form]")).toHaveCount(0);
-    await expect(otherPage.locator("[data-group-capacity]")).toBeVisible();
-    await expect(otherPage.locator("[data-claim-guidance]")).toBeHidden();
 
     await context.close();
   });
@@ -347,11 +342,8 @@ test.describe("claim member gate", () => {
     await page.keyboard.press("Escape");
     await page.locator("#welcome-gate").waitFor({ state: "detached", timeout: 10_000 });
 
-    // RSVP section transitioned to capacity state
-    const capacityNotice = page.locator("[data-group-capacity]");
-    await expect(capacityNotice).toBeVisible();
-    await expect(capacityNotice).toContainText("This group invitation is at capacity");
-    await expect(page.locator("[data-claim-guidance]")).toBeHidden();
+    // RSVP section form remains hidden
+    await expect(page.locator("[data-rsvp-form]")).toBeHidden();
   });
 
   test("stale cookie (404 / 409 not_a_group) hands off to welcome gate without trapping", async ({
