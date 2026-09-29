@@ -2,11 +2,6 @@
 ---
 
 <section class="relative min-h-screen min-h-lvh bg-[color:var(--verse-bg)] flex flex-col items-center justify-center py-24 px-6 overflow-hidden" id="verse-container">
-  <!-- Ambient Background Effect -->
-  <div class="absolute inset-0 z-0 pointer-events-none verse-ambient">
-    <div class="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_50%_50%,var(--verse-ambient-core),transparent_70%)] animate-pulse-slow"></div>
-    <div class="absolute bottom-0 right-0 w-[500px] h-[500px] bg-[color:var(--verse-ambient-blob)] rounded-full blur-3xl animate-float"></div>
-  </div>
 
   <div class="max-w-3xl mx-auto text-center space-y-10 md:space-y-12 relative z-10">
     
@@ -49,8 +44,6 @@
     --verse-translation: #a3a3a3; /* neutral-400 */
     --verse-reference: #ffffff;
     --verse-text-shadow: rgba(251, 191, 36, 0.15); /* amber-500 glow */
-    --verse-ambient-core: rgba(120, 60, 0, 0.08);
-    --verse-ambient-blob: rgba(146, 64, 14, 0.1); /* amber-900/10 */
   }
 
   @media (prefers-color-scheme: light) {
@@ -60,13 +53,6 @@
       --verse-translation: #525252; /* neutral-600: holds contrast on white */
       --verse-reference: #0a0a0a;
       --verse-text-shadow: rgba(146, 64, 14, 0.14); /* warm, not neon, on white */
-    }
-
-    /* The amber haze that reads as depth on black turns into an orange wash
-       on white, so the whole ambient layer is dropped rather than re-tinted.
-       display: none also stops float/pulse-slow from running for nothing. */
-    .verse-ambient {
-      display: none;
     }
   }
 
@@ -115,19 +101,6 @@
     will-change: auto;
   }
 
-  @keyframes float {
-    0%, 100% { transform: translate(0, 0); }
-    50% { transform: translate(-20px, -20px); }
-  }
-  
-  @keyframes pulse-slow {
-    0%, 100% { opacity: 0.5; }
-    50% { opacity: 0.8; }
-  }
-
-  .animate-float { animation: float 10s ease-in-out infinite; }
-  .animate-pulse-slow { animation: pulse-slow 8s ease-in-out infinite; }
-
   /* Reduced motion: instant/gentle appearance without blur computation */
   @media (prefers-reduced-motion: reduce) {
     :global(.blur-reveal) {
@@ -136,10 +109,6 @@
       opacity: 1 !important;
       transition: opacity 0.2s ease !important;
       transition-delay: 0ms !important;
-    }
-    .animate-float,
-    .animate-pulse-slow {
-      animation: none !important;
     }
   }
 </style>
