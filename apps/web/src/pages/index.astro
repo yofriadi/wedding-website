@@ -166,7 +166,7 @@ Astro.response.headers.set("Cache-Control", "no-store");
   <div id="loading-screen" class="fixed inset-0 z-50 flex items-center justify-center transition-opacity duration-300 ease-out">
     <div class="flex flex-col items-center">
       <TextShimmer
-        class="text-xl font-medium tracking-tight"
+        class="text-xl font-medium tracking-tight font-[sans-serif]"
         duration={2}
         phrases={[
           "nyari titik koma yang ilang…",
@@ -557,9 +557,10 @@ Astro.response.headers.set("Cache-Control", "no-store");
     }
   }
 
-  /* Loading screen theme-aware background */
+  /* Loading screen theme-aware background and default browser font (prevents font shift mid-flight) */
   #loading-screen {
     background-color: var(--loading-bg);
+    font-family: sans-serif;
   }
 
   /* No-script escape, Chromium twin of the <noscript> block above: Safari has
@@ -596,6 +597,7 @@ Astro.response.headers.set("Cache-Control", "no-store");
   #loading-screen :global(text-shimmer [data-text]),
   #loading-screen :global(text-shimmer [data-text-out]) {
     background-image: linear-gradient(110deg, #4b5563, 45%, #ffffff, 55%, #4b5563);
+    font-family: sans-serif;
   }
 
   /* Theme-aware text shimmer gradients for light mode (dark shimmer) */
