@@ -133,6 +133,14 @@ const loadingPhrases = shuffleTrail(LOADING_PHRASES);
     imagesizes={HERO_SIZES}
     fetchpriority="high"
   />
+  {/* Preload center hero image for ZoomParallax so it is fully decoded before the scroll runway */}
+  <link
+    slot="head"
+    rel="preload"
+    as="image"
+    type="image/avif"
+    href="/center-focus.avif?v=3"
+  />
   {/* Predicate kept in sync with DesktopGate.astro and DESKTOP_MEDIA_QUERY */}
   <script is:inline slot="head">
     if (window.matchMedia('(min-width: 768px) and (min-height: 600px)').matches) {
@@ -225,7 +233,6 @@ const loadingPhrases = shuffleTrail(LOADING_PHRASES);
     <script is:inline>
       (function () {
         var root = document.documentElement;
-        if (root.hasAttribute('data-desktop')) return;
         var PENDING = '#zoom-parallax-container img[data-src]:not([data-promoted])';
 
         function promote() {

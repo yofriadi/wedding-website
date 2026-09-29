@@ -142,7 +142,7 @@ const COL_W = 33.333; // 33.333vw
 // the config comments call them "Fast (Outer edge)", "Fast (Side edge)", "Fast
 // (Corner)" — and motion masks resolution loss. 33vw is the grid column. Do not
 // "correct" these values upward on geometric grounds alone.
-const SIZES_CENTER = "(orientation: portrait) 150vh, 100vw";
+const SIZES_CENTER = "2592px";
 const SIZES_OUTER = "min(33vw, 390px)";
 ---
 
@@ -157,7 +157,7 @@ const SIZES_OUTER = "min(33vw, 390px)";
         const sizes = picture.isCenter ? SIZES_CENTER : SIZES_OUTER;
         return (
       <div 
-        class="zoom-wrapper absolute inset-0 w-full h-full pointer-events-none flex items-center justify-center will-change-transform"
+        class={`zoom-wrapper absolute inset-0 w-full h-full pointer-events-none flex items-center justify-center ${picture.isCenter ? "" : "will-change-transform"}`}
         data-is-center={picture.isCenter}
         data-scale-target={picture.scale}
         data-slot={slotIndex}
@@ -199,25 +199,41 @@ const SIZES_OUTER = "min(33vw, 390px)";
                width at or above it, and markup derives its candidate list from
                the same rule, so a mismatch here names a file that was never
                emitted. */}
-          <picture>
-            <source
-              srcset={placeholderSrc(base, "avif")}
-              data-srcset={variantSrcset(base, "avif", picture.iw)}
-              sizes={sizes}
-              type="image/avif"
-            />
-            <img
-              src={placeholderSrc(base, "webp")}
-              data-src={masterSrc(picture.src, "webp")}
-              data-srcset={variantSrcset(base, "webp", picture.iw)}
-              sizes={sizes}
-              alt={picture.alt}
-              width={picture.iw}
-              height={picture.ih}
-              class="zoom-image"
-              decoding="async"
-            />
-          </picture>
+          {picture.isCenter ? (
+            <picture>
+              <source srcset="/center-focus.avif?v=3" type="image/avif" />
+              <img
+                src="/center-focus.webp?v=3"
+                alt={picture.alt}
+                width={picture.iw}
+                height={picture.ih}
+                class="zoom-image"
+                loading="eager"
+                decoding="sync"
+                data-promoted=""
+              />
+            </picture>
+          ) : (
+            <picture>
+              <source
+                srcset={placeholderSrc(base, "avif")}
+                data-srcset={variantSrcset(base, "avif", picture.iw)}
+                sizes={sizes}
+                type="image/avif"
+              />
+              <img
+                src={placeholderSrc(base, "webp")}
+                data-src={masterSrc(picture.src, "webp")}
+                data-srcset={variantSrcset(base, "webp", picture.iw)}
+                sizes={sizes}
+                alt={picture.alt}
+                width={picture.iw}
+                height={picture.ih}
+                class="zoom-image"
+                decoding="async"
+              />
+            </picture>
+          )}
         </div>
       </div>
         );
@@ -377,7 +393,6 @@ const SIZES_OUTER = "min(33vw, 390px)";
   // `rebuild` indicates whether the geometry the bindings were measured against
   // has changed — a width-changing resize, or a client navigation.
   function applyTier(rebuild: boolean) {
-    if (document.documentElement.hasAttribute("data-desktop")) return;
     if (!isCollapsedTier()) {
       stopWatchingDeferredImages();
       promoteAll();
@@ -587,11 +602,9 @@ const SIZES_OUTER = "min(33vw, 390px)";
     width: 100%;
     height: 100%;
     object-fit: cover;
-    /* `translateZ(0)` alone is enough to keep the image on its own texture
-       during the parent's scale. The scroll scrub transforms .zoom-wrapper,
-       never this element, so hinting `transform` here only doubles the
-       number of full-viewport layers the compositor holds. */
-    transform: translateZ(0);
+  }
+  .zoom-wrapper[data-is-center="true"] {
+    will-change: auto !important;
   }
 
   /* Lite collapse (media-tiering D4): the stage stops pinning and the
