@@ -4,7 +4,7 @@
 // removed, pointer interaction removed: up to 18 cards drift continuously
 // along the original orbit/scale paths around a FIXED center. The trail shows
 // exactly the photo sources it is given — each photo appears once, a list
-// shorter than the frame count leaves the outer positions empty, and an
+// shorter than the frame count leaves unassigned positions empty, and an
 // empty list animates nothing. No background, no headline — only the photos
 // trailing. The box is full-bleed with an aspect-ratio so the composition
 // keeps its ratio instead of reflowing: cards never layout-shift the page,
@@ -432,6 +432,7 @@ const {
   // and a new photo from the shuffled pool at the hidden end of its orbit.
   interface TrailSlot { y: number; size: number; w: number; h: number }
   interface TrailFrame {
+    slotIndex: number;
     phase: number;
     introDelay: number;
     revealAt: number;
@@ -467,6 +468,11 @@ const {
     { y: 134, size: 0.70, w: 111, h: 83 },
     { y: 10, size: 0.91, w: 140, h: 108 }, // very little
   ];
+
+  const SLOT_BY_CENTRALITY = SLOTS.map((_, i) => i).sort(
+    (a, b) => Math.abs(SLOTS[a]!.y) - Math.abs(SLOTS[b]!.y),
+  );
+  const bySlotIndex = (a: { slotIndex: number }, b: { slotIndex: number }) => a.slotIndex - b.slotIndex;
 
   // Faster + tighter motion. SPEED is the original's base rate — with no
   // pointer there is no speed boost, so the trail flows at a constant pace.
@@ -633,13 +639,15 @@ const {
       let running = false;
 
       // Stratification keeps the section filled across its width; shuffling
-      // removes the fixed relationship between a photo, a frame and its phase.
+      // removes the fixed relationship between a photo, a frame, its phase and its slot.
       const phases = shuffleTrail(SLOTS.map((_, index) =>
         (index + Math.random() * 0.5) / SLOTS.length,
       ));
       let delay = 0;
       const delays = shuffleTrail(SLOTS.map(() => (delay += spawnGap())));
+      const slotOrder = shuffleTrail(SLOTS.map((_, index) => index));
       const frames: TrailFrame[] = SLOTS.map((_, index) => ({
+        slotIndex: slotOrder[index]!,
         phase: reducedMotion.matches ? index / SLOTS.length : phases[index]!,
         introDelay: delays[index]!,
         revealAt: 0,
@@ -723,6 +731,23 @@ const {
         return source ? prepareImage(state, source) : Promise.resolve(null);
       };
 
+      const pickNewSlot = (state: TrailFrame) => {
+        // A slot is eligible if no other visible frame in that slot is near the entrance (phase < 0.35)
+        const busySlots = new Set(
+          frames
+            .filter((other) => other !== state && (other.image || other.pendingImage || other.source))
+            .filter((other) => other.gap === 0 && other.phase < 0.35)
+            .map((other) => other.slotIndex),
+        );
+        const eligible = SLOTS
+          .map((_, idx) => idx)
+          .filter((idx) => !busySlots.has(idx) && idx !== state.slotIndex);
+        const candidates = eligible.length > 0 ? eligible : SLOTS.map((_, idx) => idx).filter((idx) => idx !== state.slotIndex);
+        if (candidates.length > 0) {
+          state.slotIndex = candidates[Math.floor(Math.random() * candidates.length)]!;
+        }
+      };
+
       const resize = () => {
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
         canvas.width = Math.round(box.clientWidth * dpr);
@@ -748,8 +773,8 @@ const {
         const cx = W / 2;
         const cy = H / 2;
 
-        const cards = SLOTS.map((slot, i) => {
-          const state = frames[i]!;
+        const cards = frames.map((state) => {
+          const slot = SLOTS[state.slotIndex] ?? SLOTS[0]!;
           if (!reducedMotion.matches && state.image && elapsed >= state.revealAt) {
             if (state.gap > 0) {
               state.gap = Math.max(0, state.gap - dt);
@@ -761,6 +786,7 @@ const {
                 commitImage(state);
                 state.gap = spawnGap();
                 state.prefetched = false;
+                pickNewSlot(state);
                 // Keep a slow request reserved until it decodes. Clearing only
                 // its source here would separate the photo from its identity.
               }
@@ -805,7 +831,7 @@ const {
           const scale = lerp(0.06, 0.9, easedCenterScale) * 1.14;
 
           return {
-            i,
+            slotIndex: state.slotIndex,
             img: state.image,
             opacity,
             x,
@@ -815,7 +841,8 @@ const {
           };
         });
 
-        // SLOTS order is stable; never sort by the changing animation depth.
+        // Stable slot order ensures canvas layering never flickers or thrashes.
+        cards.sort(bySlotIndex);
 
         for (const card of cards) {
           if (!card.img || card.opacity <= 0 || card.w < 2 || card.h < 2) continue;
@@ -867,7 +894,7 @@ const {
       // Update the pool without restarting any orbit. Upload feedback can
       // await its own decoded photo without downloading the entire gallery.
       // The trail shows exactly the given sources: no padding to the frame
-      // count and no repeats — fewer photos than frames leave the outer
+      // count and no repeats — fewer photos than frames leave unassigned
       // positions empty, and an empty list clears everything.
       this.updateImages = async (nextSources, preferred) => {
         const version = ++imageVersion;
@@ -924,8 +951,29 @@ const {
             pending.push(prepareImage(frames[index]!, source));
           });
         } else {
-          // Innermost orbits first, so a small gallery clusters around the
-          // center instead of scattering across the outer lanes.
+          // Ensure active frames each hold a distinct random slot.
+          // Expand the candidate window with gallery size so small galleries vary across
+          // prominent central lanes while larger galleries open the full 18-lane spread.
+          const takenSlots = new Set(
+            frames
+              .filter((state) => state.image || state.pendingImage || state.source)
+              .map((state) => state.slotIndex),
+          );
+          const freeCentrality = SLOT_BY_CENTRALITY.filter((idx) => !takenSlots.has(idx));
+          const windowSize = Math.min(
+            freeCentrality.length,
+            Math.max(3, active + Math.ceil(active / 2)),
+          );
+          const freeSlots = [
+            ...shuffleTrail(freeCentrality.slice(0, windowSize)),
+            ...freeCentrality.slice(windowSize),
+          ];
+          let freeIdx = 0;
+          frames.slice(0, active).forEach((state) => {
+            if (!state.image && !state.pendingImage && !state.source && freeIdx < freeSlots.length) {
+              state.slotIndex = freeSlots[freeIdx++]!;
+            }
+          });
           for (const state of frames.slice(0, active)) {
             if (!state.image && !state.pendingSource) pending.push(prepareNext(state));
           }

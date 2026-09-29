@@ -11,7 +11,7 @@ const LANE_OFFSETS = [
   0, -30, 30, -60, 60, -94, 94, -122, 122, -18, 18, -52, 52, -78, 78, -134, 134, 10,
 ];
 
-type Draw = { source: string; lane: number };
+type Draw = { source: string; lane: number; time: number };
 type ProbeWindow = Window & { trailDraws: Draw[] };
 
 async function prepareWithPhotos(page: Page, count: number) {
@@ -29,7 +29,7 @@ async function prepareWithPhotos(page: Page, count: number) {
     }),
   );
   await page.addInitScript((laneOffsets: number[]) => {
-    const draws: { source: string; lane: number }[] = [];
+    const draws: { source: string; lane: number; time: number }[] = [];
     Object.assign(window, { trailDraws: draws });
     const original = CanvasRenderingContext2D.prototype.drawImage;
     CanvasRenderingContext2D.prototype.drawImage = function (
@@ -56,7 +56,7 @@ async function prepareWithPhotos(page: Page, count: number) {
             error = distance;
           }
         });
-        draws.push({ source: new URL(image.src).pathname, lane });
+        draws.push({ source: new URL(image.src).pathname, lane, time: performance.now() });
       }
       Reflect.apply(original, this, [image, ...args]);
     };
@@ -96,16 +96,19 @@ for (const count of [0, 1, 2, 3]) {
       .poll(async () => [...new Set((await draws(page)).map((draw) => draw.source))].sort())
       .toEqual(expected);
 
-    // Every photo occupies exactly one lane for the whole session: with a
-    // pool no larger than the frame count nothing rotates, so a photo seen
-    // in two lanes is a duplication bug.
-    const lanes = new Map<string, Set<number>>();
-    for (const draw of await draws(page)) {
-      const seen = lanes.get(draw.source) ?? new Set<number>();
-      seen.add(draw.lane);
-      lanes.set(draw.source, seen);
+    // Photos rotate dynamically across lanes, but no photo may ever be drawn
+    // concurrently in multiple lanes within the same render tick.
+    const allDraws = await draws(page);
+    const byTick = new Map<number, string[]>();
+    for (const d of allDraws) {
+      const tick = Math.round(d.time / 8);
+      const list = byTick.get(tick) ?? [];
+      list.push(d.source);
+      byTick.set(tick, list);
     }
-    expect([...lanes.values()].every((seen) => seen.size === 1)).toBe(true);
-    expect([...lanes.keys()].sort()).toEqual(expected);
+    for (const sources of byTick.values()) {
+      expect(new Set(sources).size).toBe(sources.length);
+    }
+    expect([...new Set(allDraws.map((d) => d.source))].sort()).toEqual(expected);
   });
 }
