@@ -21,13 +21,13 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@j178/prek": "^0.5.3",
+    "@j178/prek": "^0.5.4",
     "@types/node": "catalog:",
     "@wedding-website/config": "workspace:*",
-    "oxfmt": "^0.68.0",
-    "oxlint": "^1.83.0",
-    "turbo": "^2.11.2",
+    "oxfmt": "^0.71.0",
+    "oxlint": "^1.86.0",
+    "turbo": "^2.11.5",
     "typescript": "catalog:"
   },
-  "packageManager": "pnpm@12.4.2"
+  "packageManager": "pnpm@12.6.0"
 }

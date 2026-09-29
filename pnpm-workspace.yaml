@@ -12,8 +12,8 @@ allowBuilds:
   sharp: true
 catalog:
   "@libsql/client": 0.17.4
-  "@types/node": ^26.6.2
-  dotenv: ^18.0.1
+  "@types/node": ^26.6.3
+  dotenv: ^18.0.4
   # TS 7 drops the programmatic API `astro check` needs; stay on 6.x until
   # https://github.com/withastro/roadmap/discussions/1321 ships.
   typescript: ^6.0.3
