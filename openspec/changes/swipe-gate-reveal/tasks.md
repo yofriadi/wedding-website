@@ -36,5 +36,5 @@
 
 - [x] 6.1 Throttled-network regression check (Slow 3G): loader → gate → swipe → hero sequence is deterministic; no mid-timeline landing; no gate/loader deadlock (loader still hides without gate JS) [Playwright CDP `emulateNetworkConditions` (~1 MB/s, 300ms latency): scroll locked at 0 from first paint, loader hides on its own media readiness and reveals the gate, scroll still 0 post-reveal. NOTE: emulated-throttle proxy, not a physical Slow 3G device soak — see 5.4.]
 - [x] 6.2 Confirm anonymous HTML contains no names anywhere; invited HTML contains exactly one (in the gate) [Verified against standalone build with a distinctive seeded name: invited → exactly one occurrence, inside `#gate-greeting`; anonymous → zero occurrences.]
-- [ ] 6.3 Confirm the production migration runs BEFORE server start on deploy (same discipline as `invite-only-personalization` task 1.9)
-- [ ] 6.4 Archive order: archive `invite-only-personalization` BEFORE this change so the `guest-greeting` MODIFIED delta has its base
+- [x] 6.3 Confirm the production migration runs BEFORE server start on deploy (same discipline as `invite-only-personalization` task 1.9)
+- [x] 6.4 Archive order: archive `invite-only-personalization` BEFORE this change so the `guest-greeting` MODIFIED delta has its base

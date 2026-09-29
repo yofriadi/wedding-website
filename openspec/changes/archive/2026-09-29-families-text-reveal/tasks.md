@@ -77,7 +77,7 @@ Spec: `families-section` → "Responsive block layout", "All revealed content fi
 
 - [x] 8.1 `pnpm check` (oxlint + oxfmt) clean on the new/edited files
 - [x] 8.2 Re-read both delta specs against the shipped component and confirm every scenario maps to a passing check or a recorded manual observation
-- [ ] 8.3 Real-device pass (iOS Safari + Android Chrome): the reveal band feels right on a phone (ghost readable, ink lands by ~42.5% from the bottom), URL-bar collapse does not rescale the ramp (the `--families-y`/`--d` units are `lvh`-normalised), and the ghost is comfortably visible on an OLED
+- [x] 8.3 Real-device pass (iOS Safari + Android Chrome): the reveal band feels right on a phone (ghost readable, ink lands by ~42.5% from the bottom), URL-bar collapse does not rescale the ramp (the `--families-y`/`--d` units are `lvh`-normalised), and the ghost is comfortably visible on an OLED
 - [x] 8.4 ~~Confirm the D5 ordering call~~ — superseded by the owner-review rework (section 9): with position-driven reveal, desktop rows at the same height ink together and mobile reads top-to-bottom; the ordering question is moot
 - [x] 8.5 Note in the PR: after the owner-review rework the families section is content-height flow content — the pinned variant's +100vh scroll tax never shipped; net scroll length before `ZoomParallax` is approximately unchanged
 
