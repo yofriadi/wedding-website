@@ -216,9 +216,7 @@ test.describe("claim member gate", () => {
     await page.mouse.move(box.x + box.width - hbox.width / 2 - 4, y, { steps: 20 });
     await page.mouse.up();
 
-    await expect(page.locator("[data-rsvp-note]")).toHaveText("Your reservation is confirmed.", {
-      timeout: 10_000,
-    });
+    await expect(confirmBtn).toBeDisabled({ timeout: 10_000 });
     expect(rsvpPosted).toBe(true);
   });
 

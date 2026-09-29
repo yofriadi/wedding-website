@@ -280,7 +280,6 @@ const countDigits = String(confirmedCount);
         // `disabled` bars the button itself from being focusable, hence the
         // wrapper. (The rim keeps rotating either way.)
         actionWrap?.focus({ preventScroll: true });
-        if (noteEl) noteEl.textContent = "Your reservation is confirmed.";
         void poll();
       } catch {
         // Network failure mid-flight: same rollback — the gesture's
