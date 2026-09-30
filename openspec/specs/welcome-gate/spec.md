@@ -60,6 +60,8 @@ The homepage scroll lock SHALL begin when the gate's inline script first runs (d
 
 Rationale for the widened window: the loading overlay gates on entry media — the HeroZoom-through-ZoomParallax sequence where the collage is scrubbed, first-view media only where it is collapsed — and can outlive DOMContentLoaded on a slow network, while the gate arms only after the overlay is removed. Without a lock that starts at first script run, a window exists between page parse and gate arming in which the raw page behind the overlay scrolls — the mid-timeline landing this requirement exists to prevent. Gesture binding, inert, and the failsafe cancel remain arm-time behaviors; only the scroll lock moves earlier.
 
+On viewports where `DesktopGate` is active ($\ge 768\text{px}$ width and $\ge 600\text{px}$ height), `WelcomeGate` SHALL NOT latch `overflow: hidden` permanently. If a visitor resizes their window from desktop to an ungated mobile viewport, `WelcomeGate` SHALL evaluate its arming condition dynamically and apply its normal scroll-lock and gesture-reveal behaviors.
+
 #### Scenario: Scroll attempts do nothing
 
 - **WHEN** the user swipes or wheels while the gate is armed
@@ -79,6 +81,11 @@ Rationale for the widened window: the loading overlay gates on entry media — t
 
 - **WHEN** the gate exits by reveal commit or any dismissal path (reduced-motion tap, Escape, desktop wheel/click/keydown)
 - **THEN** the scroll lock is released as part of that exit, and the page behind scrolls normally from scroll zero
+
+#### Scenario: Resize from desktop restores normal mobile gate lifecycle
+
+- **WHEN** a desktop visitor resizes their window below the desktop gate threshold ($< 768\text{px}$ width or $< 600\text{px}$ height)
+- **THEN** `DesktopGate` hides, `WelcomeGate` arms normally, and the mobile scroll lock and gesture listeners are activated
 
 ### Requirement: Finger-tracked upward swipe reveal
 
@@ -134,11 +141,16 @@ The reveal commit SHALL invoke audio playback synchronously within the releasing
 
 ### Requirement: Non-touch dismissal
 
-Desktop-style input SHALL also commit the reveal: wheel scroll, click, or keydown while the gate is armed dismisses it (no finger-tracking physics required).
+On viewports where `DesktopGate` is active ($\ge 768\text{px}$ width and $\ge 600\text{px}$ height), `WelcomeGate` SHALL NOT arm or listen to wheel or mouse events behind the blocking desktop gate. Non-touch dismissal (wheel, click, keydown) remains supported for keyboard-navigated mobile devices, assistive technologies, and testing fixtures on mobile viewports ($< 768\text{px}$ width or $< 600\text{px}$ height).
 
-#### Scenario: Wheel dismisses
+#### Scenario: Desktop input behind DesktopGate does not commit reveal
 
-- **WHEN** a desktop user scrolls with a wheel or trackpad while the gate is armed
+- **WHEN** a desktop visitor scrolls or presses keys while `DesktopGate` is displayed
+- **THEN** `WelcomeGate` does not commit its reveal, does not unlock audio, and does not fire `POST /api/invite/opened` behind the gate
+
+#### Scenario: Wheel dismisses on ungated viewports
+
+- **WHEN** a visitor scrolls with a wheel or trackpad on an ungated viewport ($< 600\text{px}$ height or $< 768\text{px}$ width) while the gate is armed
 - **THEN** the gate dismisses and the page scrolls normally afterwards
 
 ### Requirement: Reduced-motion path

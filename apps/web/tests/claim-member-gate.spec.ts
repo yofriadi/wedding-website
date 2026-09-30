@@ -277,7 +277,10 @@ test.describe("claim member gate", () => {
     expect(claim2.status).toBe(201);
 
     // Another visitor loads the group link
-    const context = await page.context().browser()!.newContext();
+    const context = await page
+      .context()
+      .browser()!
+      .newContext({ viewport: { width: 390, height: 844 } });
     const otherPage = await context.newPage();
     pinFullTier(otherPage);
 
@@ -626,7 +629,10 @@ test.describe("claim member gate", () => {
     });
 
     // Visit with the member cookie set
-    const memberContext = await page.context().browser()!.newContext();
+    const memberContext = await page
+      .context()
+      .browser()!
+      .newContext({ viewport: { width: 390, height: 844 } });
     const memberPage = await memberContext.newPage();
     pinFullTier(memberPage);
 

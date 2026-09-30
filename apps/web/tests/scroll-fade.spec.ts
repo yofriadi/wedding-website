@@ -81,7 +81,10 @@ test.describe("scroll-fade animation on key sections", () => {
   test("all data-scroll-fade participants are visible with JavaScript disabled", async ({
     browser,
   }) => {
-    const context = await browser.newContext({ javaScriptEnabled: false });
+    const context = await browser.newContext({
+      javaScriptEnabled: false,
+      viewport: { width: 390, height: 844 },
+    });
     const page = await context.newPage();
     try {
       await page.goto("/");

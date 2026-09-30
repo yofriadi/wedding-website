@@ -10,25 +10,25 @@ Device-matched raster delivery: `srcset`/`sizes` candidate sets, intrinsic dimen
 
 Every `<img>` in **server-rendered markup** that the site delivers for photographic or illustrated content SHALL carry a candidate set offering at least two resolutions and a `sizes` attribute describing the rendered width, so the browser selects bytes matched to the device rather than downloading a desktop-sized asset on a phone. Images injected into the DOM at runtime by a third-party widget — Leaflet tile `<img>`s, and the popup banner `venue-map.ts:123` builds as an HTML string — are outside this requirement's scope and are tracked as a named follow-up rather than silently exempted.
 
-Where an image's presentation size is set by a **CSS transform** rather than by layout, `sizes` SHALL account for the transform rather than being derived from the layout box alone — transforms are invisible to candidate selection, so a layout-derived `sizes` would serve an image presented at several times its layout size from its smallest candidate. The hero follows this with `sizes="min(280vw, 1536px)"` against a `scale(2.8)` transform.
+Where an image's presentation size is set by a **CSS transform** rather than by layout, `sizes` SHALL account for the transform rather than being derived from the layout box alone — transforms are invisible to candidate selection, so a layout-derived `sizes` would serve an image presented at several times its layout size from its smallest candidate. The hero follows this with `sizes="min(280vw, 768px)"` against a `scale(2.8)` transform, clamped from `1536px` to match the mobile rail.
 
 Accounting for the transform does **not** mean claiming the full geometric presentation width. Where an image is perceptually unimportant at its scaled size — fast-moving, peripheral, largely clipped by an `overflow-hidden` container — `sizes` MAY deliberately claim less than geometry would justify, provided the reasoning is recorded in `design.md` and the claim is not later "corrected" upward on geometric grounds alone. The collage exercises this in both directions. Its ten surrounding slots claim `min(33vw, 390px)` despite being scaled 4–9×, because motion masks the resolution loss. Its centre slot is the one image the scrub magnifies until it covers the whole stage and then holds motionless, so its claim follows the LAYOUT rather than being a single compromise: while the collage is scrubbed it claims `2592px`, the master's intrinsic width, and while it is collapsed — a `lite` tier, or `prefers-reduced-motion` on any tier, both of which render the same slot as one static 33vw bento cell and pin nothing — it claims `min(33vw, 390px)` and resolves to a generated variant instead. Per-slot values keyed on an existing markup flag are preferred over one global cap when the slots differ this much. A claim that depends on runtime state SHALL be written before its slot is promoted (see `media-tiering`), because candidate selection runs the moment a `srcset` becomes live.
 
 Format negotiation SHALL offer AVIF with a WebP fallback through `<picture>` where the engine supports it, as the existing markup already does. Decorative images under 2 KB, and assets that exist at a single resolution, MAY ship a plain `src`. The ZoomParallax collage images are tier-managed under `media-tiering` and are exempt from the live-`srcset` form of this requirement: they carry their full-resolution candidate set deferred until promoted, plus a `sizes` attribute and a live low-fidelity `src`. While the collage is scrubbed the entry loader promotes them before the welcome gate can arm; while it is collapsed they stay deferred to the component's own pass.
 
-No upper bound is placed on the candidate set beyond the no-upscale rule below. A cap tied to rendered width was considered and dropped: it conflicts with the master-as-top-candidate rule for images whose intrinsic width far exceeds their layout box — `keluarga-acik` is a 2048 px master in a card capped at `md:w-[560px]` — and resolving the conflict in favour of the cap would mean re-encoding private masters this change has no mandate to alter. The browser selects by `sizes` and simply never requests the wider candidates; they cost repository bytes, not guest bytes.
+No upper bound is placed on the candidate set beyond the no-upscale rule. The browser selects by `sizes` and simply never requests the wider candidates; they cost repository bytes, not guest bytes. The candidate ladder `VARIANT_WIDTHS = [390, 768, 1280]` is retained so that high-DPI mobile devices (Pixel 7 at DPR 2.625, iPhone Pro at DPR 3) select the 1280w resolution variant for wide presentation slots rather than falling through to multi-megabyte masters.
+
+The fallback image source for the hero (`HERO_FALLBACK_SRC`) SHALL reference `/wedding_photo.webp` (the 768w master), replacing the obsolete 1024w reference, with declared intrinsic dimensions `width="768"` and `height="1376"`.
 
 #### Scenario: Phone does not pay for desktop pixels
 
 - **WHEN** a guest loads the page on a 390 CSS px viewport at device pixel ratio 2
 - **THEN** the family portrait downloads a candidate at or below 780 px wide, not the 2048 px master
 
-#### Scenario: Wide viewport gets the high-resolution candidate
+#### Scenario: High-DPI mobile viewport selects 1280w candidate
 
-- **WHEN** a guest loads the page on a 1440 CSS px viewport at device pixel ratio 2
-- **THEN** at least one image selects a wider candidate than it selects on a 390 CSS px @2x load, from the same `srcset` and with no markup change — not necessarily the widest, since selection follows `sizes` and stops at the first candidate that satisfies it
-
-The subject is existential, not universal, and an assertion that reads it as universal will fail on correct behavior. Two of the seventeen images have masters narrower than the 780 device px a 390 CSS px @2x load demands, so they select their master at _both_ viewports and are evidence neither way: `event-akad` (768 px) and `event-resepsi` (584 px). The discriminating subject is `keluarga-acik`, measured at `-w768.avif` on the 390 @2x leg and `-w1280.avif` on the 1440 @2x leg from one unchanged `srcset`.
+- **WHEN** a guest loads the page on a high-DPI mobile viewport (such as Pixel 7 at 412 CSS px @ DPR 2.625 or iPhone Pro at 393 CSS px @ DPR 3)
+- **THEN** wide presentation slots select the `-w1280` variant rather than the unoptimized 1920px or 2048px master
 
 #### Scenario: Collage images carry candidate sets
 

@@ -167,7 +167,7 @@ test.describe("welcome gate", () => {
     // Every frame at scroll zero: fully zoomed in, overlay copy still hidden.
     for (const s of samples) {
       expect(s.scrollY).toBe(0);
-      expect(s.scale).toBeCloseTo(2.8, 2);
+      expect(s.scale).toBeCloseTo(1.75, 2);
       expect(s.textOpacity).toBe(0);
     }
   });
@@ -442,35 +442,42 @@ test.describe("welcome gate", () => {
     expect(metric.posts).toBe(0); // anonymous
   });
 
-  test("desktop wheel dismisses the gate without firing the metric", async ({
-    page,
-    browserName,
-    isMobile,
-  }) => {
-    // Desktop-pointer-only behavior: the mobile-chrome Playwright project
-    // (venue-map-routes 5.15) also runs this suite, but a synthesized wheel
-    // event is meaningless from a touch device profile.
-    test.skip(isMobile === true, `desktop-pointer behavior (${browserName})`);
-    test.slow();
-    const metric = countOpenMetricPosts(page);
+  test.describe("desktop-pointer dismissal", () => {
+    test.use({ viewport: { width: 1024, height: 500 } });
 
-    await page.goto("/");
-    await waitForLoaderDismissed(page);
+    test("desktop wheel dismisses the gate without firing the metric", async ({
+      page,
+      browserName,
+      isMobile,
+    }) => {
+      // Desktop-pointer-only behavior: the mobile-chrome Playwright project
+      // (venue-map-routes 5.15) also runs this suite, but a synthesized wheel
+      // event is meaningless from a touch device profile.
+      test.skip(isMobile === true, `desktop-pointer behavior (${browserName})`);
+      test.slow();
+      const metric = countOpenMetricPosts(page);
 
-    const gate = page.locator("#welcome-gate");
-    await expect(gate).toBeVisible();
+      await page.goto("/");
+      await waitForLoaderDismissed(page);
 
-    await page.mouse.move(640, 360);
-    await page.mouse.wheel(0, 120);
+      const gate = page.locator("#welcome-gate");
+      await expect(gate).toBeVisible();
 
-    await expect(gate).toHaveCount(0);
-    expect(metric.posts).toBe(0); // no cookie → the client stays quiet
+      await page.mouse.move(640, 250);
+      await page.mouse.wheel(0, 120);
+
+      await expect(gate).toHaveCount(0);
+      expect(metric.posts).toBe(0); // no cookie → the client stays quiet
+    });
   });
 
   test("no JavaScript: the gate is hidden entirely", async ({ browser }) => {
     // scripting: none media query applies when JS is disabled — the gate must
     // not render, so the page is usable for no-JS visitors.
-    const context = await browser.newContext({ javaScriptEnabled: false });
+    const context = await browser.newContext({
+      javaScriptEnabled: false,
+      viewport: { width: 390, height: 844 },
+    });
     try {
       const page = await context.newPage();
       await page.goto("/", { waitUntil: "domcontentloaded" });

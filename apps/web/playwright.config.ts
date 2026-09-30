@@ -15,7 +15,11 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
-      use: { ...devices["Desktop Chrome"] },
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 390, height: 844 },
+      },
+      testIgnore: /desktop-gate/,
     },
     {
       // Touch device (venue-map-routes task 5.15): the venue map gates
@@ -26,6 +30,7 @@ export default defineConfig({
       // require this project.
       name: "mobile-chrome",
       use: { ...devices["Pixel 7"] },
+      testIgnore: /desktop-gate/,
     },
     {
       // Media-tiering tasks 7.5/7.10 (archive gate): the video's exit
@@ -41,8 +46,19 @@ export default defineConfig({
       // It reads CSSOM declarations and static stage geometry, so it needs no
       // CDP touch synthesis.
       name: "webkit",
-      use: { ...devices["Desktop Safari"] },
+      use: {
+        ...devices["iPhone 14"],
+        viewport: { width: 390, height: 844 },
+      },
       testIgnore: /^(?!.*(media-tiering|hero-zoom-built|pinned-viewport-units))/,
+    },
+    {
+      name: "desktop-gate",
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1280, height: 720 },
+      },
+      testMatch: /desktop-gate/,
     },
   ],
 });

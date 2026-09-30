@@ -313,27 +313,31 @@ test("zoom UI is top-right and provider credits remain without the Leaflet flag"
   await expect.poll(async () => mapZoom(page)).toBeGreaterThan(beforeZoom);
 });
 
-test("desktop map is draggable and edge-to-edge with the taller height", async ({
-  page,
-  isMobile,
-}) => {
-  test.skip(isMobile === true, "desktop interaction only");
-  const section = await scrollToMap(page);
-  const container = section.locator("[data-venue-map-container]");
-  const box = await container.boundingBox();
-  expect(box).not.toBeNull();
-  expect(box!.x).toBeLessThanOrEqual(1);
-  expect(Math.abs(box!.width - page.viewportSize()!.width)).toBeLessThanOrEqual(2);
-  expect(box!.height).toBe(720);
-  await expect(container).toHaveClass(/leaflet-grab/);
+test.describe("desktop map interaction", () => {
+  test.use({ viewport: { width: 1024, height: 500 } });
 
-  const pane = section.locator(".leaflet-map-pane");
-  const before = await pane.evaluate((el) => getComputedStyle(el).transform);
-  await page.mouse.move(box!.x + box!.width * 0.72, box!.y + box!.height * 0.58);
-  await page.mouse.down();
-  await page.mouse.move(box!.x + box!.width * 0.5, box!.y + box!.height * 0.58, { steps: 8 });
-  await page.mouse.up();
-  await expect.poll(() => pane.evaluate((el) => getComputedStyle(el).transform)).not.toBe(before);
+  test("desktop map is draggable and edge-to-edge with the taller height", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(isMobile === true, "desktop interaction only");
+    const section = await scrollToMap(page);
+    const container = section.locator("[data-venue-map-container]");
+    const box = await container.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.x).toBeLessThanOrEqual(1);
+    expect(Math.abs(box!.width - page.viewportSize()!.width)).toBeLessThanOrEqual(2);
+    expect(box!.height).toBe(720);
+    await expect(container).toHaveClass(/leaflet-grab/);
+
+    const pane = section.locator(".leaflet-map-pane");
+    const before = await pane.evaluate((el) => getComputedStyle(el).transform);
+    await page.mouse.move(box!.x + box!.width * 0.72, box!.y + box!.height * 0.58);
+    await page.mouse.down();
+    await page.mouse.move(box!.x + box!.width * 0.5, box!.y + box!.height * 0.58, { steps: 8 });
+    await page.mouse.up();
+    await expect.poll(() => pane.evaluate((el) => getComputedStyle(el).transform)).not.toBe(before);
+  });
 });
 
 test("markers are keyboard-focusable and Enter opens popups", async ({ page }) => {

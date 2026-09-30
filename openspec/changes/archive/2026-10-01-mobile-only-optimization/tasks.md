@@ -56,27 +56,27 @@
 
 ## 4. Mobile-First Testing Suite & Verification
 
-- [ ] 4.1 Update `apps/web/playwright.config.ts`:
+- [x] 4.1 Update `apps/web/playwright.config.ts`:
   - Reconfigure default `chromium` project to a standard mobile viewport: `use: { ...devices["Desktop Chrome"], viewport: { width: 390, height: 844 } }`, `testIgnore: /desktop-gate/`.
   - Retain `mobile-chrome` (`devices["Pixel 7"]`, `testIgnore: /desktop-gate/`).
   - Reconfigure `webkit` project to a mobile Safari profile (`devices["iPhone 14"]`, viewport 390x844, retaining `testIgnore: /^(?!.*media-tiering)/`).
   - Add dedicated `desktop-gate` project with viewport $1280 \times 720$ scoped to `testMatch: /desktop-gate/`.
-- [ ] 4.2 Re-base wide-viewport component tests and `browser.newContext()` calls:
+- [x] 4.2 Re-base wide-viewport component tests and `browser.newContext()` calls:
   - Add `{ viewport: { width: 390, height: 844 } }` to `browser.newContext()` invocations in `apps/web/tests/group-invitations.spec.ts:933, 934, 1187`, `apps/web/tests/claim-member-gate.spec.ts:262, 608`, `apps/web/tests/resilient-media-delivery.spec.ts:148`, `apps/web/tests/scroll-fade.spec.ts:84`, and `apps/web/tests/venue-map.spec.ts:133`.
   - In `apps/web/tests/resilient-media-delivery.spec.ts`, delete the wide leg (`:98-141`) and its `expect(wideAcikSrc).not.toBe(mobileAcikSrc)` assertion, and clean up the unused `mobileAcikSrc` binding.
   - In `apps/web/tests/families-reveal.spec.ts:124, 416`, re-base viewport to mobile (`390x844`).
   - In `apps/web/tests/magnetic-image-trail.spec.ts:41`, drop the 1440 iteration and rename test to drop "on desktop".
   - In `apps/web/tests/families-reveal-wave-motion.spec.ts:50`, re-base viewport to `{ width: 400, height: 844 }`.
   - In `apps/web/tests/venue-map-interactions.spec.ts:316-327`, re-pin with `test.use({ viewport: { width: 1024, height: 500 } })`.
-- [ ] 4.3 Create `apps/web/tests/desktop-gate.spec.ts`:
+- [x] 4.3 Create `apps/web/tests/desktop-gate.spec.ts`:
   - Assert `DesktopGate` is visible on $1280 \times 720$ and `data-qr-target` matches expected URL.
   - Assert `DesktopGate` is hidden on $412 \times 915$ and landscape $915 \times 412$.
   - Assert `<main>`, `#welcome-gate`, and `#claim-gate` (if present) carry `inert` when gate is displayed; on resize below threshold, assert `#welcome-gate` loses `inert` while `<main>` retains `inert` until welcome gate exit (and loses `inert` when `#welcome-gate` is absent).
   - Assert no `.mp3` requests are made and collage images remain unpromoted while gate is displayed.
   - Assert QR target encodes `${origin}/${inviteId}` when invite cookie is present, and root when anonymous.
-- [ ] 4.4 Update `apps/web/tests/welcome-gate.spec.ts`:
+- [x] 4.4 Update `apps/web/tests/welcome-gate.spec.ts`:
   - Wrap `test("desktop wheel dismisses the gate without firing the metric")` inside a scoped `test.describe` with `test.use({ viewport: { width: 1024, height: 500 } })`.
-- [ ] 4.5 Run verification contract:
+- [x] 4.5 Run verification contract:
   - Execute `pnpm run check-types`.
   - Execute `pnpm --filter web exec playwright test`.
   - Execute `pnpm run build`.

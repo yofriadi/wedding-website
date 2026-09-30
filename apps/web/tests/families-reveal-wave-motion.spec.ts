@@ -47,7 +47,7 @@ test("flipping reduced-motion OFF mid-session restores the wave", async ({ page 
   await dismissWelcomeGate(page);
   await page.waitForTimeout(300);
   await page.emulateMedia({ reducedMotion: "no-preference" });
-  await page.setViewportSize({ width: 880, height: 700 }); // width change -> re-init
+  await page.setViewportSize({ width: 400, height: 844 }); // width change -> re-init
   await page.waitForTimeout(700);
   const a = await waveX(page);
   await page.waitForTimeout(500);

@@ -346,6 +346,7 @@ const loadingPhrases = shuffleTrail(LOADING_PHRASES);
         // one wasted. Leaving it to the module costs a few milliseconds of parse
         // time and nothing else, because no gate waits on these bytes while the
         // collage is static.
+        if (root.hasAttribute('data-desktop')) return;
         var tier = root.getAttribute('data-tier');
         var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         if (tier !== 'lite' && !reduce) {
@@ -609,6 +610,7 @@ const loadingPhrases = shuffleTrail(LOADING_PHRASES);
   // completes the tail the throw skipped, instead of letting the wait below hang
   // on placeholders until the ceiling.
   const promoteEntryCollage = () => {
+    if (document.documentElement.hasAttribute('data-desktop')) return;
     if (typeof window.__promoteCollageImages === 'function') {
       window.__promoteCollageImages();
     }
@@ -697,6 +699,12 @@ const loadingPhrases = shuffleTrail(LOADING_PHRASES);
   // gesture asks for playback.
   window.addEventListener('desktop-gate:release', () => {
     if (tierIsFull()) enableSoundtrack();
+    if (typeof window.__promoteCollageImages === 'function') {
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (tierIsFull() && !reduce) {
+        window.__promoteCollageImages();
+      }
+    }
   });
 
   const initLoadingScreen = async () => {

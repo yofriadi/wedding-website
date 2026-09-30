@@ -499,6 +499,7 @@ const SIZES_CENTER_COLLAPSED = SIZES_OUTER;
   // `rebuild` indicates whether the geometry the bindings were measured against
   // has changed — a width-changing resize, or a client navigation.
   function applyTier(rebuild: boolean) {
+    if (document.documentElement.hasAttribute("data-desktop")) return;
     // Sizes first, on both branches: a promotion that runs under the wrong
     // `sizes` claim selects the wrong candidate, and on a collapsed collage that
     // candidate is the master nothing will ever magnify.

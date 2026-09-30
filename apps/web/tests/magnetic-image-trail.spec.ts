@@ -6,7 +6,7 @@ test.setTimeout(90_000);
 
 for (const reducedMotion of ["no-preference", "reduce"] as const) {
   test.describe(`magnetic image trail — ${reducedMotion}`, () => {
-    test("fills a full-width square on desktop and after resizing to mobile", async ({ page }) => {
+    test("fills a full-width square on mobile", async ({ page }) => {
       await page.emulateMedia({ reducedMotion });
       // The trail shows exactly what the collection returns: 18 photos fill
       // every card position. Starters are no longer a default fallback.
@@ -38,10 +38,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       const box = trail.locator(".magnetic-trail__box");
       const canvas = trail.locator("[data-trail-canvas]");
 
-      for (const viewport of [
-        { width: 1440, height: 900 },
-        { width: 375, height: 812 },
-      ]) {
+      for (const viewport of [{ width: 375, height: 812 }]) {
         await page.setViewportSize(viewport);
         await trail.scrollIntoViewIfNeeded();
 
@@ -193,6 +190,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       await trail.scrollIntoViewIfNeeded();
 
       await expect(trail).toHaveAttribute("data-empty", "true");
+      await expect(trail).toHaveAttribute("data-invited", "false");
       await expect(placeholder).toBeVisible();
       await expect(placeholder.locator(".magnetic-trail__placeholder-title")).toHaveText(
         "Belum ada foto yang dibagikan",
@@ -241,7 +239,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
     }) => {
       await page.emulateMedia({ reducedMotion });
       await context.addCookies([
-        { name: "ww_invite_id", value: "ValidInv1", domain: "localhost", path: "/" },
+        { name: "ww_invite_id", value: "ValidInvite1", domain: "localhost", path: "/" },
       ]);
       await page.route("**/api/guest-photos", (route) =>
         route.fulfill({
@@ -265,6 +263,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       const trail = page.locator("[data-trail]");
       const placeholder = trail.locator("[data-trail-placeholder]");
       await trail.scrollIntoViewIfNeeded();
+      await expect(trail).toHaveAttribute("data-invited", "true");
       await expect(placeholder.locator(".magnetic-trail__placeholder-desc")).toContainText(
         "Jadilah yang pertama mengabadikan dan membagikan momen bahagia ini bersama kami.",
       );

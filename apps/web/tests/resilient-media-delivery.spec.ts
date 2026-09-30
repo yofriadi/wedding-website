@@ -39,7 +39,6 @@ test.describe("resilient media delivery: throttled baseline & responsive media",
     const mobilePage = await mobileContext.newPage();
     const mobileCdp = await emulateGood3G(mobilePage);
 
-    let mobileAcikSrc = "";
     try {
       await mobilePage.goto("/", { waitUntil: "domcontentloaded" });
       await dismissWelcomeGate(mobilePage);
@@ -75,7 +74,6 @@ test.describe("resilient media delivery: throttled baseline & responsive media",
           { timeout: 15_000 },
         )
         .toMatch(/-w768\.(avif|webp)/);
-      mobileAcikSrc = await acikImg.evaluate((img: HTMLImageElement) => img.currentSrc || img.src);
       // Verify scroll fade participants have opacity >= 0.05 when entered
       const lowOpacityEntered = await mobilePage.evaluate(() => {
         const vh = window.innerHeight;
@@ -94,58 +92,16 @@ test.describe("resilient media delivery: throttled baseline & responsive media",
       await mobileCdp.detach();
       await mobileContext.close();
     }
-
-    // 2. Wide leg: 1440x900 @2x
-    const wideContext = await browser.newContext({
-      viewport: { width: 1440, height: 900 },
-      deviceScaleFactor: 2,
-    });
-    const widePage = await wideContext.newPage();
-    const wideCdp = await emulateGood3G(widePage);
-
-    try {
-      await widePage.goto("/", { waitUntil: "domcontentloaded" });
-      await dismissWelcomeGate(widePage);
-
-      const acikImgWide = widePage.locator('img[src*="keluarga-acik"]').first();
-      await widePage.evaluate(async () => {
-        const section = document.getElementById("timeline-section");
-        if (!section) return;
-        const stage = section.querySelector(".timeline-stage") as HTMLElement;
-        if (!stage) return;
-        const top = section.getBoundingClientRect().top + window.scrollY;
-        const travel = section.offsetHeight - stage.offsetHeight;
-        for (let f = 0.5; f <= 0.85; f += 0.05) {
-          window.scrollTo(0, top + f * travel);
-          await new Promise((r) => setTimeout(r, 80));
-        }
-      });
-      await widePage.waitForTimeout(500);
-
-      await expect
-        .poll(
-          async () => {
-            return await acikImgWide.evaluate((img: HTMLImageElement) => img.currentSrc || img.src);
-          },
-          { timeout: 15_000 },
-        )
-        .toMatch(/-w1280\.(avif|webp)/);
-
-      const wideAcikSrc = await acikImgWide.evaluate(
-        (img: HTMLImageElement) => img.currentSrc || img.src,
-      );
-      expect(wideAcikSrc).not.toBe(mobileAcikSrc);
-    } finally {
-      await wideCdp.detach();
-      await wideContext.close();
-    }
   });
 
   // 6.3: No-script visibility and overlay suppression
   test("no-script: markup complete, text visible, and overlays suppressed (task 6.3)", async ({
     browser,
   }) => {
-    const context = await browser.newContext({ javaScriptEnabled: false });
+    const context = await browser.newContext({
+      javaScriptEnabled: false,
+      viewport: { width: 390, height: 844 },
+    });
     const page = await context.newPage();
 
     try {

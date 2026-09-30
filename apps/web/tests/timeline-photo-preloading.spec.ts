@@ -126,7 +126,10 @@ test.describe("timeline photo preloading", () => {
   });
 
   test("noscript renders timeline images with opacity 1", async ({ browser }) => {
-    const context = await browser.newContext({ javaScriptEnabled: false });
+    const context = await browser.newContext({
+      javaScriptEnabled: false,
+      viewport: { width: 390, height: 844 },
+    });
     const page = await context.newPage();
     try {
       await page.goto("/");

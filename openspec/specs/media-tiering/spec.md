@@ -32,12 +32,17 @@ The document SHALL carry a media tier verdict on `<html data-tier>` with one of 
 
 ### Requirement: Tier-driven promotion of deferred collage media
 
-The ZoomParallax collage images SHALL ship with low-fidelity LQIP placeholders in `src`/`srcset` and deferred master sources in `data-src`/`data-srcset`. On a `full` tier at parse time the deferred sources SHALL be promoted to live attributes synchronously during the initial parse, so their fetches start as early as markup-shipped sources would. While the collage is COLLAPSED — a `lite` tier, or `prefers-reduced-motion` on any tier, the two switches whose CSS produces the same static one-viewport grid — neither the parse-time promoter nor the entry loader SHALL promote the images: no scroll-driven transform magnifies them, so promotion stays with the component's own pass, and the centre slot's `sizes` claim SHALL be rewritten to the bento column before it is promoted so candidate selection lands on a generated variant rather than the 2592 px master. Reduced motion is not a tier downgrade: the verdict, the soundtrack and the video policy still follow `full`. Where a slot's `sizes` claim depends on the collapse state it SHALL be written before the slot is promoted: candidate selection runs the moment a `srcset` becomes live, so promoting first and re-claiming afterwards leaves the wider candidate downloaded and a second fetch in flight — which is why the parse-time promoter defers entirely while collapsed instead of promoting the outer slots early. Promotion SHALL mark the element with `data-promoted`; that marker, not the presence or absence of a `src`, is the sole idempotency mechanism, because every image now has a live placeholder `src` from the moment it parses. All promotion paths — the component observer, the page parse-time promoter and the entry loader — SHALL apply the same marker, and the page's two inline paths SHALL share one promotion implementation rather than each carrying a copy of the attribute-ordering rules. The component's approach observer MAY promote any image that remains unpromoted after the entry path and after client navigation. That observer's promotion margin is measured once when the observer is created and re-measured if the viewport changes; it is not scroll-scrub geometry and MAY derive from the viewport height — a deliberate carve-out from `scroll-motion`'s prohibition on measuring JS-derived scroll geometry from the dynamic viewport.
+The ZoomParallax collage images SHALL ship with low-fidelity LQIP placeholders in `src`/`srcset` and deferred master sources in `data-src`/`data-srcset`. On a `full` tier at parse time on non-gated mobile viewports the deferred sources SHALL be promoted to live attributes synchronously during the initial parse, so their fetches start as early as markup-shipped sources would. On desktop viewports where `DesktopGate` is displayed (`<html data-desktop>` present), collage promotion (both the parse-time copy and `ZoomParallax.astro`'s component promoter) SHALL be suppressed to prevent downloading heavy collage media behind the gate. While the collage is COLLAPSED — a `lite` tier, or `prefers-reduced-motion` on any tier, the two switches whose CSS produces the same static one-viewport grid — neither the parse-time promoter nor the entry loader SHALL promote the images: no scroll-driven transform magnifies them, so promotion stays with the component's own pass, and the centre slot's `sizes` claim SHALL be rewritten to the bento column before it is promoted so candidate selection lands on a generated variant rather than the 2592 px master. Reduced motion is not a tier downgrade: the verdict, the soundtrack and the video policy still follow `full`. Where a slot's `sizes` claim depends on the collapse state it SHALL be written before the slot is promoted: candidate selection runs the moment a `srcset` becomes live, so promoting first and re-claiming afterwards leaves the wider candidate downloaded and a second fetch in flight — which is why the parse-time promoter defers entirely while collapsed instead of promoting the outer slots early. Promotion SHALL mark the element with `data-promoted`; that marker, not the presence or absence of a `src`, is the sole idempotency mechanism, because every image now has a live placeholder `src` from the moment it parses. All promotion paths — the component observer, the page parse-time promoter and the entry loader — SHALL apply the same marker, and the page's two inline paths SHALL share one promotion implementation rather than each carrying a copy of the attribute-ordering rules. The component's approach observer MAY promote any image that remains unpromoted after the entry path and after client navigation. That observer's promotion margin is measured once when the observer is created and re-measured if the viewport changes; it is not scroll-scrub geometry and MAY derive from the viewport height — a deliberate carve-out from `scroll-motion`'s prohibition on measuring JS-derived scroll geometry from the dynamic viewport.
 
 #### Scenario: Full tier fetches at parse time
 
-- **WHEN** the tier is `full` during the initial parse
+- **WHEN** the tier is `full` during the initial parse on an ungated mobile viewport
 - **THEN** every collage image is promoted immediately after the collage markup parses
+
+#### Scenario: Desktop gate suppresses collage promotion
+
+- **WHEN** the page loads on a desktop viewport where `data-desktop` is set
+- **THEN** collage promotion does not run (neither parse-time nor component-level), and collage images remain unpromoted
 
 #### Scenario: Lite defers the collage to approach
 
@@ -99,7 +104,7 @@ The timeline video SHALL NOT carry an `autoplay` attribute and SHALL NOT transfe
 
 ### Requirement: Soundtrack is tier-conditional
 
-The soundtrack element SHALL ship with `preload="none"`. On a `full` tier the page SHALL enable eager preloading once the loading screen's entry-media gate settles — not on a fixed post-parse timer — so the soundtrack cannot compete for bandwidth with the very media that gate is waiting on, and SHALL start playback at the welcome-gate commit. On a `lite` tier the page SHALL NOT download the soundtrack at all: no preloading, no playback at commit, and no gesture-armed fallback; and the gate's music note SHALL be hidden so no playback is promised.
+The soundtrack element SHALL ship with `preload="none"`. On a `full` tier on ungated mobile viewports, the page SHALL enable eager preloading once the loading screen's entry-media gate settles — not on a fixed post-parse timer — so the soundtrack cannot compete for bandwidth with the very media that gate is waiting on, and SHALL start playback at the welcome-gate commit. On desktop viewports where `DesktopGate` is displayed (`<html data-desktop>` present), soundtrack preloading and playback SHALL be suppressed. On a `lite` tier the page SHALL NOT download the soundtrack at all: no preloading, no playback at commit, and no gesture-armed fallback; and the gate's music note SHALL be hidden so no playback is promised.
 
 #### Scenario: Lite from the initial verdict transfers zero soundtrack bytes
 
@@ -108,8 +113,13 @@ The soundtrack element SHALL ship with `preload="none"`. On a `full` tier the pa
 
 #### Scenario: Full tier buffers behind the gate
 
-- **WHEN** a full-tier guest waits through the loading screen and gate
+- **WHEN** a full-tier guest waits through the loading screen and gate on an ungated mobile viewport
 - **THEN** the soundtrack preloads in the background and begins at the commit gesture
+
+#### Scenario: Desktop visitor does not download soundtrack
+
+- **WHEN** a full-tier visitor views the homepage on a desktop viewport with `data-desktop` present
+- **THEN** no network request is issued for the soundtrack file
 
 ### Requirement: Loader gates the HeroZoom-through-ZoomParallax entry sequence
 

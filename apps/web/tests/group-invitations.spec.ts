@@ -930,8 +930,8 @@ test.describe("7.2 E2E member isolation", () => {
       maxMembers: 3,
     });
 
-    const context1 = await browser.newContext();
-    const context2 = await browser.newContext();
+    const context1 = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    const context2 = await browser.newContext({ viewport: { width: 390, height: 844 } });
 
     try {
       const page1 = await context1.newPage();
@@ -1178,7 +1178,10 @@ test.describe("7.4 E2E sticky cookie persistence", () => {
     expect(currentCookie).toBe(memberCookie);
 
     // Fresh / incognito visitor gets the group identity
-    const freshContext = await page.context().browser()!.newContext();
+    const freshContext = await page
+      .context()
+      .browser()!
+      .newContext({ viewport: { width: 390, height: 844 } });
     try {
       const freshPage = await freshContext.newPage();
       pinFullTier(freshPage);

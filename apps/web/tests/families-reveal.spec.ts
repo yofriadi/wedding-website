@@ -14,34 +14,7 @@ import { dismissWelcomeGate } from "./helpers";
  * expected accessible-text sequence.
  */
 const EXPECTED_WORDS = [
-  "Keluarga",
-  "Bapak",
-  "Ch.",
-  "Fuad",
-  "Ery",
-  "Pribadi",
-  "Ibu",
-  "Siti",
-  "Mufrodah",
-  "Jl.",
-  "Dr.",
-  "Wahidin",
-  "49,",
-  "Surakarta",
-  "Keluarga",
-  "Bapak",
-  "Hermansyah",
-  "Ibu",
-  "Nur",
-  "Faizah",
-  "Jl.",
-  "Kemanggisan",
-  "Ilir",
-  "No.",
-  "58a,",
-  "Palmerah,",
-  "Jakarta",
-  "Barat",
+  "Bismillahirrahmanirrahim",
   "Ya",
   "Allah,",
   "izinkanlah",
@@ -121,7 +94,7 @@ function inkOpacities(page: Page) {
 }
 
 test.describe("travelling reveal — ghost below the band, ink at the band, inked after", () => {
-  test.use({ viewport: { width: 1440, height: 900 } });
+  test.use({ viewport: { width: 390, height: 844 } });
 
   /**
    * The reveal maps viewport position, not section progress: words enter at
@@ -280,7 +253,7 @@ test.describe("fit — content stays readable and unclipped at phone sizes", () 
 
         const fit = await page.evaluate(() => {
           const section = document.getElementById("families-section");
-          const nameRow = document.querySelector("#families-section .families-names li");
+          const nameRow = document.querySelector("#families-section .families-names span");
           if (!section || !nameRow) throw new Error("families section not found");
           return {
             docScrollW: document.documentElement.scrollWidth,
@@ -413,7 +386,7 @@ test.describe("no JavaScript", () => {
 });
 
 test.describe("theme and reveal wiring", () => {
-  test.use({ viewport: { width: 1440, height: 900 } });
+  test.use({ viewport: { width: 390, height: 844 } });
 
   /**
    * families-section spec: "Device-theme ink pair" — dark is the authored
@@ -433,12 +406,12 @@ test.describe("theme and reveal wiring", () => {
       page.evaluate(() => {
         const section = document.getElementById("families-section");
         const word = document.querySelector("#families-section .fw");
-        const divider = document.querySelector(".families-divider");
+        const divider = document.querySelector(".families-wave-divider svg");
         if (!section || !word || !divider) throw new Error("families section not found");
         return {
           bg: getComputedStyle(section).backgroundColor,
           ink: getComputedStyle(word).color,
-          rule: getComputedStyle(divider).backgroundColor,
+          rule: getComputedStyle(divider).color,
         };
       });
 
@@ -473,7 +446,7 @@ test.describe("theme and reveal wiring", () => {
         });
       const origRect = Element.prototype.getBoundingClientRect;
       Element.prototype.getBoundingClientRect = function () {
-        probe.rects++;
+        if (this.closest && this.closest("#families-section")) probe.rects++;
         return origRect.call(this);
       };
       const origSet = CSSStyleDeclaration.prototype.setProperty;
