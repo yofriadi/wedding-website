@@ -187,12 +187,23 @@ const MARKUP_BASE_PATTERNS = [
 // Placeholders drop lower: at 32px blurred there is no detail left to preserve
 // and the byte cap is the binding constraint.
 const SETTINGS = {
-  avif: { normal: { quality: 55, effort: 4 }, lqip: { quality: 35, effort: 4 } },
+  avif: {
+    normal: { quality: 55, effort: 4 },
+    timeline: { quality: 45, effort: 4 },
+    lqip: { quality: 35, effort: 4 },
+  },
   webp: {
     normal: { quality: 80, effort: 4, smartSubsample: true },
+    timeline: { quality: 70, effort: 4, smartSubsample: true },
     lqip: { quality: 45, effort: 4, smartSubsample: true },
   },
 };
+
+/**
+ * Timeline photos in TimelineScroll are smaller cards viewed during scroll.
+ * They use optimized quality to minimize initial download time on approach.
+ */
+const TIMELINE_BASES = new Set(["awal-perkenalan", "keluarga-yofri", "keluarga-acik"]);
 
 /** Low-fidelity placeholder width (design D3: ~32px, blurred). */
 const LQIP_WIDTH = 32;
@@ -313,8 +324,10 @@ const variantName = (base, format, width) => `${base}-w${width}.${format}`;
 const lqipName = (base, format) => `${base}-lqip.${format}`;
 const kb = (bytes) => `${(bytes / 1024).toFixed(bytes < 10 * 1024 ? 2 : 1)} KB`;
 
-function encode(pipeline, format, isLqip) {
-  const settings = SETTINGS[format][isLqip ? "lqip" : "normal"];
+function encode(pipeline, format, isLqip, base) {
+  const isTimeline = Boolean(base && TIMELINE_BASES.has(base));
+  const profile = isLqip ? "lqip" : isTimeline ? "timeline" : "normal";
+  const settings = SETTINGS[format][profile] ?? SETTINGS[format][isLqip ? "lqip" : "normal"];
   return format === "avif" ? pipeline.avif(settings) : pipeline.webp(settings);
 }
 
@@ -630,6 +643,7 @@ async function generateFor(base, entries, report) {
           sharp(file).resize({ width, withoutEnlargement: true }),
           format,
           false,
+          base,
         ).toBuffer();
         await writeAtomic(outPath, bytes);
         report.written.push(`${name} (${kb(bytes.byteLength)})`);
@@ -653,6 +667,7 @@ async function generateFor(base, entries, report) {
         sharp(file).resize({ width: LQIP_WIDTH, withoutEnlargement: true }).blur(LQIP_BLUR_SIGMA),
         format,
         true,
+        base,
       ).toBuffer();
 
       if (bytes.byteLength > LQIP_MAX_BYTES) {

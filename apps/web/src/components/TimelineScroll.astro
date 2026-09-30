@@ -28,8 +28,11 @@ const SIZES_CARD =
        motion on any tier.
 
        The photos DO carry device-matched candidate sets (responsive-media):
-       `keluarga-acik` is a 2048px, 463 KB master in a card capped at
-       `sm:w-[400px]`, and a 390px phone used to download all of it. Delivered
+       `keluarga-acik` is a 2048px master, but its card is capped at `sm:w-[400px]`,
+       so its candidate ladder is capped at 768w to prevent high-DPI phones from
+       downloading heavy 1280w/2048w assets for small display cards. Timeline
+       variants are encoded at optimized quality (webp q70 / avif q45) to ensure
+       fast download and decode on approach. Delivered
        server markup retains `loading="lazy"` so initial page load and hero LCP
        are unhindered. When the guest approaches `#timeline-section`, client-side
        script promotes them to `loading="eager"` and triggers `img.decode()` to
@@ -166,13 +169,13 @@ const SIZES_CARD =
               <div class="w-[340px] sm:w-[400px] max-w-[calc(100vw-32px)] h-auto aspect-[1280/591] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl mb-4 ring-1 ring-[color:var(--timeline-photo-ring)]">
                 <picture>
                   <source
-                    srcset={variantSrcset("keluarga-yofri", "avif", 1280)}
+                    srcset={variantSrcset("keluarga-yofri", "avif", 1280, undefined, 768)}
                     sizes={SIZES_CARD}
                     type="image/avif"
                   />
                   <img
                     src="/keluarga-yofri.webp"
-                    srcset={variantSrcset("keluarga-yofri", "webp", 1280)}
+                    srcset={variantSrcset("keluarga-yofri", "webp", 1280, undefined, 768)}
                     sizes={SIZES_CARD}
                     alt="Aisha diperkenalkan ke keluarga Yofri"
                     width="1280"
@@ -218,13 +221,13 @@ const SIZES_CARD =
               <div class="w-[340px] sm:w-[400px] max-w-[calc(100vw-32px)] h-auto aspect-[2048/945] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
                 <picture>
                   <source
-                    srcset={variantSrcset("keluarga-acik", "avif", 2048)}
+                    srcset={variantSrcset("keluarga-acik", "avif", 2048, undefined, 768)}
                     sizes={SIZES_CARD}
                     type="image/avif"
                   />
                   <img
                     src="/keluarga-acik.webp"
-                    srcset={variantSrcset("keluarga-acik", "webp", 2048)}
+                    srcset={variantSrcset("keluarga-acik", "webp", 2048, undefined, 768)}
                     sizes={SIZES_CARD}
                     alt="Yofri bertemu keluarga Aisha"
                     width="2048"

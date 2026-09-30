@@ -119,18 +119,24 @@ export function masterSrc(base: string, format: ImageFormat, version?: string): 
  *   offers one that was never generated
  * @param version cache-bust for the MASTER candidate only; pass exactly what
  *   `masterSrc` gets, or the two name different URLs for one file
+ * @param maxCandidateWidth optional ceiling on candidate width to offer in srcset;
+ *   useful when a card's layout box is capped much smaller than the master
  */
 export function variantSrcset(
   base: string,
   format: ImageFormat,
   intrinsicWidth: number,
   version?: string,
+  maxCandidateWidth?: number,
 ): string {
   const name = baseOf(base);
-  const candidates = VARIANT_WIDTHS.filter((width) => width < intrinsicWidth).map(
-    (width) => `${GENERATED_DIR}/${name}-w${width}.${format} ${width}w`,
-  );
-  candidates.push(`/${name}.${format}${versionSuffix(version)} ${intrinsicWidth}w`);
+  const effectiveMax = maxCandidateWidth ?? intrinsicWidth;
+  const candidates = VARIANT_WIDTHS.filter(
+    (width) => width < intrinsicWidth && width <= effectiveMax,
+  ).map((width) => `${GENERATED_DIR}/${name}-w${width}.${format} ${width}w`);
+  if (effectiveMax >= intrinsicWidth) {
+    candidates.push(`/${name}.${format}${versionSuffix(version)} ${intrinsicWidth}w`);
+  }
   return candidates.join(", ");
 }
 
