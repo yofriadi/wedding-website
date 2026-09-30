@@ -259,6 +259,64 @@ test.describe("media tiering", () => {
       // An API-derived `full` never fires net-tier:change.
       expect(await tierEvents(page)).toEqual([]);
     });
+
+    test("holds the overlay while a collage variant is still in flight", async ({ page }) => {
+      // The property this gate exists for: a scrubbed-collage guest never reaches
+      // the welcome gate — and therefore never reaches the scrub — with a slot
+      // still on its 32px placeholder. Promotion alone does not prove it:
+      // `data-promoted` is stamped at parse, long before the bytes arrive, so a
+      // loader that gated on the hero only would pass every other assertion in
+      // this file. Stall one outer variant and watch the overlay refuse to lift.
+      pinFullTier(page);
+      let stalled = 0;
+      await page.route("**/generated/square-top-right-w*.avif", async (route) => {
+        stalled += 1;
+        await new Promise((resolve) => setTimeout(resolve, 2500));
+        await route.continue();
+      });
+
+      await page.goto("/", { waitUntil: "domcontentloaded" });
+
+      // The route really was the thing in flight — without this the test could
+      // pass vacuously if the glob stopped matching a generated URL.
+      expect(stalled).toBe(1);
+
+      // Still held. The hero decoded long ago and the dwell floor is 300 ms, so
+      // the only thing keeping the overlay up is the stalled collage slot.
+      await expect(page.locator("#loading-screen")).toBeAttached();
+
+      await waitForLoaderDismissed(page);
+
+      // And when it does lift, every slot is past its placeholder: promoted,
+      // fully loaded, decoded, and no longer 32px wide.
+      const slots = await page.evaluate(() =>
+        Array.from(document.querySelectorAll<HTMLImageElement>("#zoom-parallax-container img")).map(
+          (img) => ({
+            promoted: img.hasAttribute("data-promoted"),
+            placeholder: /-lqip\.(avif|webp)(\?|$)/.test(img.currentSrc || img.src),
+            complete: img.complete,
+            naturalWidth: img.naturalWidth,
+          }),
+        ),
+      );
+      expect(slots).toHaveLength(11);
+      for (const slot of slots) {
+        expect(slot.promoted).toBe(true);
+        expect(slot.placeholder).toBe(false);
+        expect(slot.complete).toBe(true);
+        expect(slot.naturalWidth).toBeGreaterThan(32);
+      }
+
+      // The centre in particular is the master the scrub magnifies to cover the
+      // stage, at its full intrinsic width — the sharpness `1f9fdbb` bought.
+      expect(await centreCandidate(page)).toBe(CENTRE_MASTER_AVIF);
+      const centreWidth = await page.evaluate(
+        () =>
+          document.querySelector<HTMLImageElement>('[data-is-center="true"] img')?.naturalWidth ??
+          0,
+      );
+      expect(centreWidth).toBe(2592);
+    });
   });
 
   test.describe("reduced motion on a full verdict", () => {

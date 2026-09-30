@@ -409,9 +409,12 @@ const SIZES_CENTER_COLLAPSED = SIZES_OUTER;
     const collapsed = !scrubsCollage();
     document.querySelectorAll<HTMLElement>(COLLAPSE_SIZED).forEach((el) => {
       // Cache the markup value on first touch. `sizes` is overwritten below, so
-      // on a second pass (resize, client navigation, a motion preference that
-      // changes at runtime) the original is no longer recoverable from the
-      // attribute.
+      // on a second pass — a width-changing resize, `desktop-gate:release`, or
+      // client navigation re-running this module — the original is no longer
+      // recoverable from the attribute. Nothing listens for a motion-preference
+      // change, so that flip is NOT covered: a guest who toggles the OS setting
+      // mid-session gets the pre-toggle claim until they reload, exactly like
+      // every other media-query-driven decision on this page.
       if (!el.dataset.sizesScrubbed) el.dataset.sizesScrubbed = el.getAttribute("sizes") ?? "";
       const next = collapsed ? el.dataset.sizesCollapsed : el.dataset.sizesScrubbed;
       // Write only on change: setting `sizes` re-runs candidate selection, so a
@@ -537,10 +540,15 @@ const SIZES_CENTER_COLLAPSED = SIZES_OUTER;
     } finally {
       // The loader waits for this component's initial setup as well as its
       // images, so this is signalled from `finally` and NOT after a successful
-      // `applyTier`. A throw in there — or a failed `motion` chunk, or a stale
-      // hashed asset URL after a deploy, or an extension that blocks external
-      // scripts while allowing inline ones — would otherwise strand the entry
-      // gate for its whole ceiling on a page that is perfectly scrollable.
+      // `applyTier`. A throw in there — a stale hashed asset URL after a deploy,
+      // or an extension that blocks external scripts while allowing inline ones —
+      // would otherwise strand the entry gate for its whole ceiling on a page
+      // that is perfectly scrollable.
+      //
+      // What `finally` does NOT cover: a `motion` chunk that fails to fetch. That
+      // stops this module from evaluating at all, so no `finally` ever runs and a
+      // scrubbed-collage guest still rides the ceiling. Bounding that case needs
+      // a separate, shorter cap on the ready wait — not a wider `try`.
       //
       // The data attribute handles initialization winning the race with the
       // loader's listener; the event handles the normal path. Module scripts

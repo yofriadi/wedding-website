@@ -548,7 +548,11 @@ const loadingPhrases = shuffleTrail(LOADING_PHRASES);
   const LOADER_MAX_WAIT_MS = 16000;
   // The overlay fades for this long before it is removed, and only its removal
   // lets the welcome gate arm — so the real worst case from navigation is
-  // LOADER_MAX_WAIT_MS + LOADER_FADE_MS.
+  // LOADER_MAX_WAIT_MS + LOADER_FADE_MS. This constant and the `duration-300`
+  // class on #loading-screen are two halves of one duration, and Tailwind cannot
+  // take a computed class name — so changing one means editing the other by
+  // hand. The welcome gate's CSS failsafe delay is sized against that worst case
+  // (see WelcomeGate.astro); it must stay larger than it.
   const LOADER_FADE_MS = 300;
 
   const hideLoadingScreen = () => {
@@ -593,11 +597,17 @@ const loadingPhrases = shuffleTrail(LOADING_PHRASES);
   const ENTRY_MEDIA_SELECTOR = '#hero-container img, #zoom-parallax-container img';
   const FIRST_VIEW_MEDIA_SELECTOR = '#hero-container img';
 
-  // Called on `full` only (see the tier note above). It uses the parse-time
-  // promoter's own function rather than carrying a second copy of the
+  // Called while the collage is scrubbed (see the tier note above). It uses the
+  // parse-time promoter's own function rather than carrying a second copy of the
   // attribute-ordering rules — see the note where `__promoteCollageImages` is
-  // assigned. If that global is missing then inline scripts are blocked, this
-  // script is not running either, and the component module owns promotion.
+  // assigned.
+  //
+  // What this second call actually covers is NOT "inline scripts were blocked":
+  // if the parse-time promoter did not run, this script did not run either. It
+  // covers a parse-time pass that THREW partway through. Promotion stamps
+  // `data-promoted` last per image, which makes the pass resumable — so this
+  // completes the tail the throw skipped, instead of letting the wait below hang
+  // on placeholders until the ceiling.
   const promoteEntryCollage = () => {
     if (typeof window.__promoteCollageImages === 'function') {
       window.__promoteCollageImages();
@@ -693,7 +703,10 @@ const loadingPhrases = shuffleTrail(LOADING_PHRASES);
     // Measured from navigation start, so the ceiling bounds the guest's total
     // wait rather than the time since this script happened to parse.
     const remaining = Math.max(0, LOADER_MAX_WAIT_MS - performance.now());
-    const deadline = new Promise((resolve) => setTimeout(resolve, remaining));
+    let deadlineTimer;
+    const deadline = new Promise((resolve) => {
+      deadlineTimer = setTimeout(resolve, remaining);
+    });
     try {
       // On `full` the loader does not remove until every image in the HeroZoom →
       // ZoomParallax entry range has either loaded or failed, decoded where
@@ -712,8 +725,11 @@ const loadingPhrases = shuffleTrail(LOADING_PHRASES);
     } catch {
       // Ignore errors; the deadline remains the final escape hatch.
     } finally {
-      // Drop the listeners the losing branch left registered, then hand the
-      // connection the entry media just vacated to the soundtrack preload.
+      // Drop the listeners the losing branch left registered and the deadline
+      // timer that would otherwise stay pending for the life of the page when the
+      // media branch won, then hand the connection the entry media just vacated
+      // to the soundtrack preload.
+      if (deadlineTimer) clearTimeout(deadlineTimer);
       entryAbort.abort();
       if (tierIsFull()) enableSoundtrack();
       hideLoadingScreen();

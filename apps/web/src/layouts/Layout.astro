@@ -51,9 +51,11 @@ const { title = "wedding-website" } = Astro.props;
     {/* Media tiering: default to full unless user explicitly enabled Save-Data.
 
         Deliberately ABOVE the page-owned head slot. The verdict is an input to
-        the tier-conditional hints a page emits through that slot — index.astro
-        skips the collage-centre master preload on `lite` — so a slot script has
-        to find `html[data-tier]` already written. The script is synchronous,
+        the collapse-conditional hints a page emits through that slot —
+        index.astro skips the collage-centre master preload while the collage is
+        collapsed (`lite`, or a guest who prefers reduced motion) — so a slot
+        script has to find `html[data-tier]` already written. The script is
+        synchronous,
         dependency-free and reads nothing the slot provides, so hoisting it costs
         nothing and cannot change the verdict; leaving it below would make the
         ordering load-bearing in the one direction that silently fails (the hint
