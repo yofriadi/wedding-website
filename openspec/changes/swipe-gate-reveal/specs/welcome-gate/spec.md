@@ -110,7 +110,7 @@ Under `prefers-reduced-motion: reduce` the gate SHALL NOT finger-track or slide;
 
 ### Requirement: The gate never traps the page
 
-With scripting disabled, the gate SHALL NOT render (via the `scripting` media query). With scripting enabled, a CSS failsafe SHALL auto-dismiss the gate after a bounded delay unless the gesture script has cancelled it by arming successfully.
+With scripting disabled, the gate SHALL NOT render (via the `scripting` media query). With scripting enabled, a CSS failsafe SHALL auto-dismiss the gate after a bounded delay unless the gesture script has cancelled it by arming successfully. The failsafe SHALL defer — re-arming up to a bounded count rather than dismissing — while another opaque overlay still covers the page (the loading screen, or an active entry claim gate), so that it cannot release the scroll lock behind an overlay the guest cannot see past. The bound is not an absolute veto: past it the failsafe SHALL dismiss regardless, because a gate that can never exit is a worse failure than one that exits early.
 
 #### Scenario: No JavaScript
 
@@ -121,6 +121,11 @@ With scripting disabled, the gate SHALL NOT render (via the `scripting` media qu
 
 - **WHEN** JavaScript is enabled but the gate script never arms
 - **THEN** the gate auto-dismisses after the failsafe delay and the page becomes usable
+
+#### Scenario: Failsafe defers while an opaque overlay is up
+
+- **WHEN** the failsafe animation completes while `#loading-screen` is still connected, or an entry claim gate is still active
+- **THEN** the gate re-arms the failsafe instead of dismissing, so scroll stays locked behind the overlay, and only dismisses once the overlay is gone or the bounded re-arm count is exhausted
 
 ### Requirement: Open metric trigger
 

@@ -48,7 +48,7 @@ The gesture script ships `is:inline` in `index.astro` (same pattern as the exist
 Three layers, cheapest first:
 
 1. `@media (scripting: none) { #welcome-gate { display: none } }` — no JS, no gate.
-2. A pure-CSS failsafe animation (25s) fades the gate out; the inline script cancels it the moment it successfully arms the gesture. Covers enabled-but-broken/blocked JS. The delay clears the loader's navigation-relative 16s entry-media ceiling plus its 300ms fade, and the `animationend` handler re-arms rather than dismissing while `#loading-screen` is still connected — so this path can never unlock scroll behind an opaque overlay.
+2. A pure-CSS failsafe animation (25s) fades the gate out; the inline script cancels it the moment it successfully arms the gesture. Covers enabled-but-broken/blocked JS. The delay clears the loader's navigation-relative 16s entry-media ceiling plus its 300ms fade, and the `animationend` handler re-arms rather than dismissing while `#loading-screen` is still connected — so this path cannot unlock scroll behind an opaque overlay within a bounded window. The re-arm count is capped (4), past which it dismisses regardless: a gate that can never exit is the worse failure, so this is a deferral, not a veto.
 3. `prefers-reduced-motion` — no tracking, no slide: first tap/click/key dismisses instantly (fade only), scroll lock still applies until then.
 
 ### D7 — Open metric: mirror the seen-metrics pattern

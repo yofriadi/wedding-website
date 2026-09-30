@@ -4,6 +4,16 @@
 repos:
   - repo: local
     hooks:
+      - id: private-media-placeholders
+        name: private media are placeholders
+        language: system
+        entry: tools/assert-placeholders.sh --staged
+        # Fires only when a path under apps/web/public/ is staged, which is
+        # exactly the leak scenario: git cleared the skip-worktree flags, the
+        # real private media became visible, and something staged it. Listed
+        # first so a privacy failure aborts before lint rewrites anything.
+        # See tools/media-placeholders.lock.
+        files: ^apps/web/public/
       - id: oxlint
         name: oxlint
         language: system

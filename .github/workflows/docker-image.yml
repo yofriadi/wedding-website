@@ -21,6 +21,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Assert private media are placeholders
+        # This is the leg that survives `git commit --no-verify` and machines
+        # with no hooks installed: it re-checks, server-side, that every
+        # protected path in apps/web/public/ holds its committed placeholder
+        # blob rather than the real private media that
+        # tools/restore-private-media.sh overlays locally. Fails the build
+        # before an image is produced from leaked bytes.
+        run: tools/assert-placeholders.sh
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 

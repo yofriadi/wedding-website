@@ -1,0 +1,53 @@
+# Placeholder-blob allowlist for private media paths.
+#
+# apps/web/public/ ships PLACEHOLDERS at the master paths; the real private
+# photos and video live only on the maintainer's disk, overlaid by
+# tools/restore-private-media.sh and hidden from git with `skip-worktree`.
+#
+# skip-worktree is a caching hint, not a security boundary: git porcelain
+# (stash, reset --hard, checkout across branches, rebase, am, read-tree -m -u,
+# sparse-checkout, and libgit2/JGit clients) clears it routinely. When it is
+# cleared, ~5 MB of real private media shows up as an ordinary modification and
+# one `git commit -a` publishes it — into a public repository's history, where
+# it is effectively unrecoverable.
+#
+# This file is that boundary. It pins the exact placeholder blob expected at
+# each protected path, so a real file cannot be committed by accident: the blob
+# SHA differs, and tools/assert-placeholders.sh rejects it in the pre-commit
+# hook and in CI. Sizes are NOT a usable discriminator here — the smallest real
+# master (square-mid-left.avif, 22.5 KB) is smaller than several legitimately
+# committed assets (wedding_photo-1536.webp, 111 KB).
+#
+# Regenerate DELIBERATELY, and only after reading the diff:
+#   tools/assert-placeholders.sh --update
+#
+# <blob-sha>  <path>
+472a8d63cc5f1b9dcd7c88e3fb927fbd3ef09465  apps/web/public/awal-perkenalan.avif
+e861902e9b27d632b64006b336febbc7c111e205  apps/web/public/awal-perkenalan.webp
+420dfd6e476473719ef94ea864f3de8fa597941a  apps/web/public/center-focus.avif
+67193df9da9b1d41a8f7d7c441390589203ee21c  apps/web/public/center-focus.webp
+6f623bd51694f5261813c5980364d418ded53c78  apps/web/public/keluarga-acik.avif
+cc6f98318be586271436d07fdaf373ba9c2d725e  apps/web/public/keluarga-acik.webp
+4ee38635fa221a6fb338bfc9fa1c5394a470c59b  apps/web/public/keluarga-yofri.avif
+62b827644782938bb0f6b4c102af12d9128ff73b  apps/web/public/keluarga-yofri.webp
+a4c7c56c934eacb0fe80e348d86f2fcd3c5f8489  apps/web/public/lamaran.mp4
+1b8274808d1c7e8656fab9523406df31a3a9c401  apps/web/public/landscape-bottom-right.avif
+303f9463035307badd5739c7971fa00273fc27c6  apps/web/public/landscape-bottom-right.webp
+226921658a6f91d3f79706041f582bd9e9b48116  apps/web/public/landscape-mid-bottom.avif
+142c08eb838a8a231da9b5cfab1d506301428173  apps/web/public/landscape-mid-bottom.webp
+71451fd423879c6a3aa0091e9f360584b8d019b9  apps/web/public/landscape-mid-left.avif
+e7629fd3c163f86d0730f455a6d95b5fa1ad17d4  apps/web/public/landscape-mid-left.webp
+7793a60b19172afdbf99f707abda82b8c495f22f  apps/web/public/landscape-top-left.avif
+59eab23fddc74f9a908f3492f7c0f54d4a29bac8  apps/web/public/landscape-top-left.webp
+6ae023567dbe03c99f98bfdc3108cc457d9f02db  apps/web/public/portrait-bottom-left.avif
+5a94fd7cd60292652d19f6ffe1f078ba46f9b825  apps/web/public/portrait-bottom-left.webp
+c4f77e45f839dcf36d27349f7d3296fa14b2c8be  apps/web/public/square-lower-left.avif
+324a5342281c01e83acbe2d0614e526fe6f90365  apps/web/public/square-lower-left.webp
+611a3f602992207299ed48df212a3e2636765cda  apps/web/public/square-mid-left.avif
+60953b97e127d81e3e7a2c025d74a94b9c4f4acc  apps/web/public/square-mid-left.webp
+71451fd423879c6a3aa0091e9f360584b8d019b9  apps/web/public/square-mid-right.avif
+e7629fd3c163f86d0730f455a6d95b5fa1ad17d4  apps/web/public/square-mid-right.webp
+b7ba0627520e054a08711ec365368fdc38f61402  apps/web/public/square-top-right.avif
+5e4b468b9fbf925134abbad44fe511a3d7b7e795  apps/web/public/square-top-right.webp
+b7ba0627520e054a08711ec365368fdc38f61402  apps/web/public/square-upper-right.avif
+5e4b468b9fbf925134abbad44fe511a3d7b7e795  apps/web/public/square-upper-right.webp

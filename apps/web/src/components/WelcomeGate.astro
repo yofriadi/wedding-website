@@ -448,20 +448,29 @@ const gateBg = await resolveGateBg();
     // The failsafe is a dismissal path too: release the lock it exits under, or a
     // gate that never arms leaves the page permanently unscrollable.
     //
-    // But never while the loading overlay is still up. This animation's clock
-    // starts when the gate's style applies, early in <body>; the loader's
-    // ceiling is navigation-relative and its overlay is opaque and fixed.
-    // Dismissing here with the loader still connected would unlock scroll
-    // BEHIND an opaque overlay — the mid-timeline landing the early lock exists
-    // to prevent. Re-arm instead and let the loader's removal drive the next
-    // attempt. Capped so "never loops forever" is structural, not arithmetic.
+    // But not while another opaque overlay still covers the page. This
+    // animation's clock starts when the gate's style applies, early in <body>;
+    // the loader's ceiling is navigation-relative and its overlay is opaque and
+    // fixed. Dismissing here with the loader still connected would unlock
+    // scroll BEHIND an opaque overlay — the mid-timeline landing the early lock
+    // exists to prevent. Re-arm instead and let the overlay's removal drive the
+    // next attempt.
+    //
+    // The re-arm is CAPPED, so this is a bounded deferral rather than an
+    // absolute veto: past the cap it dismisses regardless, because a gate that
+    // can never exit is a worse failure than one that exits early.
     var failsafeRearms = 0;
     gate.addEventListener('animationend', function (e) {
       if (e.target !== gate || e.animationName !== 'gate-failsafe') return;
       if (document.documentElement.hasAttribute('data-desktop')) return;
 
+      // Re-check the claim gate as well as the loader. Unreachable while the
+      // claim gate's pause holds — a paused animation emits no `animationend` —
+      // but it keeps the invariant if that gate ever becomes dynamically shown
+      // rather than SSR'd, which is the only thing the pause depends on.
       var loader = document.getElementById('loading-screen');
-      if (loader && loader.isConnected && failsafeRearms < 4) {
+      var overlaid = (loader && loader.isConnected) || isClaimGateActive();
+      if (overlaid && failsafeRearms < 4) {
         failsafeRearms += 1;
         gate.style.animation = 'none';
         // Force style recalc, or the re-added animation coalesces with the

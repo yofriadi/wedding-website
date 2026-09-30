@@ -99,3 +99,7 @@ apps/web/public/generated/
 
 # Guest photo storage (guest-submissions D4): dev fallback root is ./var/photos
 /var/
+
+# Agent session transcript exports dumped at the repo root; never project
+# content, and large enough to be worth keeping out of `git add -A` range.
+pi-session-*.html
