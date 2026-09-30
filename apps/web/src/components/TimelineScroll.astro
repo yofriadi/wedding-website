@@ -27,14 +27,17 @@ const SIZES_CARD =
        first-view (hero) media only where it is collapsed — `lite`, or reduced
        motion on any tier.
 
-       The photos DO carry device-matched candidate sets now (responsive-media):
+       The photos DO carry device-matched candidate sets (responsive-media):
        `keluarga-acik` is a 2048px, 463 KB master in a card capped at
-       `sm:w-[400px]`, and a 390px phone used to download all of it. They are
-       also `loading="lazy"` — this track sits far below the fold and is
-       scrolled horizontally, so the browser, not a tier observer, should decide
-       when to spend the connection. Neither is tier deferral: the real `src`
-       ships and the box is reserved by intrinsic dimensions, so no state of
-       this component is an empty frame.
+       `sm:w-[400px]`, and a 390px phone used to download all of it. Delivered
+       server markup retains `loading="lazy"` so initial page load and hero LCP
+       are unhindered. When the guest approaches `#timeline-section`, client-side
+       script promotes them to `loading="eager"` and triggers `img.decode()` to
+       eliminate empty-frame flashes during horizontal scrubbing. Images start at
+       `opacity-0` and transition smoothly (`transition-opacity duration-300`) to
+       `opacity-100` once `data-loaded="true"` is set on decode or load.
+       Neither is tier deferral: the real `src` ships and the box is reserved by
+       intrinsic dimensions, so no state of this component is an empty frame.
 
        The video below is the one tier-gated element in this component. -->
   <div class="timeline-stage sticky top-0 w-full overflow-hidden">
@@ -136,7 +139,9 @@ const SIZES_CARD =
                     height="1280"
                     loading="lazy"
                     decoding="async"
-                    class="h-full w-full object-cover"
+                    onload="this.dataset.loaded='true'"
+                    onerror="this.dataset.loaded='true'"
+                    class="h-full w-full object-cover opacity-0 transition-opacity duration-300 data-[loaded=true]:opacity-100"
                   />
                 </picture>
               </div>
@@ -174,7 +179,9 @@ const SIZES_CARD =
                     height="591"
                     loading="lazy"
                     decoding="async"
-                    class="h-full w-full object-cover"
+                    onload="this.dataset.loaded='true'"
+                    onerror="this.dataset.loaded='true'"
+                    class="h-full w-full object-cover opacity-0 transition-opacity duration-300 data-[loaded=true]:opacity-100"
                   />
                 </picture>
               </div>
@@ -224,7 +231,9 @@ const SIZES_CARD =
                     height="945"
                     loading="lazy"
                     decoding="async"
-                    class="h-full w-full object-cover"
+                    onload="this.dataset.loaded='true'"
+                    onerror="this.dataset.loaded='true'"
+                    class="h-full w-full object-cover opacity-0 transition-opacity duration-300 data-[loaded=true]:opacity-100"
                   />
                 </picture>
               </div>
@@ -366,6 +375,14 @@ const SIZES_CARD =
 
   </div>
 </section>
+
+<noscript>
+  <style>
+    .timeline-node img {
+      opacity: 1 !important;
+    }
+  </style>
+</noscript>
 
 <style>
   /* Theme tokens (WeddingFAQ precedent). The timeline swaps colors BETWEEN
@@ -611,6 +628,15 @@ const SIZES_CARD =
       opacity: 1 !important;
       transform: none !important;
     }
+    .timeline-node img {
+      opacity: 1 !important;
+    }
+  }
+
+  @media (scripting: none) {
+    .timeline-node img {
+      opacity: 1 !important;
+    }
   }
 </style>
 
@@ -687,6 +713,47 @@ const SIZES_CARD =
   let initRaf: number | undefined;
   let settleTimeout: ReturnType<typeof setTimeout> | undefined;
 
+  // --- Timeline photos: approach-triggered preload & pre-decode -----------
+  let imagesPreloaded = false;
+
+  function preloadTimelineImages(trackEl?: HTMLElement | null) {
+    if (imagesPreloaded) return;
+    imagesPreloaded = true;
+
+    const container = trackEl ?? document.getElementById("timeline-track");
+    if (!container) return;
+
+    const images = container.querySelectorAll<HTMLImageElement>("img");
+    images.forEach((img) => {
+      img.loading = "eager";
+
+      const markLoaded = () => {
+        img.dataset.loaded = "true";
+      };
+
+      if (img.complete && img.naturalWidth > 0) {
+        markLoaded();
+        return;
+      }
+
+      if ("decode" in img && typeof img.decode === "function") {
+        img.decode()
+          .then(markLoaded)
+          .catch(() => {
+            if (img.complete) {
+              markLoaded();
+            } else {
+              img.addEventListener("load", markLoaded, { once: true });
+              img.addEventListener("error", markLoaded, { once: true });
+            }
+          });
+      } else {
+        img.addEventListener("load", markLoaded, { once: true });
+        img.addEventListener("error", markLoaded, { once: true });
+      }
+    });
+  }
+
   function initTimeline() {
     // Reduced motion: the CSS media query reflows the timeline into a readable
     // vertical story; no animate()/scroll() scrub bindings are created at all.
@@ -699,6 +766,7 @@ const SIZES_CARD =
     cleanupFns = [];
     clearTimeout(resizeTimeout);
     clearTimeout(settleTimeout);
+    imagesPreloaded = false;
 
     const section = document.getElementById("timeline-section");
     const titleLayerBottom = document.getElementById("title-layer-bottom");
@@ -1187,6 +1255,7 @@ const SIZES_CARD =
         (entries) => {
           sectionVisible = entries.some((e) => e.isIntersecting);
           if (sectionVisible) {
+            preloadTimelineImages(track);
             measureGeometry();
             updateProgress();
           }
