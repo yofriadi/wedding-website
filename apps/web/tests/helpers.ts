@@ -1,11 +1,14 @@
 import type { Page } from "@playwright/test";
 
 /**
- * Wait for the loading overlay to fade and detach. The loader gates on the
- * hero image fetching and decoding (media-tiering: "Loader gates on
- * first-view media only"), raced against an 8 s ceiling, plus its minimum
- * dwell — so give it room. The audio gate this wait used to describe is
- * retired: the soundtrack no longer holds the loader on any tier.
+ * Wait for the loading overlay to fade and detach. What it gates on is
+ * tier-dependent (media-tiering: "Loader gates the HeroZoom-through-
+ * ZoomParallax entry sequence"): `full` waits for the hero AND every collage
+ * image to fetch and decode plus ZoomParallax's setup signal, `lite` waits for
+ * first-view media only. Both are raced against a 16 s ceiling measured from
+ * navigation start, then a 300 ms dwell floor and a 300 ms fade — so give it
+ * room. The audio gate this wait used to describe is retired: the soundtrack no
+ * longer holds the loader on any tier.
  */
 export async function waitForLoaderDismissed(page: Page) {
   await page.locator("#loading-screen").waitFor({ state: "detached", timeout: 45_000 });

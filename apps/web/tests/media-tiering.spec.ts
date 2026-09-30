@@ -10,6 +10,15 @@ import {
   stubNetworkConnection,
   waitForLoaderDismissed,
 } from "./helpers";
+import { CENTER_FOCUS_VERSION, masterSrc } from "../src/lib/media-candidates";
+
+/**
+ * The centre slot's master URL, derived exactly as the markup and the head hint
+ * derive it. A test that restated the literal would keep passing after a
+ * version bump that the hint and the `<img>` disagreed about — the double fetch
+ * these assertions exist to catch.
+ */
+const CENTRE_MASTER_AVIF = masterSrc("center-focus", "avif", CENTER_FOCUS_VERSION);
 
 /**
  * Media-tiering end-to-end behavior (adaptive-media-tiering tasks 7.2,
@@ -47,10 +56,28 @@ const containerInfo = (page: Page) =>
     };
   });
 
-/** Track network requests whose URL matches a string fragment or RegExp pattern. */
-function trackRequests(page: Page, pattern: string | RegExp) {
+/** The centre slot's resolved candidate URL, origin-stripped.
+ *
+ *  `currentSrc` updates asynchronously after a srcset/`sizes` swap, so callers
+ *  assert on this through `expect.poll` rather than reading it once. */
+const centreCandidate = (page: Page) =>
+  page.evaluate(() => {
+    const img = document.querySelector<HTMLImageElement>('[data-is-center="true"] img');
+    return (img?.currentSrc || img?.src || "").replace(location.origin, "");
+  });
+
+/** Track network requests whose URL matches a string fragment or RegExp pattern.
+ *
+ *  `resourceType` narrows by request type, and the centre trackers need it:
+ *  Astro's dev-server audit module issues its own `fetch()` for assets named in
+ *  the markup, so a URL-only match records a request no guest makes and no
+ *  production build serves. Real image loads are `image`; the audit fetch is
+ *  `fetch`. Leaving it unfiltered made the centre counts pass on timing rather
+ *  than on behaviour. */
+function trackRequests(page: Page, pattern: string | RegExp, resourceType?: string) {
   const urls: string[] = [];
   page.on("request", (request) => {
+    if (resourceType && request.resourceType() !== resourceType) return;
     const url = request.url();
     const match = typeof pattern === "string" ? url.includes(pattern) : pattern.test(url);
     if (match) urls.push(url);
@@ -142,6 +169,9 @@ test.describe("media tiering", () => {
       recordTierEvents(page);
       const mp3s = trackRequests(page, ".mp3");
       const videos = trackRequests(page, ".mp4");
+      // The centre MASTER only: generated candidates are `/generated/center-focus-w…`,
+      // so this fragment cannot match them.
+      const centres = trackRequests(page, "/center-focus.", "image");
       await page.goto("/");
       await waitForLoaderDismissed(page);
 
@@ -172,6 +202,14 @@ test.describe("media tiering", () => {
       await expect
         .poll(async () => (await containerInfo(page)).promoted, { timeout: 20_000 })
         .toBe(11);
+      // `lite` never pays for the centre master. The collapsed grid magnifies
+      // nothing, so ZoomParallax claims bento sizes for that slot BEFORE
+      // promoting it and selection lands on a generated variant; the ~570 KB
+      // master is never requested, and no head hint preloads it either.
+      expect(centres).toEqual([]);
+      await expect
+        .poll(() => centreCandidate(page), { timeout: 10_000 })
+        .toMatch(/^\/generated\/center-focus-w\d+\.avif$/);
       // And the whole pageview stayed byte-free where it must be.
       expect(mp3s).toEqual([]);
       expect(videos).toEqual([]);
@@ -187,12 +225,21 @@ test.describe("media tiering", () => {
       recordTierEvents(page);
       const mp3s = trackRequests(page, ".mp3");
       const videos = trackRequests(page, ".mp4");
+      const centres = trackRequests(page, "/center-focus.", "image");
 
       await page.goto("/", { waitUntil: "domcontentloaded" });
 
       // Every collage source promoted synchronously during the parse.
       const info = await containerInfo(page);
       expect(info.promoted).toBe(11);
+
+      // The centre slot keeps its master on `full`: the scrub magnifies it until
+      // it covers the stage. The head hint and the promoted `<img>` derive the
+      // SAME URL, so the largest asset in the entry sequence is fetched exactly
+      // once — a hint that drifted from the markup (a stale `?v=`, a bare href
+      // against a srcset selection) would surface here as a second request.
+      await expect.poll(() => centres.length, { timeout: 15_000 }).toBe(1);
+      await expect.poll(() => centreCandidate(page), { timeout: 10_000 }).toBe(CENTRE_MASTER_AVIF);
 
       // Pinned runway: 400lvh of travel, sticky stage.
       expect(info.height).toBeGreaterThan(3.5 * info.viewport);
@@ -211,6 +258,52 @@ test.describe("media tiering", () => {
       expect(gateDismissed).toBe(false);
       // An API-derived `full` never fires net-tier:change.
       expect(await tierEvents(page)).toEqual([]);
+    });
+  });
+
+  test.describe("reduced motion on a full verdict", () => {
+    // `prefers-reduced-motion` collapses the pin to the same static one-viewport
+    // bento grid the `lite` tier shows, so nothing magnifies the centre slot —
+    // and the media decision follows the layout decision. Without that, this
+    // guest downloads a 571 KB master for one 33vw cell and is ALSO entry-gated
+    // on it: the loader would hold the welcome gate for bytes that cannot break
+    // anything, up to its 16 s ceiling on a slow link.
+    test.use({ reducedMotion: "reduce" });
+
+    test("claims bento sizes for the centre, never fetches or preloads the master", async ({
+      page,
+    }) => {
+      pinFullTier(page);
+      const centres = trackRequests(page, "/center-focus.", "image");
+
+      await page.goto("/");
+      await waitForLoaderDismissed(page);
+
+      // Reduced motion is not a tier downgrade: the verdict is untouched, so the
+      // soundtrack and video policy still follow `full`.
+      expect(await currentTier(page)).toBe("full");
+
+      // No head hint for the master, because nothing will magnify it.
+      const hints = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('link[rel="preload"][as="image"]')).map(
+          (l) => l.getAttribute("href") ?? "",
+        ),
+      );
+      expect(hints).not.toContain(CENTRE_MASTER_AVIF);
+
+      // ZoomParallax's own pass promotes under the collapsed claim, so the centre
+      // resolves to a generated variant and the master is never requested at all.
+      // A parse-time promoter that ignored the motion preference would fetch the
+      // master first and fail both assertions.
+      await expect
+        .poll(() => centreCandidate(page), { timeout: 20_000 })
+        .toMatch(/^\/generated\/center-focus-w\d+\.avif$/);
+      expect(centres).toEqual([]);
+
+      // Static grid: one viewport, un-pinned stage.
+      const info = await containerInfo(page);
+      expect(info.height).toBe(info.viewport);
+      expect(info.stagePosition).toBe("relative");
     });
   });
 

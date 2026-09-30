@@ -441,10 +441,11 @@ async function captureFamiliesReveal(browser, url, width, report) {
     document.documentElement.style.overflow = "visible";
     document.body.style.overflow = "visible";
   });
-  // The loader holds a 2.6s minimum dwell before fading; without this wait
-  // every capture photographs the overlay instead of the section. (The
-  // timeline pass above survives without it only because its warm-up loop
-  // spans the dwell.)
+  // The loader stays up until its entry-media gate resolves (on `full` that is
+  // the hero plus every collage image, raced against a 16s ceiling); without
+  // this wait every capture photographs the overlay instead of the section.
+  // (The timeline pass above survives without it only because its warm-up loop
+  // already spans the gate.)
   await page.locator("#loading-screen").waitFor({ state: "detached", timeout: 45000 });
   await page
     .locator("#welcome-gate")

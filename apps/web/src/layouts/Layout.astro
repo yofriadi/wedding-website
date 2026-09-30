@@ -48,12 +48,17 @@ const { title = "wedding-website" } = Astro.props;
          webfont-delivery caps font preloads at two. */}
     <link rel="preload" as="font" type="font/woff2" href={frauncesLatinNormal} crossorigin />
 
-    {/* Page-owned head hints. Layout is shared, so a hint for an asset only one
-         page renders belongs to that page: index.astro puts the hero image
-         preload here through this slot. */}
-    <slot name="head" />
+    {/* Media tiering: default to full unless user explicitly enabled Save-Data.
 
-    {/* Media tiering: default to full unless user explicitly enabled Save-Data. */}
+        Deliberately ABOVE the page-owned head slot. The verdict is an input to
+        the tier-conditional hints a page emits through that slot — index.astro
+        skips the collage-centre master preload on `lite` — so a slot script has
+        to find `html[data-tier]` already written. The script is synchronous,
+        dependency-free and reads nothing the slot provides, so hoisting it costs
+        nothing and cannot change the verdict; leaving it below would make the
+        ordering load-bearing in the one direction that silently fails (the hint
+        script reads a missing attribute and degrades to `full`, spending
+        Save-Data bytes). */}
     <script is:inline>
       (function () {
         var root = document.documentElement;
@@ -62,6 +67,11 @@ const { title = "wedding-website" } = Astro.props;
         root.setAttribute('data-tier', tier);
       })();
     </script>
+
+    {/* Page-owned head hints. Layout is shared, so a hint for an asset only one
+         page renders belongs to that page: index.astro puts the hero image
+         preload here through this slot. */}
+    <slot name="head" />
   </head>
   <body class="min-h-screen bg-neutral-950 text-white">
     <slot />

@@ -10,7 +10,13 @@
  * - Result: The image (offset from center) moves radially outward and scales up, creating a 3D tunnel effect.
  */
 
-import { baseOf, masterSrc, placeholderSrc, variantSrcset } from "../lib/media-candidates";
+import {
+  baseOf,
+  CENTER_FOCUS_VERSION,
+  masterSrc,
+  placeholderSrc,
+  variantSrcset,
+} from "../lib/media-candidates";
 
 /**
  * Collage slot config.
@@ -70,10 +76,15 @@ const pictures = [
   },
   // 6. CENTER HERO - the focus slot. NOT 9:16 portrait: `center-focus` is
   //    2592x1728 (ar 1.50, landscape) and the widest master in the collage.
+  //    `version` is this master's cache-bust: the file was re-encoded in place
+  //    by the zoom-sharpness fix, public media is cached 7d without
+  //    revalidation, and the head preload in index.astro names the SAME string —
+  //    see CENTER_FOCUS_VERSION.
   { 
     src: "/center-focus.webp", 
     alt: "CENTER FOCUS",
     isCenter: true,
+    version: CENTER_FOCUS_VERSION,
     grid: { col: 1, row: 2, w: 1, h: 1 }, 
     scale: 4,
     iw: 2592, ih: 1728
@@ -144,6 +155,35 @@ const COL_W = 33.333; // 33.333vw
 // "correct" these values upward on geometric grounds alone.
 const SIZES_CENTER = "2592px";
 const SIZES_OUTER = "min(33vw, 390px)";
+
+/**
+ * The centre slot's claim when the collage is NOT scrubbed, swapped in by
+ * `applyCollapsedSizes()` before any promotion pass.
+ *
+ * Why it cannot be CSS: `sizes` is not a style property, and a media condition
+ * inside `sizes` can test the viewport but neither `html[data-tier]` nor (as a
+ * value) drive candidate selection from a media query. Both switches are known
+ * only at runtime, so the one claim that genuinely differs has to be swapped in
+ * JS — and swapped FIRST, because candidate selection runs the instant a
+ * `srcset` goes live. Promoting under the 2592px claim and downgrading
+ * afterwards would leave the master downloaded AND a second fetch in flight,
+ * i.e. strictly worse than either claim alone.
+ *
+ * Why the value is the bento column: two independent switches — the `lite` tier
+ * and `prefers-reduced-motion` — both collapse this collage to the same static
+ * one-viewport grid via CSS. No pin, no scrub, no transform, so the centre cell
+ * is exactly one 33vw column and is never magnified. Claiming that lands
+ * selection on `-w390` for a phone (~30 KB) and at most `-w1280` for a wide
+ * viewport, instead of the 2592px master (~570 KB of AVIF, the single largest
+ * asset in the entry sequence). Master resolution there would buy bytes, not
+ * sharpness.
+ *
+ * A scrubbed collage keeps SIZES_CENTER. This is a layout split, not a global
+ * underclaim: the zoom finale magnifies the centre slot until it covers the
+ * stage, and that is precisely the case the master exists for (see the centre
+ * markup below).
+ */
+const SIZES_CENTER_COLLAPSED = SIZES_OUTER;
 ---
 
 <div id="zoom-parallax-container" class="zoom-container relative w-full">
@@ -155,6 +195,11 @@ const SIZES_OUTER = "min(33vw, 390px)";
         // Base name drives the generated candidate URLs; `sizes` is per slot.
         const base = baseOf(picture.src);
         const sizes = picture.isCenter ? SIZES_CENTER : SIZES_OUTER;
+        // Only the centre slot's claim differs between a scrubbed and a static
+        // collage, so only it carries the override: `undefined` omits the
+        // attribute for the ten outer slots, whose claims are already the bento
+        // column on both paths.
+        const collapsedSizes = picture.isCenter ? SIZES_CENTER_COLLAPSED : undefined;
         return (
       <div 
         class={`zoom-wrapper absolute inset-0 w-full h-full pointer-events-none flex items-center justify-center ${picture.isCenter ? "" : "will-change-transform"}`}
@@ -181,9 +226,31 @@ const SIZES_OUTER = "min(33vw, 390px)";
                The full-resolution candidate set waits in `data-srcset`/`data-src`
                and promotion OVERWRITES both live attributes with it.
 
-               `full` promotes during the parse (inline promoter in index.astro,
-               immediately after this markup); `lite` promotes per image as the
-               collage approaches (IntersectionObserver below).
+               WHO PROMOTES, per tier:
+               - `full`: the inline parse-time promoter in index.astro, the
+                 instant this markup has parsed, so every fetch starts as early
+                 as a shipped `src` would; the entry loader promotes again
+                 (idempotent) before it waits, and the component observer stays a
+                 fallback for anything still unpromoted.
+               - `lite`: the component's approach observer only. The entry loader
+                 gates on first-view media there, and `lite` shows this collage
+                 as a static one-viewport grid — nothing is magnified by a
+                 scroll-driven transform, so there is no mid-scroll blur to
+                 pre-empt and no reason to make a Save-Data guest wait for, or
+                 pay for, these bytes up front.
+
+               THE CENTRE SLOT is deferred like the others yet keeps the
+               sharpness treatment the zoom needs: `loading="eager"` and
+               `decoding="sync"`, because a scrubbed image must never paint
+               half-decoded, plus a 2592px `sizes` claim on `full` — the master
+               is the ladder's top candidate, so that claim selects it at every
+               DPR. index.astro preloads the same master URL in the head, but
+               only while the collage is actually scrubbed. When it is not —
+               `lite`, or `prefers-reduced-motion` on any tier —
+               `applyCollapsedSizes()` rewrites the claim to the bento column
+               BEFORE promotion, so selection lands on a generated variant
+               instead. Its master is also the one versioned file here
+               (`picture.version`).
 
                Every URL here — the two placeholders, the two candidate sets and
                `data-src` — is derived through `media-candidates.ts`, which
@@ -199,41 +266,28 @@ const SIZES_OUTER = "min(33vw, 390px)";
                width at or above it, and markup derives its candidate list from
                the same rule, so a mismatch here names a file that was never
                emitted. */}
-          {picture.isCenter ? (
-            <picture>
-              <source srcset="/center-focus.avif?v=3" type="image/avif" />
-              <img
-                src="/center-focus.webp?v=3"
-                alt={picture.alt}
-                width={picture.iw}
-                height={picture.ih}
-                class="zoom-image"
-                loading="eager"
-                decoding="sync"
-                data-promoted=""
-              />
-            </picture>
-          ) : (
-            <picture>
-              <source
-                srcset={placeholderSrc(base, "avif")}
-                data-srcset={variantSrcset(base, "avif", picture.iw)}
-                sizes={sizes}
-                type="image/avif"
-              />
-              <img
-                src={placeholderSrc(base, "webp")}
-                data-src={masterSrc(picture.src, "webp")}
-                data-srcset={variantSrcset(base, "webp", picture.iw)}
-                sizes={sizes}
-                alt={picture.alt}
-                width={picture.iw}
-                height={picture.ih}
-                class="zoom-image"
-                decoding="async"
-              />
-            </picture>
-          )}
+          <picture>
+            <source
+              srcset={placeholderSrc(base, "avif")}
+              data-srcset={variantSrcset(base, "avif", picture.iw, picture.version)}
+              sizes={sizes}
+              data-sizes-collapsed={collapsedSizes}
+              type="image/avif"
+            />
+            <img
+              src={placeholderSrc(base, "webp")}
+              data-src={masterSrc(picture.src, "webp", picture.version)}
+              data-srcset={variantSrcset(base, "webp", picture.iw, picture.version)}
+              sizes={sizes}
+              data-sizes-collapsed={collapsedSizes}
+              alt={picture.alt}
+              width={picture.iw}
+              height={picture.ih}
+              class="zoom-image"
+              loading={picture.isCenter ? "eager" : undefined}
+              decoding={picture.isCenter ? "sync" : "async"}
+            />
+          </picture>
         </div>
       </div>
         );
@@ -282,10 +336,12 @@ const SIZES_OUTER = "min(33vw, 390px)";
   // --- Media tier ------------------------------------------------------------
   // Layout.astro's head script owns `html[data-tier]`; this component only
   // reads it. `full` gets the pinned scroll-zoom plus every collage byte at
-  // parse time. `lite` gets the collapsed static bento grid, no
-  // scroll binding, and per-image promotion as the collage approaches.
+  // parse time — the entry loader waits on those bytes before the welcome gate
+  // can arm, because the scrub is driven by scroll POSITION and cannot pause
+  // for a download. `lite` gets the collapsed static bento grid, no scroll
+  // binding, bento-sized `sizes` claims, and per-image promotion as the collage
+  // approaches; the entry loader does not gate on it.
   const COLLAGE_IMAGES = "#zoom-parallax-container img[data-src]:not([data-promoted])";
-  // seen, so the placeholder has already sharpened by the time the slot arrives.
   // Promotion is idempotent against the `data-promoted` marker.
   //
   // Computed in pixels rather than written as "200% 0px": a percentage root
@@ -316,6 +372,53 @@ const SIZES_OUTER = "min(33vw, 390px)";
   // scrubs and a collage nothing promotes.
   function isCollapsedTier(): boolean {
     return mediaTier() === "lite";
+  }
+
+  function prefersReducedMotion(): boolean {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
+  // Is the collage SCRUBBED — will a scroll-driven transform magnify these
+  // slots? That, and only that, turns an under-resolved image into a visible
+  // blur mid-scroll, so it is also the only thing that makes the 2592px centre
+  // claim (and the entry loader's wait on those bytes) worth its cost.
+  //
+  // Two independent switches produce the identical static one-viewport bento
+  // grid: the CSS `html[data-tier="lite"]` rules and the CSS
+  // `prefers-reduced-motion` rules. The media decision follows the LAYOUT
+  // decision rather than the tier attribute alone, so a guest who reduces motion
+  // on a `full` tier is not charged for a master nothing magnifies.
+  //
+  // index.astro asks the same question three more times — head hint, parse-time
+  // promoter, loader gate — and all four sites must agree. A promoter that
+  // disagrees is worse than either alone: it promotes under the scrubbed claim,
+  // then the sizes swap below re-selects, and the guest pays for both.
+  function scrubsCollage(): boolean {
+    return !isCollapsedTier() && !prefersReducedMotion();
+  }
+
+  // --- Collapse-dependent `sizes` --------------------------------------------
+  // Exactly one claim in this component differs between a scrubbed and a static
+  // collage: the centre slot's (see SIZES_CENTER_COLLAPSED). `sizes` is not
+  // settable from CSS, so it is swapped here — on every tier, every motion
+  // preference and every rebuild, and ALWAYS before a promotion pass, because
+  // candidate selection runs the instant a srcset goes live.
+  const COLLAPSE_SIZED = "#zoom-parallax-container [data-sizes-collapsed]";
+
+  function applyCollapsedSizes() {
+    const collapsed = !scrubsCollage();
+    document.querySelectorAll<HTMLElement>(COLLAPSE_SIZED).forEach((el) => {
+      // Cache the markup value on first touch. `sizes` is overwritten below, so
+      // on a second pass (resize, client navigation, a motion preference that
+      // changes at runtime) the original is no longer recoverable from the
+      // attribute.
+      if (!el.dataset.sizesScrubbed) el.dataset.sizesScrubbed = el.getAttribute("sizes") ?? "";
+      const next = collapsed ? el.dataset.sizesCollapsed : el.dataset.sizesScrubbed;
+      // Write only on change: setting `sizes` re-runs candidate selection, so a
+      // no-op write on every resize would re-select images that are already
+      // correct — and a re-selection can cost a second fetch.
+      if (next && el.getAttribute("sizes") !== next) el.setAttribute("sizes", next);
+    });
   }
 
   function promoteImage(img: HTMLImageElement) {
@@ -393,6 +496,10 @@ const SIZES_OUTER = "min(33vw, 390px)";
   // `rebuild` indicates whether the geometry the bindings were measured against
   // has changed — a width-changing resize, or a client navigation.
   function applyTier(rebuild: boolean) {
+    // Sizes first, on both branches: a promotion that runs under the wrong
+    // `sizes` claim selects the wrong candidate, and on a collapsed collage that
+    // candidate is the master nothing will ever magnify.
+    applyCollapsedSizes();
     if (!isCollapsedTier()) {
       stopWatchingDeferredImages();
       promoteAll();
@@ -405,7 +512,7 @@ const SIZES_OUTER = "min(33vw, 390px)";
   function bindScrollZoomIfEligible() {
     // Reduced motion: the static bento grid is the content; bind no
     // scroll-driven transforms and let the CSS media query collapse the pin.
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (prefersReducedMotion()) return;
 
     // Tier gate: while collapsed the stage stays static and no scroll-driven zoom runs.
     if (isCollapsedTier()) return;
@@ -425,7 +532,26 @@ const SIZES_OUTER = "min(33vw, 390px)";
     // Deferred promotion and the scroll binding are both tier-driven, and
     // promotion runs on every tier and every motion preference: the static grid
     // is content, and an unpromoted <img> is a placeholder that never sharpens.
-    applyTier(rebuild);
+    try {
+      applyTier(rebuild);
+    } finally {
+      // The loader waits for this component's initial setup as well as its
+      // images, so this is signalled from `finally` and NOT after a successful
+      // `applyTier`. A throw in there — or a failed `motion` chunk, or a stale
+      // hashed asset URL after a deploy, or an extension that blocks external
+      // scripts while allowing inline ones — would otherwise strand the entry
+      // gate for its whole ceiling on a page that is perfectly scrollable.
+      //
+      // The data attribute handles initialization winning the race with the
+      // loader's listener; the event handles the normal path. Module scripts
+      // are deferred, so the loader's inline listener is always attached first
+      // and the attribute re-check is belt-and-braces.
+      const container = document.getElementById("zoom-parallax-container");
+      if (container && container.getAttribute("data-zoom-parallax-ready") !== "true") {
+        container.setAttribute("data-zoom-parallax-ready", "true");
+        window.dispatchEvent(new CustomEvent("zoom-parallax:ready"));
+      }
+    }
   }
 
   function bindScrollZoom() {

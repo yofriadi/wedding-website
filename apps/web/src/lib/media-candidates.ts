@@ -66,6 +66,26 @@ export function baseOf(src: string): string {
 }
 
 /**
+ * Cache-bust for the ONE master that was re-encoded in place after it had
+ * already shipped: the collage centre, replaced by the zoom-sharpness fix.
+ * Public media is served `Cache-Control: public, max-age=604800` with no
+ * revalidation (`Caddyfile.example`), so without the suffix a returning guest
+ * would keep the soft bytes for up to a week. Bump it whenever
+ * `public/center-focus.*` is replaced, and nowhere else.
+ *
+ * Generated variants are deliberately NOT versioned. They share the 7-day window
+ * every other slot's derivatives already have, and the generator names them by
+ * width — a version suffix here would fingerprint files this module does not
+ * control, while the byte-identical masters beside them stayed unversioned.
+ */
+export const CENTER_FOCUS_VERSION = "3";
+
+/** The `?v=` suffix for a versioned master; "" keeps the URL byte-identical. */
+function versionSuffix(version?: string): string {
+  return version ? `?v=${version}` : "";
+}
+
+/**
  * The master file URL for one format — the `src` an `<img>` or `<source>` falls
  * back to, and the top candidate `variantSrcset` appends.
  *
@@ -75,9 +95,16 @@ export function baseOf(src: string): string {
  * obvious tidy-up, since the neighbouring component stores exactly that — would
  * silently produce `/event-akad.webp.webp` while the `srcset` beside it stayed
  * correct, because `variantSrcset` normalises and string concatenation does not.
+ *
+ * `version` is optional, and every reference to the same master MUST pass the
+ * same value: a `<link rel="preload">` carrying `?v=3` beside an `<img>` that
+ * does not names two URLs for one file and downloads it twice — the failure
+ * `hero-media.ts` exists to prevent. The collage centre is the only versioned
+ * master (`CENTER_FOCUS_VERSION`); it is named from both ZoomParallax and the
+ * head hint in `pages/index.astro`, which is why the constant lives here.
  */
-export function masterSrc(base: string, format: ImageFormat): string {
-  return `/${baseOf(base)}.${format}`;
+export function masterSrc(base: string, format: ImageFormat, version?: string): string {
+  return `/${baseOf(base)}.${format}${versionSuffix(version)}`;
 }
 
 /**
@@ -90,13 +117,20 @@ export function masterSrc(base: string, format: ImageFormat): string {
  * @param intrinsicWidth the master's real pixel width; MUST equal the `width`
  *   attribute the markup declares, or rule 1 skips a width that exists (404) or
  *   offers one that was never generated
+ * @param version cache-bust for the MASTER candidate only; pass exactly what
+ *   `masterSrc` gets, or the two name different URLs for one file
  */
-export function variantSrcset(base: string, format: ImageFormat, intrinsicWidth: number): string {
+export function variantSrcset(
+  base: string,
+  format: ImageFormat,
+  intrinsicWidth: number,
+  version?: string,
+): string {
   const name = baseOf(base);
   const candidates = VARIANT_WIDTHS.filter((width) => width < intrinsicWidth).map(
     (width) => `${GENERATED_DIR}/${name}-w${width}.${format} ${width}w`,
   );
-  candidates.push(`/${name}.${format} ${intrinsicWidth}w`);
+  candidates.push(`/${name}.${format}${versionSuffix(version)} ${intrinsicWidth}w`);
   return candidates.join(", ");
 }
 

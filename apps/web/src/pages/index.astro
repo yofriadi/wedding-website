@@ -23,6 +23,16 @@ import { inviteIdFromCookies, readGroupQuota } from "../lib/invite-session";
 import { HERO_SIZES, HERO_SRCSET_AVIF } from "../lib/hero-media";
 import { shuffleTrail } from "../lib/trail-sequence";
 import { LOADING_PHRASES } from "../lib/loading-phrases";
+import { CENTER_FOCUS_VERSION, masterSrc } from "../lib/media-candidates";
+
+/**
+ * Head-hint URL for the collage centre's AVIF master. Derived, never written as
+ * a literal: the hint MUST name the same URL the promoted `<img>` selects, or
+ * the entry sequence's largest asset is downloaded twice — the failure
+ * `hero-media.ts` exists to prevent. ZoomParallax builds its centre candidate
+ * from the same `CENTER_FOCUS_VERSION`.
+ */
+const CENTER_FOCUS_PRELOAD_AVIF = masterSrc("center-focus", "avif", CENTER_FOCUS_VERSION);
 
 // Personalized greeting + RSVP controls (server-rendered; read-only — metrics
 // stay exclusive to /{id}).
@@ -133,14 +143,55 @@ const loadingPhrases = shuffleTrail(LOADING_PHRASES);
     imagesizes={HERO_SIZES}
     fetchpriority="high"
   />
-  {/* Preload center hero image for ZoomParallax so it is fully decoded before the scroll runway */}
-  <link
-    slot="head"
-    rel="preload"
-    as="image"
-    type="image/avif"
-    href="/center-focus.avif?v=3"
-  />
+  {/*
+    Collage-centre preload — `full` tier only.
+
+    The centre slot is the one image the scroll-zoom magnifies until it covers
+    the whole stage, so on `full` it earns a head start: this hint fires during
+    head parse while the body — gate, audio, hero, two more sections — is still
+    streaming, and the entry loader waits on exactly these bytes before it can
+    lift. See CENTER_FOCUS_PRELOAD_AVIF for why the URL is derived.
+
+    A COLLAPSED collage gets NO hint — `lite`, and `prefers-reduced-motion` on
+    any tier. Both render it as a static one-viewport bento grid whose centre
+    cell is one 33vw column; ZoomParallax rewrites that slot's `sizes` to the
+    bento claim before promoting it, so candidate selection lands on a generated
+    variant (~30 KB) instead of the 2592px master (~570 KB, the single largest
+    asset in the entry sequence). Preloading the master there would spend a
+    Save-Data guest's budget — and its connection, ahead of the hero LCP — on
+    bytes the page never displays.
+
+    Inserted by script because the verdict lives in `html[data-tier]`, which
+    Layout's head script writes before this slot runs. A static `<link>` cannot
+    see it: `media` takes a media query, not an attribute selector, and by the
+    time a script could retract a static hint the request is already queued.
+    `define:vars` keeps the value derived from the frontmatter module rather than
+    restated as a literal here.
+
+    `type="image/avif"` mirrors the static hero hint above, so a non-AVIF engine
+    skips the hint instead of fetching bytes its `<picture>` would discard.
+  */}
+  <script is:inline slot="head" define:vars={{ centerFocusAvif: CENTER_FOCUS_PRELOAD_AVIF }}>
+    (function () {
+      // Skip when nothing will magnify the centre slot: `lite`, or a
+      // `prefers-reduced-motion` guest on ANY tier — both collapse the collage to
+      // the same static bento grid in CSS, and ZoomParallax claims bento sizes for
+      // it there, so the master this hint names is never displayed. The predicate
+      // is duplicated at three more sites (the parse-time promoter and the loader
+      // gate below, plus `scrubsCollage()` in ZoomParallax) because each runs in
+      // its own script scope. They must agree: an early promoter that disagrees
+      // selects the master under the scrubbed claim and the later sizes swap
+      // re-selects, so the guest pays for both.
+      if (document.documentElement.getAttribute('data-tier') === 'lite') return;
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      var hint = document.createElement('link');
+      hint.rel = 'preload';
+      hint.as = 'image';
+      hint.type = 'image/avif';
+      hint.href = centerFocusAvif;
+      document.head.appendChild(hint);
+    })();
+  </script>
   {/* Predicate kept in sync with DesktopGate.astro and DESKTOP_MEDIA_QUERY */}
   <script is:inline slot="head">
     if (window.matchMedia('(min-width: 768px) and (min-height: 600px)').matches) {
@@ -228,7 +279,10 @@ const loadingPhrases = shuffleTrail(LOADING_PHRASES);
     <!-- Collage promoter (media-tiering). Inline and here, not in a module:
          it must run the instant the collage markup above has parsed, so a
          `full` verdict starts every collage fetch as early as a shipped `src`
-         would. `lite` is left to ZoomParallax's per-image approach observer.
+         would. `lite` is left to ZoomParallax's per-image approach observer:
+         the entry loader gates on first-view media only there, and that
+         component sizes the centre slot for the bento grid before promoting it,
+         so an early promotion would only fetch a candidate `lite` never shows.
          Promotion is idempotent — a second pass over promoted markup is a no-op. -->
     <script is:inline>
       (function () {
@@ -270,11 +324,31 @@ const loadingPhrases = shuffleTrail(LOADING_PHRASES);
           }
         }
 
+        // Exposed for the end-of-body loader, which promotes the same markup
+        // again on `full` (its gate covers the whole collage, and promoting here
+        // keeps that check independent of the component module's execution
+        // order). Two hand-maintained copies of this ordering — <source> before
+        // <img>, marker set LAST — is a footgun; one definition with two callers
+        // is not. The component module keeps its own typed copy because it must
+        // still work when inline scripts are blocked, in which case `data-tier`
+        // is absent too and it degrades to `full`.
+        window.__promoteCollageImages = promote;
+
         // Polarity matches the CSS and other consumers: only an explicit `lite`
         // defers. A missing attribute means the head script never ran (rollback,
         // script blocker), degrading to full rather than an unpromoted collage.
+        //
+        // `prefers-reduced-motion` defers too, on any tier. The CSS collapses the
+        // pin to the same static bento grid, so ZoomParallax claims bento sizes
+        // for the centre slot — but it does that in its module, which runs AFTER
+        // this inline pass. Promoting here would select the 2592px master first
+        // and re-select the small variant after the swap: two fetches, the larger
+        // one wasted. Leaving it to the module costs a few milliseconds of parse
+        // time and nothing else, because no gate waits on these bytes while the
+        // collage is static.
         var tier = root.getAttribute('data-tier');
-        if (tier !== 'lite') {
+        var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (tier !== 'lite' && !reduce) {
           promote();
         }
       })();
@@ -391,6 +465,15 @@ const loadingPhrases = shuffleTrail(LOADING_PHRASES);
     return document.documentElement.getAttribute('data-tier') !== 'lite';
   }
 
+  // Is a scroll-driven transform going to magnify the collage? Only then can an
+  // unpromoted or under-resolved slot be SEEN as a blur mid-scroll, so only then
+  // is it worth gating the loader on those bytes. Mirrors `scrubsCollage()` in
+  // ZoomParallax.astro and the two inline checks above it; a missing `data-tier`
+  // still degrades to the scrubbed behaviour, exactly like `tierIsFull()`.
+  function scrubsCollage() {
+    return tierIsFull() && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }
+
   function enableSoundtrack() {
     if (document.documentElement.hasAttribute('data-desktop')) return;
     if (!heroMusic || hasStarted || heroMusic.preload === 'auto') return;
@@ -439,23 +522,37 @@ const loadingPhrases = shuffleTrail(LOADING_PHRASES);
 
   // Loading screen logic
   //
-  // Minimum dwell: on a warm cache / fast connection the media gate resolves
-  // in a few hundred ms and the loader would flash for less time than it takes
-  // to read one phrase. Hold it up at least LOADER_MIN_DWELL_MS (measured from
-  // first paint) so the buffering beat — phrases cycling, then fade into the
-  // welcome gate — stays legible on any device.
-  const LOADER_MIN_DWELL_MS = 2600;
-  // Hard ceiling: the loader is a progress beat, not a gate. Whatever happens
-  // to the hero (missing file, decode failure, a connection that stalls), the
-  // page must still open. Back to 8s — the 16s value existed only to give the
-  // below-fold collage gate runway, and that gate is gone: below-fold
-  // readiness is the media tier's job now (Layout.astro's head script).
-  const LOADER_MAX_WAIT_MS = 8000;
-  const loaderShownAt = performance.now();
+  // BOTH bounds are measured from NAVIGATION START, not from this script's
+  // evaluation. `performance.now()` is already relative to the time origin, so
+  // subtracting it — rather than a timestamp captured here — is what makes the
+  // ceiling bound the guest's actual wait. This script sits at the end of
+  // <body>: measuring from here stacks the entire HTML-streaming time on top of
+  // the bound, and on a slow link that difference is seconds.
+  //
+  // Minimum dwell: the overlay is a SIGNAL that the page is still working, not a
+  // beat anyone is meant to read — so this floor is not sized for a phrase. It
+  // exists only to stop a warm-cache load flashing the overlay for less time than
+  // it takes to register, which reads as a glitch rather than a transition; it is
+  // matched to LOADER_FADE_MS so the shortest possible appearance is one coherent
+  // fade. The floor only ever BINDS on a fast load — a cold one is held by the
+  // media gate itself — so every extra millisecond here is a tax on precisely the
+  // returning guest whose photos are already cached and who has nothing left to
+  // buffer. Both bounds are measured from navigation start, so HTML streaming
+  // time usually satisfies this floor before the gate can even resolve.
+  const LOADER_MIN_DWELL_MS = 300;
+  // Hard ceiling: the loader is a bounded entry gate. On `full` the initial
+  // visual sequence runs from HeroZoom through ZoomParallax, so give its
+  // promoted collage images enough runway to fetch and decode before the welcome
+  // gate can arm; `lite` gates on the hero alone and settles far sooner. A
+  // failed/stalled asset still settles at this deadline.
+  const LOADER_MAX_WAIT_MS = 16000;
+  // The overlay fades for this long before it is removed, and only its removal
+  // lets the welcome gate arm — so the real worst case from navigation is
+  // LOADER_MAX_WAIT_MS + LOADER_FADE_MS.
+  const LOADER_FADE_MS = 300;
 
   const hideLoadingScreen = () => {
-    const elapsed = performance.now() - loaderShownAt;
-    const wait = Math.max(0, LOADER_MIN_DWELL_MS - elapsed);
+    const wait = Math.max(0, LOADER_MIN_DWELL_MS - performance.now());
     setTimeout(doHideLoadingScreen, wait);
   };
 
@@ -466,7 +563,7 @@ const loadingPhrases = shuffleTrail(LOADING_PHRASES);
     loader.style.opacity = '0';
     setTimeout(() => {
       loader.remove();
-    }, 300);
+    }, LOADER_FADE_MS);
 
     // NOTE: no startMusic() here. The loader predates the welcome gate; audio
     // unlock now belongs to the gate's commit gesture (WelcomeGate calls
@@ -475,47 +572,150 @@ const loadingPhrases = shuffleTrail(LOADING_PHRASES);
     // or silently violates autoplay policy depending on engine heuristics.
   };
 
-  const waitForHeroZoomLoaded = async () => {
-    const heroMedia = document.querySelector('#hero-container [data-hero-media]');
-    if (!heroMedia) {
-      return;
-    }
+  // WHAT THE LOADER GATES ON is tier-dependent, and the difference is geometry
+  // rather than patience:
+  //
+  // - `full` scrubs the collage with scroll, and that motion is driven by scroll
+  //   POSITION: it cannot pause for a download. An unpromoted slot is a 32px
+  //   placeholder magnified 4-9x across the stage, mid-swipe, in front of the
+  //   guest. Every collage byte has to be fetched and decoded before the gate can
+  //   arm, which is why `full` promotes here instead of relying on the component
+  //   module's own pass.
+  // - a COLLAPSED collage — `lite`, or `prefers-reduced-motion` on any tier —
+  //   renders as a static one-viewport bento grid: no pin, no transform, nothing
+  //   magnified, and ZoomParallax claims bento sizes for it, so its centre slot
+  //   resolves to a generated variant instead of the 2592px master. There is no
+  //   mid-scroll blur to pre-empt, and the grid sits several viewports below the
+  //   hero where the component's own path already promotes it. Gating on those
+  //   bytes would make the guest who asked to save data — or to stop motion —
+  //   wait longest for media that degrades gracefully by design, so a collapsed
+  //   collage gates on first-view media only.
+  const ENTRY_MEDIA_SELECTOR = '#hero-container img, #zoom-parallax-container img';
+  const FIRST_VIEW_MEDIA_SELECTOR = '#hero-container img';
 
-    if (!heroMedia.complete) {
+  // Called on `full` only (see the tier note above). It uses the parse-time
+  // promoter's own function rather than carrying a second copy of the
+  // attribute-ordering rules — see the note where `__promoteCollageImages` is
+  // assigned. If that global is missing then inline scripts are blocked, this
+  // script is not running either, and the component module owns promotion.
+  const promoteEntryCollage = () => {
+    if (typeof window.__promoteCollageImages === 'function') {
+      window.__promoteCollageImages();
+    }
+  };
+
+  // Lets the deadline drop every listener the losing branch registered:
+  // `{ once: true }` alone only cleans up on an event that may never fire.
+  const entryAbort = new AbortController();
+
+  const waitForImageReady = async (image) => {
+    if (!image.complete) {
       await new Promise((resolve) => {
         const onDone = () => resolve();
-        heroMedia.addEventListener('load', onDone, { once: true });
-        heroMedia.addEventListener('error', onDone, { once: true });
+        const opts = { once: true, signal: entryAbort.signal };
+        image.addEventListener('load', onDone, opts);
+        image.addEventListener('error', onDone, opts);
+        // Settle on abort too, so a deadline win does not leave promises that
+        // nothing will ever resolve.
+        entryAbort.signal.addEventListener('abort', onDone, { once: true });
       });
     }
 
-    if (heroMedia.naturalWidth > 0 && typeof heroMedia.decode === 'function') {
+    if (image.naturalWidth > 0 && typeof image.decode === 'function') {
       try {
-        await heroMedia.decode();
+        await image.decode();
       } catch {
-        // Ignore decode failures and continue.
+        // A decode failure must not wedge the entry gate forever.
       }
     }
   };
 
-  // Delay soundtrack preloading so the hero LCP image and fonts have exclusive
-  // initial bandwidth, while ensuring at least 1.4s of buffering before the
-  // loading screen's 2.6s minimum dwell finishes and the gate arms.
-  const SOUNDTRACK_START_MS = 1200;
-  setTimeout(() => {
-    if (tierIsFull()) enableSoundtrack();
-  }, SOUNDTRACK_START_MS);
+  const waitForEntryMediaLoaded = async () => {
+    const gateCollage = scrubsCollage();
+    if (gateCollage) {
+      promoteEntryCollage();
+      // Let the promotion settle before reading `complete`. Swapping a <picture>'s
+      // srcset queues "update the image data", which the HTML Standard defers to a
+      // stable state — read `complete` in that same tick and an engine that has
+      // not yet marked the element incomplete answers `true` for the FINISHED
+      // 32px LQIP, so the gate would open on a placeholder. One frame is enough
+      // for the pending-request bookkeeping to land. A collapsed collage promotes
+      // nothing here, so it has nothing to settle and skips the wait.
+      //
+      // Raced against a timer because rAF never fires in a background tab: a guest
+      // who opens the invite behind another tab would otherwise sit at the gate
+      // until the 16 s ceiling even on a warm cache. What this waits for is a
+      // task, not a frame, so 100 ms is generous — in a foreground tab the frame
+      // arrives in ~16 ms and the timer never wins.
+      await new Promise((resolve) => {
+        requestAnimationFrame(resolve);
+        setTimeout(resolve, 100);
+      });
+    }
+    const selector = gateCollage ? ENTRY_MEDIA_SELECTOR : FIRST_VIEW_MEDIA_SELECTOR;
+    const images = Array.from(document.querySelectorAll(selector));
+    await Promise.all(images.map(waitForImageReady));
+  };
+
+  const waitForZoomParallaxReady = () => {
+    const container = document.getElementById('zoom-parallax-container');
+    if (!container || container.getAttribute('data-zoom-parallax-ready') === 'true') {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+      const onReady = () => resolve();
+      // Module scripts are deferred, so this inline listener is always attached
+      // before ZoomParallax can dispatch; the attribute re-check below is
+      // belt-and-braces rather than the primary path.
+      window.addEventListener('zoom-parallax:ready', onReady, {
+        once: true,
+        signal: entryAbort.signal,
+      });
+      entryAbort.signal.addEventListener('abort', onReady, { once: true });
+      if (container.getAttribute('data-zoom-parallax-ready') === 'true') onReady();
+    });
+  };
+
+  // The soundtrack preload used to start on a fixed 1200 ms timer, tuned for
+  // when the loader gated on the hero alone. It now gates on the whole
+  // HeroZoom-through-ZoomParallax entry sequence, so a fixed timer would fire
+  // mid-fetch and spend bandwidth the gate is waiting on — a 3.1 MB audio file
+  // competing with the images that decide when the loader can lift. Starting it
+  // when the gate SETTLES cannot compete with anything, and still leaves the
+  // guest's read-and-swipe time on the welcome gate to buffer before the commit
+  // gesture asks for playback.
   window.addEventListener('desktop-gate:release', () => {
     if (tierIsFull()) enableSoundtrack();
   });
 
   const initLoadingScreen = async () => {
-    const deadline = new Promise((resolve) => setTimeout(resolve, LOADER_MAX_WAIT_MS));
+    // Measured from navigation start, so the ceiling bounds the guest's total
+    // wait rather than the time since this script happened to parse.
+    const remaining = Math.max(0, LOADER_MAX_WAIT_MS - performance.now());
+    const deadline = new Promise((resolve) => setTimeout(resolve, remaining));
     try {
-      await Promise.race([waitForHeroZoomLoaded(), deadline]);
+      // On `full` the loader does not remove until every image in the HeroZoom →
+      // ZoomParallax entry range has either loaded or failed, decoded where
+      // possible, and the parallax component has initialized its bindings.
+      // A collapsed collage (`lite`, or reduced motion) waits on the hero alone:
+      // it never pins the stage, so the binding signal is not something that
+      // guest can observe, and a module that fails to execute must not hold the
+      // gate to the ceiling.
+      await Promise.race([
+        Promise.all([
+          waitForEntryMediaLoaded(),
+          scrubsCollage() ? waitForZoomParallaxReady() : Promise.resolve(),
+        ]),
+        deadline,
+      ]);
     } catch {
-      // Ignore errors.
+      // Ignore errors; the deadline remains the final escape hatch.
     } finally {
+      // Drop the listeners the losing branch left registered, then hand the
+      // connection the entry media just vacated to the soundtrack preload.
+      entryAbort.abort();
+      if (tierIsFull()) enableSoundtrack();
       hideLoadingScreen();
     }
   };
