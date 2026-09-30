@@ -27,7 +27,7 @@ The homepage SHALL render a fixed, viewport-covering welcome gate in the initial
 
 #### Scenario: Claim gate held past standard failsafe delay remains visible
 
-- **WHEN** a visitor remains on the entry claim gate for longer than 15 seconds with working scripts
+- **WHEN** a visitor remains on the entry claim gate for longer than 25 seconds with working scripts
 - **THEN** the welcome gate failsafe does not trigger in the background and the welcome gate remains visible when the claim gate exits
 
 #### Scenario: Background falls back gracefully
@@ -58,7 +58,7 @@ The gate SHALL vertically center the greeting element and SHALL pin a shimmer-an
 
 The homepage scroll lock SHALL begin when the gate's inline script first runs (during initial HTML parse, while the loading overlay may still be up) and SHALL hold — through loading and arming — until reveal commit. While the lock is active, the page behind the gate SHALL NOT scroll, zoom, or rubber-band, and the hero SHALL remain at its scroll-zero (initial, fully zoomed) state. The lock SHALL release only as part of the gate's exit (reveal commit or a dismissal path).
 
-Rationale for the widened window: the loading overlay gates on media fetches (hero image, audio, timeline photos) and can outlive DOMContentLoaded on a slow network, while the gate arms only after the overlay is removed. Without a lock that starts at first script run, a window exists between page parse and gate arming in which the raw page behind the overlay scrolls — the mid-timeline landing this requirement exists to prevent. Gesture binding, inert, and the failsafe cancel remain arm-time behaviors; only the scroll lock moves earlier.
+Rationale for the widened window: the loading overlay gates on entry media — the HeroZoom-through-ZoomParallax sequence where the collage is scrubbed, first-view media only where it is collapsed — and can outlive DOMContentLoaded on a slow network, while the gate arms only after the overlay is removed. Without a lock that starts at first script run, a window exists between page parse and gate arming in which the raw page behind the overlay scrolls — the mid-timeline landing this requirement exists to prevent. Gesture binding, inert, and the failsafe cancel remain arm-time behaviors; only the scroll lock moves earlier.
 
 #### Scenario: Scroll attempts do nothing
 

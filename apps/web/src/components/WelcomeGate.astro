@@ -297,11 +297,12 @@ const gateBg = await resolveGateBg();
     will-change: transform;
     /* Failsafe (D6): if the inline gesture script never arms, the gate must
        not trap the page — fade it out after a bounded delay. The script
-       cancels this animation the moment it arms. 15s is margin over the
-       loader's 8s ceiling plus its 300ms fade and the commit choreography —
-       the 25s value existed only to outlast the retired below-fold media
-       gate. */
-    animation: gate-failsafe 600ms ease-out 15s forwards;
+       cancels this animation the moment it arms. This 25s clock starts when
+       the gate's style applies, early in <body>; the loader's ceiling and
+       dwell are navigation-relative and both sit well inside it, so the
+       loader always gets to dismiss first. The `animationend` handler below
+       guards the residual case rather than trusting that arithmetic. */
+    animation: gate-failsafe 600ms ease-out 25s forwards;
   }
 
   @keyframes gate-failsafe {
@@ -435,8 +436,8 @@ const gateBg = await resolveGateBg();
     if (!gate) return;
 
     // Lock scroll on first run, not at arm time. The gate arms only after
-    // the loader is removed, but the loader gates on the hero fetch and can
-    // outlive DOMContentLoaded on a slow network — between the two, nothing
+    // the loader is removed, but the entry media gate can outlive
+    // DOMContentLoaded on a slow network — between the two, nothing
     // locks scroll and a guest could scroll the raw page behind the loader.
     // Arming (gesture binding, inert, failsafe cancel) still waits for the
     // loader's removal.
@@ -446,9 +447,30 @@ const gateBg = await resolveGateBg();
 
     // The failsafe is a dismissal path too: release the lock it exits under, or a
     // gate that never arms leaves the page permanently unscrollable.
+    //
+    // But never while the loading overlay is still up. This animation's clock
+    // starts when the gate's style applies, early in <body>; the loader's
+    // ceiling is navigation-relative and its overlay is opaque and fixed.
+    // Dismissing here with the loader still connected would unlock scroll
+    // BEHIND an opaque overlay — the mid-timeline landing the early lock exists
+    // to prevent. Re-arm instead and let the loader's removal drive the next
+    // attempt. Capped so "never loops forever" is structural, not arithmetic.
+    var failsafeRearms = 0;
     gate.addEventListener('animationend', function (e) {
       if (e.target !== gate || e.animationName !== 'gate-failsafe') return;
       if (document.documentElement.hasAttribute('data-desktop')) return;
+
+      var loader = document.getElementById('loading-screen');
+      if (loader && loader.isConnected && failsafeRearms < 4) {
+        failsafeRearms += 1;
+        gate.style.animation = 'none';
+        // Force style recalc, or the re-added animation coalesces with the
+        // removal above and never restarts.
+        void gate.offsetWidth;
+        gate.style.animation = 'gate-failsafe 600ms ease-out 10s forwards';
+        return;
+      }
+
       setMainInert(false);
       unlockScroll();
       gate.remove();
@@ -1075,7 +1097,7 @@ const gateBg = await resolveGateBg();
         arm();
       } catch (err) {
         console.error('[welcome-gate] arm failed:', err);
-        gate.style.animation = 'gate-failsafe 600ms ease-out 15s forwards';
+        gate.style.animation = 'gate-failsafe 600ms ease-out 25s forwards';
       }
     }
 

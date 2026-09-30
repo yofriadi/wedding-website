@@ -22,7 +22,7 @@ A swipe-up welcome gate solves all three at once: the swipe's `touchend` is a gu
 
 - **Gate background image selection** — the couple supplies it later (same pattern as story teasers); this change ships the slot + fallback only.
 - **Desktop polish** — desktop gets functional dismissal (wheel/click/keydown), not finger-tracked physics or bespoke copy.
-- **Changing what the loader gates on** — hero image + audio `canplay` stays as-is (already mitigated by the 128 kbps re-encode).
+- **Changing what the loader gates on** — hero image + audio `canplay` stays as-is (already mitigated by the 128 kbps re-encode). _Superseded, and left as written rather than silently rewritten:_ the loader contract is owned by `media-tiering`'s "Loader gates the HeroZoom-through-ZoomParallax entry sequence" requirement, which was amended after this change was drafted. Read that requirement for the current gate; this bullet is historical.
 - **Hero animation changes** — `HeroZoom.astro` keyframes/timeline/fallback are untouched; the gate only guarantees a clean scroll-0 start.
 - **RSVP, households, cookie healing** — unchanged, still deferred.
 

@@ -21,8 +21,11 @@ const SIZES_CARD =
   <!-- Ships real src/srcset, with no tier deferral: the timeline story is
        content rather than decoration, and its scrub binding is in the bundle
        regardless — so lite keeps the whole narrative (media-tiering design:
-       flattening this story is a non-goal). The loading screen no longer waits
-       on them; it gates on the hero alone.
+       flattening this story is a non-goal). The loading screen does not wait
+       on these later timeline photos. What it does wait for is collapse-aware:
+       the entry sequence through ZoomParallax where the collage is scrubbed,
+       first-view (hero) media only where it is collapsed — `lite`, or reduced
+       motion on any tier.
 
        The photos DO carry device-matched candidate sets now (responsive-media):
        `keluarga-acik` is a 2048px, 463 KB master in a card capped at

@@ -48,7 +48,7 @@ The gesture script ships `is:inline` in `index.astro` (same pattern as the exist
 Three layers, cheapest first:
 
 1. `@media (scripting: none) { #welcome-gate { display: none } }` — no JS, no gate.
-2. A pure-CSS failsafe animation (long delay, e.g. 15s) fades the gate out; the inline script cancels it the moment it successfully arms the gesture. Covers enabled-but-broken/blocked JS.
+2. A pure-CSS failsafe animation (25s) fades the gate out; the inline script cancels it the moment it successfully arms the gesture. Covers enabled-but-broken/blocked JS. The delay clears the loader's navigation-relative 16s entry-media ceiling plus its 300ms fade, and the `animationend` handler re-arms rather than dismissing while `#loading-screen` is still connected — so this path can never unlock scroll behind an opaque overlay.
 3. `prefers-reduced-motion` — no tracking, no slide: first tap/click/key dismisses instantly (fade only), scroll lock still applies until then.
 
 ### D7 — Open metric: mirror the seen-metrics pattern
@@ -61,13 +61,13 @@ Three layers, cheapest first:
 
 ### D8 — Loader surgery
 
-`#loading-screen` loses the `#invite-greeting` element and reverts to shimmer-phrases-only markup (exactly the pre-personalization public shape). Everything else about the loader — what it waits for, the fade — is unchanged. The greeting element moves into `WelcomeGate.astro`, fed by the same `inviteDisplayName` frontmatter value (same cookie read, same escaping, same `no-store`).
+`#loading-screen` loses the `#invite-greeting` element and reverts to shimmer-phrases-only markup (exactly the pre-personalization public shape). The loader's readiness contract is owned by the current media-tiering specification, and it is collapse-aware: where the collage is SCRUBBED it waits for the HeroZoom-through-ZoomParallax entry sequence, and where the collage is COLLAPSED (`lite`, or `prefers-reduced-motion` on any tier) it waits for first-view media only — a collapsed grid magnifies nothing, so gating on those bytes would make the guest who asked to save data wait longest for media that degrades gracefully by design. Its ceiling and its minimum dwell are both measured from navigation start rather than from loader-script evaluation — the loader script sits at the end of `<body>`, so measuring from there would stack the whole HTML-streaming time on top of the bound and make the published ceiling untrue. The greeting element moves into `WelcomeGate.astro`, fed by the same `inviteDisplayName` frontmatter value (same cookie read, same escaping, same `no-store`).
 
 ## Risks / Trade-offs
 
 - **R1 — iOS Safari touch edge cases**: scroll chaining and rubber-banding vary by version; non-passive `touchmove` + `touch-action: none` is the known-good combination, but this needs a real-device pass before release (task 5.3). Mitigation if it misbehaves: drop to threshold-only dismissal (Level 1) — the spec's behavior classes survive that downgrade.
 - **R2 — Archive ordering**: `guest-greeting`'s source requirements live in the in-progress `invite-only-personalization` change. If this change archives first, the MODIFIED delta has no base to merge onto. Rule: archive `invite-only-personalization` first.
 - **R3 — Fixed-over-fixed stacking**: gate (fixed) over pinned hero (sticky) over loader (fixed) is compositor-friendly as long as the gate animates transform/opacity only — D2 enforces this.
-- **R4 — Failsafe false-trigger**: the 15s CSS failsafe could fire while a guest reads the gate. Accepted: it only survives if the inline script never ran — a broken page where auto-dismiss is the kinder failure.
+- **R4 — Failsafe false-trigger**: the 25s CSS failsafe could fire while a guest reads the gate. Accepted: it only survives if the inline script never ran — a broken page where auto-dismiss is the kinder failure.
 - **R5 — Metric honesty**: reveals are client-triggered; a guest who closes before revealing never counts. That's the correct semantic ("opened the invitation"), just don't read it as "saw the loader".
 - **R6 — Desktop is a second-class citizen by explicit choice**: wheel dismissal works, physics don't, music may wait for a click. Accepted per proposal non-goals.
