@@ -34,9 +34,15 @@ export default defineConfig({
       // leans on the 304 `transferSize` shape, which is Chromium-measured but
       // WebKit-reported-only. Run the tiering suite on WebKit; the rest of
       // the suite synthesizes touch through CDP and stays Chromium-only.
+      //
+      // `pinned-viewport-units` is here because WebKit is its subject: the
+      // `lvh` fallback pair and the legacy-`vh`-is-the-large-viewport behaviour
+      // it asserts are iOS Safari semantics (safari-mobile-viewport-fit 3.3).
+      // It reads CSSOM declarations and static stage geometry, so it needs no
+      // CDP touch synthesis.
       name: "webkit",
       use: { ...devices["Desktop Safari"] },
-      testIgnore: /^(?!.*media-tiering)/,
+      testIgnore: /^(?!.*(media-tiering|hero-zoom-built|pinned-viewport-units))/,
     },
   ],
 });

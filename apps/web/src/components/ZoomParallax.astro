@@ -327,7 +327,7 @@ const SIZES_CENTER_COLLAPSED = SIZES_OUTER;
   let resizeTimeout: number | undefined;
   // Viewport width the current bindings were measured against. Height-only
   // `resize` events are mobile browser chrome collapsing, not a layout change:
-  // every length here is vw/svh-based, so re-initializing on them would only
+  // every length here is vw/lvh-based, so re-initializing on them would only
   // tear down and rebuild the scroll bindings mid-scroll (scroll-motion spec:
   // no bindings are rebuilt in response to a height-only resize). Same guard
   // TimelineScroll uses.
@@ -665,7 +665,7 @@ const SIZES_CENTER_COLLAPSED = SIZES_OUTER;
 
   function handleResize() {
     // Height-only resizes are mobile browser chrome collapsing or expanding;
-    // the vw/svh geometry bound here is unchanged by them, so ignore them
+    // the vw/lvh geometry bound here is unchanged by them, so ignore them
     // instead of tearing down and rebuilding every scroll binding mid-scroll.
     // Cancel any queued rebuild before the guard, not after: a width change
     // that reverts inside the 150 ms debounce would otherwise still fire the

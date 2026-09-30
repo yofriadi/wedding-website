@@ -1,5 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { dismissWelcomeGate, pinFullTier } from "./helpers";
+
+test.use({ viewport: { width: 393, height: 852 } });
 test.setTimeout(180_000);
 // Media-tiering task 7.3: every test here walks the pinned runway or asserts
 // the reduced-motion collapse, so the verdict must be `full` (or reduced
@@ -9,7 +11,7 @@ test.beforeEach(({ page }) => {
 });
 
 /**
- * The center cover scale is measured from the stage rect (100svh), never from
+ * The center cover scale is measured from the stage rect (100lvh), never from
  * `window.innerHeight`, so the finale's crop is identical whichever state the
  * browser chrome is in — that invariance is what makes it safe to skip re-init
  * on height-only resizes.
