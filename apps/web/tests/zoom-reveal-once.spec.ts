@@ -138,3 +138,58 @@ test("reduced motion collapses the pin to one full viewport of static grid", asy
   expect(info.imageOpacity).toBe("1");
   expect(info.wrapperTransform).toBe("none");
 });
+
+test("reverse scroll clears wrapper inline transforms and preserves slot box dimensions", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await dismissWelcomeGate(page);
+
+  // Scroll forward through ZoomParallax runway
+  await page.evaluate(() => {
+    const container = document.getElementById("zoom-parallax-container")!;
+    const top = container.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo({ top: top + container.offsetHeight - window.innerHeight });
+  });
+  await page.waitForTimeout(500);
+
+  // Verify that transforms were applied during forward scroll
+  const forwardTransforms = await page.evaluate(() => {
+    const wrappers = Array.from(document.querySelectorAll<HTMLElement>(".zoom-wrapper"));
+    return wrappers.map((w) => w.style.transform);
+  });
+  expect(forwardTransforms.some((t) => t.includes("scale"))).toBe(true);
+
+  // Scroll back to the top of the ZoomParallax section
+  await page.evaluate(() => {
+    const container = document.getElementById("zoom-parallax-container")!;
+    const top = container.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo({ top });
+  });
+  await page.waitForTimeout(500);
+
+  // Assert that reverse scroll clears all wrapper transforms and image boxes match inner slot boxes
+  const restState = await page.evaluate(() => {
+    const wrappers = Array.from(document.querySelectorAll<HTMLElement>(".zoom-wrapper"));
+    return wrappers.map((w) => {
+      const inner = w.querySelector<HTMLElement>(".zoom-inner")!;
+      const img = w.querySelector<HTMLElement>(".zoom-image")!;
+      const innerRect = inner.getBoundingClientRect();
+      const imgRect = img.getBoundingClientRect();
+      return {
+        inlineTransform: w.style.transform,
+        computedTransform: getComputedStyle(w).transform,
+        widthDiff: Math.abs(imgRect.width - innerRect.width),
+        heightDiff: Math.abs(imgRect.height - innerRect.height),
+      };
+    });
+  });
+
+  expect(restState.length).toBe(11);
+  for (const item of restState) {
+    expect(item.inlineTransform).toBe("");
+    expect(item.computedTransform).toBe("none");
+    expect(item.widthDiff).toBeLessThanOrEqual(1);
+    expect(item.heightDiff).toBeLessThanOrEqual(1);
+  }
+});

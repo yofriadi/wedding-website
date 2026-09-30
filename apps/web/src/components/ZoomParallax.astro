@@ -202,7 +202,7 @@ const SIZES_CENTER_COLLAPSED = SIZES_OUTER;
         const collapsedSizes = picture.isCenter ? SIZES_CENTER_COLLAPSED : undefined;
         return (
       <div 
-        class={`zoom-wrapper absolute inset-0 w-full h-full pointer-events-none flex items-center justify-center ${picture.isCenter ? "" : "will-change-transform"}`}
+        class="zoom-wrapper absolute inset-0 w-full h-full pointer-events-none flex items-center justify-center"
         data-is-center={picture.isCenter}
         data-scale-target={picture.scale}
         data-slot={slotIndex}
@@ -577,7 +577,7 @@ const SIZES_CENTER_COLLAPSED = SIZES_OUTER;
 
     // Reset all transforms to baseline before measuring/animating
     wrappers.forEach(w => {
-      (w as HTMLElement).style.transform = "scale(1)";
+      (w as HTMLElement).style.transform = "";
     });
 
     // Force layout flush
@@ -613,30 +613,27 @@ const SIZES_CENTER_COLLAPSED = SIZES_OUTER;
           const isCenter = el.dataset.isCenter === "true";
           const scaleTarget = parseFloat(el.dataset.scaleTarget || "1");
 
-          let currentScale = 1;
-          if (isCenter) {
-            // 0-10%: Hold at 1
-            // 10-80%: Scale up to centerScaleFactor
-            // 80-100%: Hold at centerScaleFactor
-            if (progress <= 0.1) {
-              currentScale = 1;
-            } else if (progress >= 0.8) {
-              currentScale = centerScaleFactor;
-            } else {
-              const p = (progress - 0.1) / 0.7;
-              currentScale = 1 + (centerScaleFactor - 1) * p;
-            }
+          if (progress <= 0.1) {
+            // 0-10%: Hold at baseline with transform cleared (matches reduced-motion baseline)
+            el.style.transform = "";
           } else {
-            // 0-10%: Hold at 1
-            // 10-100%: Scale up to scaleTarget
-            if (progress <= 0.1) {
-              currentScale = 1;
+            let currentScale = 1;
+            if (isCenter) {
+              // 10-80%: Scale up to centerScaleFactor
+              // 80-100%: Hold at centerScaleFactor
+              if (progress >= 0.8) {
+                currentScale = centerScaleFactor;
+              } else {
+                const p = (progress - 0.1) / 0.7;
+                currentScale = 1 + (centerScaleFactor - 1) * p;
+              }
             } else {
+              // 10-100%: Scale up to scaleTarget
               const p = (progress - 0.1) / 0.9;
               currentScale = 1 + (scaleTarget - 1) * p;
             }
+            el.style.transform = `scale(${currentScale})`;
           }
-          el.style.transform = `scale(${currentScale})`;
         });
       },
       {
@@ -732,13 +729,16 @@ const SIZES_CENTER_COLLAPSED = SIZES_OUTER;
     background: #050505;
   }
 
+  .zoom-inner picture {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
   .zoom-image {
     width: 100%;
     height: 100%;
     object-fit: cover;
-  }
-  .zoom-wrapper[data-is-center="true"] {
-    will-change: auto !important;
   }
 
   /* Lite collapse (media-tiering D4): the stage stops pinning and the
