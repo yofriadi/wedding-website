@@ -494,7 +494,9 @@ test.describe("claim member gate", () => {
     await expect(page.locator("#claim-gate-submit")).toHaveAttribute("data-visible", "true");
   });
 
-  test("welcome gate failsafe delay stays visible (>15s) while typing", async ({ page }) => {
+  test("welcome gate failsafe stays paused and delayed past the loader ceiling (>25s) while typing", async ({
+    page,
+  }) => {
     test.slow();
     const group = await createInvite({
       displayName: "Welcome Failsafe Group",
@@ -505,7 +507,10 @@ test.describe("claim member gate", () => {
     await page.goto(`${server.baseUrl}${group.sharePath}`);
     await waitForLoaderDismissed(page);
 
-    // Wait 16 seconds (longer than WelcomeGate 15s failsafe)
+    // The welcome gate's failsafe is a 25 s DELAYED animation, paused while the
+    // claim gate is up. 16 s of wall clock cannot reach it either way, so the
+    // visibility assertions below pass even if the pause is broken — hence the
+    // animationDelay assertion, which is instant and deterministic.
     await page.waitForTimeout(16_000);
 
     // Welcome gate failsafe was paused, so #welcome-gate is still present and visible in DOM
@@ -514,6 +519,11 @@ test.describe("claim member gate", () => {
     await expect(welcomeGate).toHaveCSS("visibility", "visible");
     const playState = await welcomeGate.evaluate((el) => getComputedStyle(el).animationPlayState);
     expect(playState).toBe("paused");
+    // The scenario this covers is "a claim gate held PAST the failsafe delay
+    // remains visible", and that delay moved from 15 s to 25 s so it clears the
+    // entry loader's 16 s ceiling. Nothing else in the suite reads the value, so
+    // without this a delay shorter than the loader it must outlast ships green.
+    expect(await welcomeGate.evaluate((el) => getComputedStyle(el).animationDelay)).toBe("25s");
 
     // Claim gate is still visible
     await expect(page.locator("#claim-gate")).toBeVisible();
