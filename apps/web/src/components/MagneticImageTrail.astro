@@ -1,4 +1,6 @@
 ---
+import { inviteIdFromCookies } from "../lib/invite-session";
+
 // MagneticImageTrail — vanilla-Astro port of ObsidianUI's magnetic-image-trail
 // block (https://www.obsidianui.dev/r/magnetic-image-trail.json), React
 // removed, pointer interaction removed: up to 18 cards drift continuously
@@ -16,12 +18,15 @@ export interface MagneticImageTrailProps {
   /** Square box: the trail cluster is circular, so 1:1 fits it full-bleed. */
   ratio?: string;
   className?: string;
+  /** Whether the viewer holds an invite link. Uninvited links show alternative copy. */
+  isInvited?: boolean;
 }
 
 const {
   images = [],
   ratio = "1 / 1",
   className = "",
+  isInvited = Boolean(inviteIdFromCookies(Astro.cookies)),
 } = Astro.props as MagneticImageTrailProps;
 ---
 
@@ -30,6 +35,7 @@ const {
   style={`--trail-ratio: ${ratio};`}
   data-trail
   data-empty={images.length === 0 ? "true" : "false"}
+  data-invited={isInvited ? "true" : "false"}
   role="img"
   aria-label="Photos and memories shared by our guests"
 >
@@ -94,7 +100,9 @@ const {
         <div class="magnetic-trail__placeholder-copy">
           <p class="magnetic-trail__placeholder-title">Belum ada foto yang dibagikan</p>
           <p class="magnetic-trail__placeholder-desc">
-            Jadilah yang pertama mengabadikan dan membagikan momen bahagia ini bersama kami.
+            {isInvited
+              ? "Jadilah yang pertama mengabadikan dan membagikan momen bahagia ini bersama kami."
+              : "Hanya yang punya link invite bisa membagikan momen"}
           </p>
         </div>
       </slot>
@@ -599,7 +607,20 @@ const {
     private cleanup?: () => void;
     private updateImages?: (sources: string[], priority: string[]) => Promise<string[]>;
 
-    setImages(sources: string[], priority: string[] = []): Promise<string[]> {
+    setInvited(invited: boolean) {
+      this.dataset.invited = invited ? "true" : "false";
+      const desc = this.querySelector<HTMLElement>(".magnetic-trail__placeholder-desc");
+      if (desc) {
+        desc.textContent = invited
+          ? "Jadilah yang pertama mengabadikan dan membagikan momen bahagia ini bersama kami."
+          : "Hanya yang punya link invite bisa membagikan momen";
+      }
+    }
+
+    setImages(sources: string[], priority: string[] = [], invited?: boolean): Promise<string[]> {
+      if (typeof invited === "boolean") {
+        this.setInvited(invited);
+      }
       return this.updateImages?.(sources, priority) ?? Promise.resolve([]);
     }
 

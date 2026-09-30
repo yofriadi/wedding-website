@@ -198,7 +198,7 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
         "Belum ada foto yang dibagikan",
       );
       await expect(placeholder.locator(".magnetic-trail__placeholder-desc")).toContainText(
-        "Jadilah yang pertama mengabadikan dan membagikan momen bahagia ini bersama kami.",
+        "Hanya yang punya link invite bisa membagikan momen",
       );
 
       // Canvas remains transparent with 0 photos
@@ -265,6 +265,9 @@ for (const reducedMotion of ["no-preference", "reduce"] as const) {
       const trail = page.locator("[data-trail]");
       const placeholder = trail.locator("[data-trail-placeholder]");
       await trail.scrollIntoViewIfNeeded();
+      await expect(placeholder.locator(".magnetic-trail__placeholder-desc")).toContainText(
+        "Jadilah yang pertama mengabadikan dan membagikan momen bahagia ini bersama kami.",
+      );
 
       const addBtn = page.locator("[data-add-image]");
       await expect(addBtn).toBeVisible();
