@@ -62,7 +62,7 @@ test.describe("timeline photo preloading", () => {
     await expect
       .poll(async () => {
         return await timelineImages.evaluateAll((imgs) =>
-          imgs.map((img: HTMLImageElement) => img.loading),
+          imgs.map((img) => (img as HTMLImageElement).loading),
         );
       })
       .toEqual(["eager", "eager", "eager"]);
@@ -74,7 +74,7 @@ test.describe("timeline photo preloading", () => {
     await expect
       .poll(async () => {
         return await timelineImages.evaluateAll((imgs) =>
-          imgs.map((img: HTMLImageElement) => img.dataset.loaded),
+          imgs.map((img) => (img as HTMLImageElement).dataset.loaded),
         );
       })
       .toEqual(["true", "true", "true"]);
@@ -114,7 +114,7 @@ test.describe("timeline photo preloading", () => {
     await expect
       .poll(async () => {
         return await timelineImages.evaluateAll((imgs) =>
-          imgs.map((img: HTMLImageElement) => img.dataset.loaded),
+          imgs.map((img) => (img as HTMLImageElement).dataset.loaded),
         );
       })
       .toEqual(["true", "true", "true"]);
