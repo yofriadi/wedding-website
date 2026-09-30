@@ -209,7 +209,6 @@ export function initPhotoTrail(controls: HTMLElement): () => void {
 
     await customElements.whenDefined("magnetic-image-trail");
     if (disposed || version !== requestVersion) return null;
-    trail.setInvited?.(inviteValid);
     const loaded = await trail.setImages(
       selectTrailImages(data),
       data.photos.filter((photo) => photo.id === data.mineId).map((photo) => photo.photoUrl),

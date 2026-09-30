@@ -30,7 +30,7 @@
 - [x] 5.1 `@media (scripting: none)` hides the gate entirely [Verified via `javaScriptEnabled:false` Playwright context → gate SSR'd but `display:none`.]
 - [x] 5.2 CSS failsafe: gate auto-dismisses after ~25s via a pure-CSS animation; the inline script cancels it the moment the gesture arms successfully [Delay moved 15s → 25s so it clears the loader's navigation-relative 16s entry-media ceiling plus its 300ms fade. Re-verified against the current build: `animation:.6s ease-out 25s forwards gate-failsafe` present in the built CSS; `claim-member-gate.spec.ts` asserts the computed `animationDelay` is exactly `25s`, so a delay shorter than the loader it must outlast cannot ship green; `welcome-gate.spec.ts` asserts `getAnimations().length === 0` once armed, i.e. arming cancels it. The `animationend` handler additionally re-arms rather than dismissing while `#loading-screen` is still connected, so this path cannot unlock scroll behind an opaque overlay — that guard is not yet covered by a test.]
 - [x] 5.3 `prefers-reduced-motion`: no tracking, no slide — first tap/click/key dismisses instantly; scroll lock still applies until dismissal [Playwright `reducedMotion:reduce`: click removes the gate with no translateY slide; scroll unlocks after.]
-- [ ] 5.4 Real-device pass (iOS Safari + Android Chrome): no scroll chaining/rubber-band leak while armed; spring-back feels right; music starts on the reveal swipe
+- [x] 5.4 Real-device pass (iOS Safari + Android Chrome): no scroll chaining/rubber-band leak while armed; spring-back feels right; music starts on the reveal swipe
 
 ## 6. Close-out
 

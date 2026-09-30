@@ -1,6 +1,4 @@
 ---
-import { inviteIdFromCookies } from "../lib/invite-session";
-
 // MagneticImageTrail — vanilla-Astro port of ObsidianUI's magnetic-image-trail
 // block (https://www.obsidianui.dev/r/magnetic-image-trail.json), React
 // removed, pointer interaction removed: up to 18 cards drift continuously
@@ -26,8 +24,11 @@ const {
   images = [],
   ratio = "1 / 1",
   className = "",
-  isInvited = Boolean(inviteIdFromCookies(Astro.cookies)),
+  isInvited = false,
 } = Astro.props as MagneticImageTrailProps;
+
+const COPY_INVITED = "Jadilah yang pertama mengabadikan dan membagikan momen bahagia ini bersama kami.";
+const COPY_UNINVITED = "Hanya yang punya link invite bisa membagikan momen";
 ---
 
 <magnetic-image-trail
@@ -99,10 +100,13 @@ const {
 
         <div class="magnetic-trail__placeholder-copy">
           <p class="magnetic-trail__placeholder-title">Belum ada foto yang dibagikan</p>
-          <p class="magnetic-trail__placeholder-desc">
-            {isInvited
-              ? "Jadilah yang pertama mengabadikan dan membagikan momen bahagia ini bersama kami."
-              : "Hanya yang punya link invite bisa membagikan momen"}
+          <p
+            class="magnetic-trail__placeholder-desc"
+            data-trail-placeholder-desc
+            data-copy-invited={COPY_INVITED}
+            data-copy-uninvited={COPY_UNINVITED}
+          >
+            {isInvited ? COPY_INVITED : COPY_UNINVITED}
           </p>
         </div>
       </slot>
@@ -609,11 +613,9 @@ const {
 
     setInvited(invited: boolean) {
       this.dataset.invited = invited ? "true" : "false";
-      const desc = this.querySelector<HTMLElement>(".magnetic-trail__placeholder-desc");
+      const desc = this.querySelector<HTMLElement>("[data-trail-placeholder-desc]");
       if (desc) {
-        desc.textContent = invited
-          ? "Jadilah yang pertama mengabadikan dan membagikan momen bahagia ini bersama kami."
-          : "Hanya yang punya link invite bisa membagikan momen";
+        desc.textContent = (invited ? desc.dataset.copyInvited : desc.dataset.copyUninvited) ?? "";
       }
     }
 
