@@ -273,11 +273,11 @@ const SIZES_CARD =
           <div class="absolute left-[50vw] -translate-x-1/2 -top-8 flex flex-col items-center w-[280px]">
             <div data-node5-photo style="opacity: 0; transform: scale(0.6); transform-origin: 0% 0%;">
               <div class="h-[320px] w-auto aspect-[2/3] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl mb-4 ring-1 ring-[color:var(--timeline-photo-ring)]">
-                <!-- No `autoplay`: that attribute defeated preload="none" and
-                     pulled 714 KB at parse time on every network. Playback is
+                <!-- No `autoplay`: that attribute defeated preload="none". Playback is
                      tier-driven — see applyVideoTier() at the foot of this
-                     component's script. -->
-                <video id="timeline-video" loop muted playsinline preload="none" aria-label="Lamaran" class="h-full w-full object-cover" width="478" height="850"><source src="/lamaran.mp4" type="video/mp4" /></video>
+                     component's script. A lightweight poster provides immediate visual
+                     display before playback begins. -->
+                <video id="timeline-video" loop muted playsinline preload="none" poster="/lamaran-poster.webp" aria-label="Lamaran" class="h-full w-full object-cover" width="478" height="850"><source src="/lamaran.mp4" type="video/mp4" /></video>
               </div>
             </div>
             <div data-node5-desc class="text-center" style="opacity: 0; transform: scale(0.6); transform-origin: 0% 0%;">

@@ -102,7 +102,7 @@ const BASES = [
  * `public/`, so without it the cross-check would demand variants of hand-
  * maintained derivatives.
  */
-const EXCLUDED_NAME_PREFIXES = ["wedding_photo"];
+const EXCLUDED_NAME_PREFIXES = ["wedding_photo", "lamaran"];
 
 /**
  * Source files whose markup names generated bases — an explicit floor that
