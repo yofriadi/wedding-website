@@ -1,4 +1,4 @@
-import { fork } from "node:child_process";
+import { fork, spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { createWriteStream } from "node:fs";
 import { createServer } from "node:net";
@@ -107,6 +107,116 @@ export async function createTestServer(label: string) {
   const database = createTestDatabase(label);
   try {
     const server = await startTestServer(database);
+    return {
+      ...database,
+      ...server,
+      async dispose() {
+        await server.stop();
+        database.dispose();
+      },
+    };
+  } catch (error) {
+    database.dispose();
+    throw error;
+  }
+}
+export async function startBuiltTestServer(
+  database: TestDatabase,
+  port = 0,
+  extraEnv: NodeJS.ProcessEnv = {},
+) {
+  const requestedPort = await availablePort(port);
+  const logPath = join(database.workDir, "built-server.log");
+  const log = createWriteStream(logPath, { flags: "a" });
+  log.on("error", () => {}); // swallow late writes if stdio drains after log.end()
+  const server = spawn(process.execPath, [join(WEB_ROOT, "dist/server/entry.mjs")], {
+    cwd: WEB_ROOT,
+    env: {
+      ...database.env,
+      ...extraEnv,
+      HOST: "127.0.0.1",
+      PORT: String(requestedPort),
+    },
+    stdio: ["ignore", "pipe", "pipe"],
+    detached: true,
+  });
+  server.stdout?.pipe(log, { end: false });
+  server.stderr?.pipe(log, { end: false });
+  const exited = new Promise<void>((resolve) => server.once("exit", () => resolve()));
+  let stopped = false;
+  const stop = async () => {
+    if (stopped) return;
+    stopped = true;
+    if (server.pid) {
+      try {
+        process.kill(-server.pid, "SIGTERM");
+      } catch {
+        /* already exited */
+      }
+      if (server.exitCode === null && server.signalCode === null) {
+        await Promise.race([exited, new Promise((resolve) => setTimeout(resolve, 5000))]);
+      }
+      try {
+        process.kill(-server.pid, "SIGKILL");
+      } catch {
+        /* already exited */
+      }
+    }
+    log.end();
+  };
+  const baseUrl = `http://127.0.0.1:${requestedPort}`;
+  const ac = new AbortController();
+
+  // Reject as soon as the child fails to spawn ('error': e.g. dist/server/entry.mjs
+  // missing, or EMFILE under CI load) or exits before readiness ('exit': covers a
+  // non-zero code AND a signal kill, where exitCode stays null). Detecting this via
+  // listeners — rather than polling a captured `let` — both surfaces logPath instead
+  // of an uncaught 'error' that would kill the worker, and avoids a variable TS
+  // narrows to `never` because it can't see the closure assignment.
+  const failed = new Promise<never>((_, reject) => {
+    const fail = (message: string) => {
+      ac.abort();
+      reject(new Error(`${message}; see ${logPath}`));
+    };
+    server.once("error", (error) => fail(`Built test server failed to start: ${error.message}`));
+    server.once("exit", (code, signal) =>
+      fail(`Built test server exited prematurely (code ${code}, signal ${signal})`),
+    );
+  });
+
+  const ready = (async () => {
+    const deadline = Date.now() + 60_000;
+    while (Date.now() < deadline && !ac.signal.aborted) {
+      try {
+        const count = await fetch(`${baseUrl}/api/rsvp/count`, {
+          signal: AbortSignal.timeout(1000),
+        });
+        if (count.ok) return;
+      } catch {
+        // Not listening yet — keep polling until ready, aborted, or deadline.
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    // Aborted means `failed` already rejected and wins the race; resolve quietly.
+    if (ac.signal.aborted) return;
+    throw new Error(`Built test server timed out waiting for readiness; see ${logPath}`);
+  })();
+
+  try {
+    // `failed` stays pending on success; Promise.race attaches a handler, so the
+    // later stop()-triggered 'exit' rejection is handled, not unhandled.
+    await Promise.race([ready, failed]);
+    return { baseUrl, stop, logPath };
+  } catch (error) {
+    await stop();
+    throw error;
+  }
+}
+
+export async function createBuiltTestServer(label: string) {
+  const database = createTestDatabase(label);
+  try {
+    const server = await startBuiltTestServer(database);
     return {
       ...database,
       ...server,
