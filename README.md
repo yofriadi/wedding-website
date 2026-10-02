@@ -216,7 +216,18 @@ tools/restore-private-media.sh --undo   # reverts back to placeholders
 
 ## 🚢 Deployment
 
-### Recommended: Docker Compose on a VPS
+### Free Cloud Demo (Render)
+
+You can deploy a free live demo on [Render](https://render.com/) using the included `render.yaml` Blueprint or Docker:
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
+
+- **Runtime**: Docker (Render builds from the root `Dockerfile` automatically).
+- **Free Tier**: Uses Render's free instance type (512MB RAM). Spins down after 15 min of inactivity.
+- **Ephemeral Demo Storage**: The SQLite database and photo uploads reset cleanly on restart, making it ideal for a public demo.
+- _(Optional)_ For persistent data on the free tier, connect a free [Turso](https://turso.tech) database via `DATABASE_URL` and `DATABASE_AUTH_TOKEN`.
+
+### Recommended for Production: Docker Compose on a VPS
 
 Everything (Astro Node server, SQLite database, and guest photo storage) runs in a single lightweight container with volume persistence:
 

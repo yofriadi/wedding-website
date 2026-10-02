@@ -429,7 +429,7 @@ import {
         if (scrolled <= zoomEnd) {
           const progress = Math.min(scrolled / zoomEnd, 1);
           const eased = 1 - Math.pow(1 - progress, 3); // easeOutCubic, matches the CSS curve.
-          const scale = 2.8 - eased * 1.8;
+          const scale = 2.8 - eased * 1.8; // easeOutCubic, matches the CSS curve.
           img.style.transform = `scale(${scale})`;
           blur.style.opacity = "0";
           overlay.style.opacity = "0";

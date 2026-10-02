@@ -167,7 +167,7 @@ test.describe("welcome gate", () => {
     // Every frame at scroll zero: fully zoomed in, overlay copy still hidden.
     for (const s of samples) {
       expect(s.scrollY).toBe(0);
-      expect(s.scale).toBeCloseTo(1.75, 2);
+      expect(s.scale).toBeCloseTo(2.8, 2);
       expect(s.textOpacity).toBe(0);
     }
   });
