@@ -1,141 +1,314 @@
-# wedding-website
+# 💍 Wedding Website
 
+A modern, high-performance, and beautifully crafted wedding website with personalized guest invitations, family RSVP management, and a live guest photo wall.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![docker-image](https://github.com/yofriadi/wedding-website/actions/workflows/docker-image.yml/badge.svg)](https://github.com/yofriadi/wedding-website/actions/workflows/docker-image.yml)
-Licensed under the [MIT license](LICENSE).
+[![Built with Astro](https://img.shields.io/badge/Built%20with-Astro-ff5d01.svg)](https://astro.build)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-38bdf8.svg)](https://tailwindcss.com)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-3178c6.svg)](https://www.typescriptlang.org)
+[![SQLite](https://img.shields.io/badge/Database-SQLite%20%2F%20libSQL-003b57.svg)](https://sqlite.org)
 
-Astro + TypeScript + Tailwind, deployed with the standalone Node adapter. SQLite is accessed through Drizzle and libSQL. The application stores invitations, RSVP responses, and one optional guest photo per invitation.
+---
 
-## Media: placeholders vs. private
+## ✨ Features
 
-The public repository ships **placeholder** images (and a short placeholder video) for all personal photos — the memories collage, family photos, the proposal clip, and the soundtrack. The hero photo, event (akad/resepsi) images, and venue map images are the real files. Placeholder filenames and dimensions match the originals exactly, so the layout is unaffected.
+- **Personalized Guest Experience**: Share unique links (`/<invite-id>`) that greet each guest by name with an elegant swipe-to-open entrance gate.
+- **Family & Group Invitations**: Send one link to an entire household with atomic slot claiming (`maxMembers`), so each family member can RSVP and upload photos independently.
+- **Interactive RSVP**: Real-time attendance confirmation with optimistic UI updates, celebratory confetti, and live attendance metrics.
+- **Live Guest Photo Trail**: Guests can upload a memory directly from their phone into an interactive, physics-driven photo trail and gallery.
+- **Cinematic Storytelling & Visuals**:
+  - Scroll-driven story timeline and photo parallax collage.
+  - Editorial typography with `@fontsource-variable/fraunces` and `@fontsource-variable/geist`.
+  - Ambient background music player with smooth fade-in.
+  - Interactive Leaflet & OpenStreetMap venue navigation with custom pins.
+  - Full support for `prefers-reduced-motion` and light/dark theme contrast.
+- **High-Performance Media Pipeline**:
+  - Automatic WebP canonical normalization, EXIF/metadata stripping, and background AVIF generation.
+  - Multi-resolution responsive image `srcset` (390px, 768px, 1280px) and ultra-lightweight blurhash-style placeholders.
+- **Self-Hosted & Privacy-First**:
+  - Single Docker container deployment with zero vendor lock-in.
+  - Persistent SQLite database + volume storage.
+  - Built-in Caddy configuration for automatic Let's Encrypt SSL/TLS and zstd compression.
+  - Public repository ships clean placeholders so you can open-source your code without exposing private family memories.
 
-Your real media stays **out of git**, preserved in gitignored `originals/private-media/` (same relative paths). To deploy the personal version:
+---
+
+## 🛠️ Tech Stack
+
+| Layer                  | Technology                                                                                                                     |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| **Framework**          | [Astro 7](https://astro.build/) (SSR with `@astrojs/node` standalone adapter)                                                  |
+| **Styling**            | [Tailwind CSS v4](https://tailwindcss.com/)                                                                                    |
+| **Animations**         | [Motion](https://motion.dev/) (Framer Motion engine) & CSS scroll-driven timelines                                             |
+| **Database**           | [SQLite](https://sqlite.org/) via [libSQL](https://github.com/tursodatabase/libsql) & [Drizzle ORM](https://orm.drizzle.team/) |
+| **Media Processing**   | [Sharp](https://sharp.pixelplumbing.com/) (WebP & AVIF pipelines)                                                              |
+| **Maps**               | [Leaflet](https://leafletjs.com/) & [OpenStreetMap](https://www.openstreetmap.org/)                                            |
+| **Monorepo & Tooling** | [Turborepo](https://turbo.build/), [pnpm](https://pnpm.io/), [oxlint](https://oxc.rs/), [oxfmt](https://oxc.rs/)               |
+| **Deployment**         | [Docker Compose](https://docs.docker.com/compose/) & [Caddy](https://caddyserver.com/)                                         |
+
+---
+
+## 🚀 Quick Start
+
+Get a local development server running in under two minutes:
+
+### 1. Prerequisites
+
+- **Node.js**: v20 or higher
+- **pnpm**: v9 or v10 (`corepack enable && corepack prepare pnpm@latest --activate`)
+
+### 2. Clone & Install
 
 ```sh
-tools/restore-private-media.sh   # overlays real media over the placeholders
-pnpm run build                   # or the Docker build — disk state wins, not git
-```
-
-Docker builds read from disk, not git: on a VPS, copy `originals/private-media/` over the clone first (same layout), then `docker compose up -d --build`. The CI image on GHCR always contains placeholders. The soundtrack is never committed (copyright); drop any licensed `*.mp3` at its referenced path — `tools/restore-private-media.sh` restores it too.
-
-### Generated responsive variants
-
-`apps/web/public/generated/` holds the AVIF + WebP resolution variants (390 / 768 / 1280 px) and the ~32 px blurred placeholders for every photographic master the markup references. It is **gitignored and never committed**: a variant of a real photo is itself private media, so the repository ships the masters as placeholders and derives from whatever is on disk.
-
-`pnpm run build` regenerates it first, through `apps/web`'s `prebuild`. **`astro dev` runs no `prebuild`**, so after a fresh clone — or after overlaying real media — run it once by hand:
-
-```sh
-tools/restore-private-media.sh          # real masters into public/ (private deploy only)
-pnpm --filter web run media:variants    # regenerate public/generated/ from them
-pnpm run dev
-```
-
-The generator is idempotent (it skips outputs newer than their master, so a second run reports `nothing to do`), never upscales, never re-emits a width the master already fills, and **fails the build** on any of: `apps/web/public/` not existing at all — the failure a developer hits most often, which is a `cd` into `apps/web/` before running the script, and produces `public/ not found: …` naming the expected path; a base name outside `[a-z0-9_-]`; a master the markup names being missing; a master present in only one of AVIF/WebP; the two formats of one base disagreeing on intrinsic width; a component referencing a base the generator's explicit list omits; a listed base matching the excluded `wedding_photo*` hero family or naming a subdirectory; a base listed twice; one of the markup sources the cross-check reads being absent (a sparse checkout or a rename); or an unreadable master. A placeholder over 4 KB also fails the build, and that cap is re-checked over every placeholder on disk — including ones restored from the Turbo cache that never pass through the encoder. Each is a guest-facing 404, a mis-declared `w` descriptor, or a silent budget increase otherwise. A generated **variant** over 200 KB is a warning naming every file, not a failure: that ceiling bounds a property of the couple's photos, and failing a deployment over one busy real photo is worse than shipping it.
-
-Changing an encode setting invalidates every output: the generator writes `generated/manifest.json` fingerprinting `PIPELINE_VERSION`, the `sharp`/libvips/aom/libwebp versions, `SETTINGS`, the width ladder and the placeholder geometry, and treats a mismatch as stale. It deliberately does **not** fingerprint `BASES` — no surviving output's bytes depend on the list — nor `src/lib/image-encode.ts`, whose constants `SETTINGS` mirrors by hand. Two consequences worth knowing. The fingerprint travels with `public/generated/**` through the Turbo cache, so it cannot be restored out of step with the outputs it describes — co-location is the reason for that, and the reason it is a plain filename rather than a dotfile. (A dotfile would additionally risk falling outside that glob, but the glob's dotfile behaviour is untested and is not what the choice rests on.) And it is **copied into `dist/client/` and served** at `/generated/manifest.json`, like everything else under `public/`; that is deliberate rather than an oversight, since the base names already appear in the delivered `srcset`s and encode settings are not secrets, but it does mean build configuration is publicly readable. Without it a quality edit is a silent no-op. The unchanged bytes then sit in **two** places: re-archived under the new cache key in `.turbo/cache/`, and — the one that matters — still in the working tree. So clearing the Turbo cache does not help; `rm -rf apps/web/public/generated` is the remedy. Note also that `generated/` is gitignored and therefore contributes **zero** Turbo inputs (a `--dry=json` run reports 152 inputs for `web#build`, none of them under `generated/`), so two different working-tree states hash identically: a cache hit can restore an older archive over a newer hand-run and nothing detects it, because the restored manifest matches the restored outputs. `tools/restore-private-media.sh --undo` does this for you, since the variants it leaves behind are derivatives of the real media. Because it reads whatever is _present_, CI derives variants from the placeholders and a restored machine derives them from the real photos — one command, both legs produce the same file set, and nothing private is ever staged. Turborepo caches the directory through `turbo.json`'s package-relative `public/generated/**` build output, which is what restores the _working-tree_ copy on a cache hit; `dist/client/generated/` was already covered by `dist/**`.
-
-> **Do not enable Turbo Remote Cache without reading this.** `.gitignore` keeps
-> these derivatives out of git because a variant of a real photo is itself private
-> media — but `.gitignore` does not reach the Turbo cache. Setting `TURBO_API` /
-> `TURBO_TOKEN` / `TURBO_TEAM` would upload up to 84 derivatives of the couple's
-> photos to a third-party cache, with no guard and no test watching for it. No
-> remote cache is configured today. Dropping the `public/generated/**` output entry
-> is _not_ the fix: without it a cache hit restores `dist/client/generated` but
-> leaves the working tree empty, which breaks `astro dev` and the generator's mtime
-> comparison. See `openspec/changes/resilient-media-delivery/follow-ups.md` §5.
-
-## Development
-
-```sh
+git clone https://github.com/yofriadi/wedding-website.git
+cd wedding-website
 pnpm install
-# Copy only if .env does not already exist; never overwrite your local secrets.
-cp -n apps/web/.env.example apps/web/.env
 ```
 
-### Database baseline
+### 3. Configure Environment
 
-The committed migration creates only `invites`, `rsvps`, and `guest_photos`, plus Drizzle's migration ledger. It is a **fresh-install baseline**, not an upgrade from the former submissions/party-size schema. `db:migrate` checks existing migration history and refuses incompatible targets without changing their data.
-
-On a genuinely new checkout with no existing database:
+Copy the example environment file:
 
 ```sh
+cp apps/web/.env.example apps/web/.env
+```
+
+_(The defaults work out-of-the-box for local development with a local SQLite database at `packages/db/local.db`)_
+
+### 4. Initialize Database & Run
+
+```sh
+# Apply database baseline migration
 pnpm run db:migrate
+
+# Start the development server
 pnpm run dev
 ```
 
-The example URL is `file:../../packages/db/local.db`. Relative file paths resolve from `apps/web` in the application and migration tooling. Prefer absolute paths for all operational commands.
+Visit [`http://localhost:4321`](http://localhost:4321) in your browser! 🎉
 
-**Already have a database?** Do not delete it, its `-wal`/`-shm` files, or its uploads to make migration succeed. Select a new empty database and separate storage directory, or follow the separately authorized replacement procedure in [ops/README.md](ops/README.md). If records must survive, stop and use a data-preserving migration plan. The old `0005` attendance-only migration is superseded by the new baseline; it has not been applied to your existing local database by this cleanup.
+---
 
-A safe isolated development session, leaving existing data alone:
+## 💌 Invitations & Admin API
 
-```sh
-sandbox="$(mktemp -d /tmp/wedding-dev.XXXXXX)"
-export DATABASE_URL="file:$sandbox/app.sqlite"
-export PHOTO_STORAGE_DIR="$sandbox/photos"
-mkdir "$PHOTO_STORAGE_DIR"
-pnpm run db:migrate
-pnpm --filter web run dev --port 4322
-# Keep the sandbox while needed. Stop its server before disposing of it.
-```
+Invitations are identified by unique 12-character URL slugs (e.g., `https://your-wedding.com/abc123xyz789`).
 
-Use `db:generate` after schema edits and commit SQL, snapshot, and journal together. `db:push` is only for explicitly disposable development databases; it bypasses migration history and is not a deployment command.
+### 1. Set Your Admin Token
 
-### Current contracts
-
-- `GET /<12-character-invite-id>` records a visit, binds/rebinds `ww_invite_id`, and redirects to `/`. **Sticky exception:** a _group_ link keeps a cookie that already maps to one of its own members, re-setting it with a fresh `Max-Age` instead of rebinding. Seen-metrics always bump on the link id, whatever the cookie holds.
-- `POST /api/invite/claim` mints one member slot under a group invite and rebinds the cookie to it. Opening a group link is free and unlimited — only a claim consumes a slot, capped atomically at `maxMembers`. For group links below capacity, claiming occurs up front at an entry claim gate before the welcome gate, transitioning seamlessly to the welcome gate, RSVP form, and photo upload chooser with zero page reloads.
-- `GET /api/invite/me` resolves identity without changing metrics, returning `{ displayName, kind }` plus `group: { maxMembers, claimedCount }` for group cookies.
-- `POST /api/invite/opened` records opening the invitation.
-- `GET` / `POST /api/rsvp` read/upsert boolean attendance. Response timestamps are retained; the public count is attending invitations, not party headcount — so a group contributes one count per attending member. An unclaimed group cookie POSTs to `409 { "error": "claim_required" }` and reads as `{ attending: null }`.
-- `GET /api/guest-photos` returns `{ inviteValid, mineId, photos: [{ id, photoUrl, createdAt }] }` for everyone. Names and invitation IDs are not public photo metadata.
-- `POST /api/guest-photos` accepts exactly one multipart `photo` file for a resolved invitation, once only. `409` means `already_posted` or (for an unclaimed group cookie) `claim_required` — branch on the code, not the status.
-- Canonical files are private-storage `guest-photos/<photo-id>/photo.webp`, with an optional `photo.avif`. `/api/photos/<key>` serves public immutable content, with AVIF negotiated through `Vary: Accept`.
-
-[NOTE.md](NOTE.md) provides an isolated manual walkthrough. [SPEC.md](SPEC.md) summarizes the current invitation contract; detailed capability specs live in `openspec/specs/`.
-
-## Tests
+Set an admin token in `apps/web/.env`:
 
 ```sh
-pnpm run check-types
-pnpm --filter web exec playwright test
-pnpm run build
+INVITE_ADMIN_TOKEN="your-secure-admin-token-at-least-32-chars"
 ```
 
-Playwright always starts its own migrated temporary database, photo storage, and server on a free port. It never reuses a running developer server or an inherited database URL. API suites use the same isolated setup helper. The baseline suite uses the real migrator, checks constraints/integrity, verifies repeat migration is a no-op, and guards against legacy database resets.
-
-## Deployment
-
-**Docker on a VPS (recommended):** see [DEPLOY.md](DEPLOY.md) — one container, data in a named volume, migrations applied on start.
-
-### Manual (bare metal)
-
-The application and both operations scripts must receive the **same explicit targets**. For a fresh installation, after selecting those targets:
+### 2. Create an Individual Invitation
 
 ```sh
-export DATABASE_URL=file:/srv/wedding/local.db
-export PHOTO_STORAGE_DIR=/srv/wedding/photos
-export BACKUP_DEST=/mnt/backup/wedding
-# These paths are examples, not permission to replace existing data.
-pnpm run db:migrate
-pnpm --filter web run build
-# From apps/web, start the matching build using your service manager:
-# NODE_ENV=production HOST=127.0.0.1 PORT=4321 node dist/server/entry.mjs
+curl -X POST http://localhost:4321/api/admin/<YOUR_TOKEN>/invites \
+  -H "Content-Type: application/json" \
+  -d '{"displayName": "Budi Santoso"}'
 ```
 
-Apply migrations before starting the matching application build. No startup code resets the database or upload directory. See [ops/README.md](ops/README.md) for backups, strict restore checks, replacement/rollback boundaries, AVIF configuration, and caching restrictions.
+**Response:**
 
-## Project structure
+```json
+{
+  "id": "7fqX6Jl1EPwM",
+  "sharePath": "/7fqX6Jl1EPwM",
+  "type": "individual"
+}
+```
 
-- `apps/web/`: pages, API routes, components, photo processing, browser tests
-- `packages/db/`: current schema, generated migration, guarded migration runner
-- `packages/env/`: validated server environment
-- `ops/`: backup, restore verification, moderation
-- `openspec/`: capability specifications and coordinated change plans
+Share the link: `http://localhost:4321/7fqX6Jl1EPwM`. When the guest opens it:
 
-## Commands
+- The site records the visit and binds a cookie.
+- The entrance gate greets the guest personally by name ("Untuk: Budi Santoso").
+- Opening the envelope unlocks personalized RSVP options and photo upload.
 
-- `pnpm run dev`, `pnpm run build`, `pnpm run check-types`
-- `pnpm run db:migrate`, `pnpm run db:generate`, `pnpm run db:studio`
-- `pnpm run check`: lint and format **with edits**; use `pnpm exec oxlint` and `pnpm exec oxfmt --check <paths>` for read-only verification
-- `pnpm run prepare`: install Git hooks
+### 3. Create a Group / Family Invitation
+
+For households or friend groups where multiple guests share one link:
+
+```sh
+curl -X POST http://localhost:4321/api/admin/<YOUR_TOKEN>/invites \
+  -H "Content-Type: application/json" \
+  -d '{"displayName": "The Santoso Family", "type": "group", "maxMembers": 4}'
+```
+
+**Response:**
+
+```json
+{
+  "id": "sSQusFJJxJyE",
+  "sharePath": "/sSQusFJJxJyE",
+  "type": "group",
+  "maxMembers": 4
+}
+```
+
+- Visitors opening this link see an entry claim gate where each member enters their name (e.g. "Maya").
+- A slot is claimed atomically (`POST /api/invite/claim`), giving them their own sticky identity, personalized greeting, RSVP, and photo upload slot.
+- Once the group reaches capacity (`maxMembers`), additional visitors can still view the invitation in read-only mode.
+
+### 4. Monitor RSVPs & Guest Attendance
+
+Retrieve a real-time JSON breakdown of all invitations, attendance, and member claims:
+
+```sh
+curl http://localhost:4321/api/admin/<YOUR_TOKEN>/invites
+```
+
+Or inspect the database visually using Drizzle Studio:
+
+```sh
+pnpm run db:studio
+```
+
+---
+
+## 🎨 Customizing for Your Wedding
+
+Make this website your own by updating the following components:
+
+| Section                   | File                                           | Description                                            |
+| ------------------------- | ---------------------------------------------- | ------------------------------------------------------ |
+| **Couple Names & Date**   | `apps/web/src/components/HeroZoom.astro`       | Main hero title, date string, and animated text        |
+| **Family & Lineage**      | `apps/web/src/components/FamiliesReveal.astro` | Bride/groom parents, blessings, and lineage copy       |
+| **Event Schedule**        | `apps/web/src/components/EventTimes.astro`     | Ceremony (Akad), reception times, and dress code       |
+| **Venue & Coordinates**   | `apps/web/src/lib/venue.ts`                    | Venue name, city, latitude, and longitude for the map  |
+| **Love Story / Timeline** | `apps/web/src/components/TimelineScroll.astro` | Milestones, story narrative, and relationship photos   |
+| **Wedding FAQ**           | `apps/web/src/components/WeddingFAQ.astro`     | Dress code, parking, schedules, dining style           |
+| **Loading Phrases**       | `apps/web/src/lib/loading-phrases.ts`          | Playful text shimmer phrases during initial asset load |
+| **Background Music**      | `apps/web/public/`                             | Place your licensed `*.mp3` soundtrack in `public/`    |
+| **Photos & Imagery**      | `apps/web/public/`                             | Replace hero and memories photos (see below)           |
+
+---
+
+## 🖼️ Media & Responsive Variants
+
+### Public Placeholders vs. Private Media
+
+This repository includes lightweight **placeholder images and video** so anyone can clone and run the site immediately without downloading private personal files.
+
+When you are ready to use your own photos:
+
+1. Replace images in `apps/web/public/` with your own photos (using matching filenames and dimensions, or updating component references).
+2. Generate responsive variants:
+   ```sh
+   pnpm --filter web run media:variants
+   ```
+   This generates optimized AVIF + WebP resolution ladders (390px, 768px, 1280px) and low-res blurred placeholders into `apps/web/public/generated/`.
+
+#### Private Media Workflow (Optional)
+
+If you wish to keep personal media out of git while deploying or developing locally, you can store your masters in `originals/private-media/` and use:
+
+```sh
+tools/restore-private-media.sh          # overlays real media and sets git skip-worktree
+tools/restore-private-media.sh --undo   # reverts back to placeholders
+```
+
+> [!WARNING]
+> **Turbo Remote Cache**: Generated image derivatives are stored in `apps/web/public/generated/` and gitignored. If you use Turbo Remote Cache, be aware that build artifacts containing derivatives of personal photos could be uploaded to your remote cache.
+
+---
+
+## 🚢 Deployment
+
+### Recommended: Docker Compose on a VPS
+
+Everything (Astro Node server, SQLite database, and guest photo storage) runs in a single lightweight container with volume persistence:
+
+```sh
+# 1. Copy the Docker environment file and add your admin token
+cp env.docker.example .env
+# Edit .env and set INVITE_ADMIN_TOKEN (generate with: openssl rand -hex 32)
+
+# 2. Build and run
+docker compose up -d --build
+```
+
+### With Automatic HTTPS (Caddy)
+
+If you have a domain pointed to your server's IP:
+
+```sh
+# 1. Copy and configure Caddyfile
+cp Caddyfile.example Caddyfile
+# Edit Caddyfile and replace with your actual domain
+
+# 2. Launch with Caddy reverse proxy (handles Let's Encrypt SSL automatically)
+docker compose -f docker-compose.yml -f docker-compose.caddy.yml up -d --build
+```
+
+For full VPS setup instructions, automated backups, and cache tuning, see **[DEPLOY.md](DEPLOY.md)**.
+
+---
+
+## 📂 Project Structure
+
+```text
+wedding-website/
+├── apps/
+│   └── web/                   # Astro application (pages, components, APIs)
+│       ├── public/            # Static assets & media placeholders
+│       │   └── generated/     # Generated responsive AVIF/WebP variants (gitignored)
+│       └── src/
+│           ├── components/    # UI components (Hero, RSVP, Map, Timeline, Gates)
+│           ├── layouts/       # Root HTML layout and global styles
+│           ├── lib/           # Business logic (RSVP, invite session, image encode)
+│           └── pages/         # Routes (/[id] invite landing, /api endpoints)
+├── packages/
+│   ├── config/                # Shared TypeScript and tooling configs
+│   ├── db/                    # Drizzle schema, SQLite connection, and migrations
+│   └── env/                   # Type-safe environment variable validation
+├── ops/                       # Operational scripts (backups, restore drills, moderation)
+├── tools/                     # Placeholder integrity assertion and media helpers
+├── DEPLOY.md                  # Comprehensive production deployment guide
+├── SPEC.md                    # Detailed invite, group claiming & API protocol specs
+└── NOTE.md                    # Manual testing & walkthrough notes
+```
+
+---
+
+## ⌨️ Available Commands
+
+| Command                                  | Description                                                    |
+| ---------------------------------------- | -------------------------------------------------------------- |
+| `pnpm run dev`                           | Start development server on `localhost:4321`                   |
+| `pnpm run build`                         | Build production bundle (generates media variants + SSR build) |
+| `pnpm run check-types`                   | Typecheck all workspaces (`astro check` & `tsc`)               |
+| `pnpm run check`                         | Run linter (`oxlint`) and auto-formatter (`oxfmt`)             |
+| `pnpm run db:migrate`                    | Apply latest SQLite database migrations                        |
+| `pnpm run db:generate`                   | Generate migration SQL after Drizzle schema changes            |
+| `pnpm run db:studio`                     | Open Drizzle Studio visual database inspector                  |
+| `pnpm --filter web exec playwright test` | Run end-to-end integration test suite                          |
+
+---
+
+## 📚 Further Documentation
+
+- **[DEPLOY.md](DEPLOY.md)** — Production VPS deployment with Docker, Caddy, SSL, and backups.
+- **[SPEC.md](SPEC.md)** — In-depth architectural specs for the invitation protocol, group claiming, and database constraints.
+- **[NOTE.md](NOTE.md)** — Step-by-step isolated development and manual testing guide.
+- **[ops/README.md](ops/README.md)** — Production operations, backup scripts, restore drills, and cache policies.
+- **[ops/MODERATION.md](ops/MODERATION.md)** — Guidelines for reviewing and moderating guest photo uploads.
+
+---
+
+## 🤝 Contributing
+
+Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/yofriadi/wedding-website/issues).
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## 📄 License
+
+This project is licensed under the [MIT License](LICENSE).
