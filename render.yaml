@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: wedding-website
+    runtime: docker
+    plan: free
+    region: oregon
+    healthCheckPath: /
+    envVars:
+      - key: PORT
+        value: "4321"
+      - key: INVITE_ADMIN_TOKEN
+        generateValue: true
+      - key: PHOTO_AVIF_ENABLED
+        value: "false"
+      - key: INVITE_COOKIE_DAYS
+        value: "30"
