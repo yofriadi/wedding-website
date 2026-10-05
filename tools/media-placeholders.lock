@@ -22,16 +22,16 @@
 #   tools/assert-placeholders.sh --update
 #
 # <blob-sha>  <path>
-472a8d63cc5f1b9dcd7c88e3fb927fbd3ef09465  apps/web/public/awal-perkenalan.avif
-e861902e9b27d632b64006b336febbc7c111e205  apps/web/public/awal-perkenalan.webp
-420dfd6e476473719ef94ea864f3de8fa597941a  apps/web/public/center-focus.avif
-67193df9da9b1d41a8f7d7c441390589203ee21c  apps/web/public/center-focus.webp
-6f623bd51694f5261813c5980364d418ded53c78  apps/web/public/keluarga-acik.avif
-cc6f98318be586271436d07fdaf373ba9c2d725e  apps/web/public/keluarga-acik.webp
-4ee38635fa221a6fb338bfc9fa1c5394a470c59b  apps/web/public/keluarga-yofri.avif
-62b827644782938bb0f6b4c102af12d9128ff73b  apps/web/public/keluarga-yofri.webp
-a4c7c56c934eacb0fe80e348d86f2fcd3c5f8489  apps/web/public/lamaran.mp4
-1685552831b95bec164371b82f3bc468df6129f8  apps/web/public/lamaran-poster.webp
+d5a736979c59ab72cf8cf02197469605825e3041  apps/web/public/awal-perkenalan.avif
+58154fe9df6910d0a85c509765c8ce6dd46a9e67  apps/web/public/awal-perkenalan.webp
+8860738634324dc30c12af24f42d900ab6eb725e  apps/web/public/center-focus.avif
+0d5383975ffe6545c42a0bdc4bc0a1a2fdcae1c1  apps/web/public/center-focus.webp
+f380ebacb22e36c1481ee546c1b585ccf502e723  apps/web/public/keluarga-acik.avif
+8b4b0fb5a45743301060ca0b3080446248be3546  apps/web/public/keluarga-acik.webp
+0c5f65395bffbecd7c362ce96a8ac30dfcfe2e5e  apps/web/public/keluarga-yofri.avif
+b612be84e91d4682dea5ddb3182a875db5784cbc  apps/web/public/keluarga-yofri.webp
+a17422645ee88964797c939b66f6ac286dc3e1ea  apps/web/public/lamaran.mp4
+bd63a085f0c435568539fc616a850c0d5416bf92  apps/web/public/lamaran-poster.webp
 1b8274808d1c7e8656fab9523406df31a3a9c401  apps/web/public/landscape-bottom-right.avif
 303f9463035307badd5739c7971fa00273fc27c6  apps/web/public/landscape-bottom-right.webp
 226921658a6f91d3f79706041f582bd9e9b48116  apps/web/public/landscape-mid-bottom.avif
