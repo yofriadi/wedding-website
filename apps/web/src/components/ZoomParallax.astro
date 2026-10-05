@@ -35,7 +35,7 @@ import {
 const pictures = [
   // 1. Top Right Square (single right column, top)
   { 
-    src: "/square-top-right.webp", 
+    src: "https://placehold.co/1024x1024/EEE/31343C.png",
     alt: "Square Top Right",
     grid: { col: 2, row: 0, w: 1, h: 1 },
     scale: 9, // Fast (Outer edge)
@@ -43,7 +43,7 @@ const pictures = [
   },
   // 2. Upper Right Square (single right column, upper)
   { 
-    src: "/square-upper-right.webp", 
+    src: "https://placehold.co/1024x1024/EEE/31343C.png",
     alt: "Square Upper Right",
     grid: { col: 2, row: 1, w: 1, h: 1 },
     scale: 8, // Fast (Side edge)
@@ -51,7 +51,7 @@ const pictures = [
   },
   // 3. Top Left Landscape (two columns on left)
   { 
-    src: "/landscape-top-left.webp", 
+    src: "https://placehold.co/1024x576/EEE/31343C.png",
     alt: "Landscape Top Left",
     grid: { col: 0, row: 0, w: 2, h: 1 },
     scale: 7, // Medium-Fast (Top edge)
@@ -59,23 +59,22 @@ const pictures = [
   },
   // 4. Mid Left Landscape (two columns on left)
   { 
-    src: "/landscape-mid-left.webp", 
+    src: "https://placehold.co/1024x768/EEE/31343C.png",
     alt: "Landscape Mid Left",
     grid: { col: 0, row: 1, w: 2, h: 1 },
     scale: 5, // Slow (Inner ring)
     iw: 1024, ih: 768
   },
-  // 5. Mid left cell. The legacy `square-` base name is wrong: 473x1024 is a
-  //    portrait (ar 0.46), the narrowest master in the collage.
+  // 5. Mid left cell.
   { 
-    src: "/square-mid-left.webp", 
+    src: "https://placehold.co/473x1024/EEE/31343C.png",
     alt: "Square Mid Left",
     grid: { col: 0, row: 2, w: 1, h: 1 },
     scale: 8, // Fast (Side edge)
     iw: 473, ih: 1024
   },
   // 6. CENTER HERO - the focus slot. NOT 9:16 portrait: `center-focus` is
-  //    2592x1728 (ar 1.50, landscape) and the widest master in the collage.
+  //    2176x1792 (ar 1.21, landscape) and the widest master in the collage.
   //    `version` is this master's cache-bust: the file was re-encoded in place
   //    by the zoom-sharpness fix, public media is cached 7d without
   //    revalidation, and the head preload in index.astro names the SAME string —
@@ -87,12 +86,11 @@ const pictures = [
     version: CENTER_FOCUS_VERSION,
     grid: { col: 1, row: 2, w: 1, h: 1 }, 
     scale: 4,
-    iw: 2592, ih: 1728
+    iw: 2176, ih: 1792
   },
-  // 7. Mid right cell. The legacy `square-` base name is wrong: 1024x768 is a
-  //    landscape (ar 1.33), identical in shape to slot 4.
+  // 7. Mid right cell.
   { 
-    src: "/square-mid-right.webp", 
+    src: "https://placehold.co/1024x768/EEE/31343C.png",
     alt: "Square Mid Right",
     grid: { col: 2, row: 2, w: 1, h: 1 },
     scale: 8, // Fast (Side edge)
@@ -100,7 +98,7 @@ const pictures = [
   },
   // 8. Lower Left Square (on top of bottom left)
   { 
-    src: "/square-lower-left.webp", 
+    src: "https://placehold.co/960x960/EEE/31343C.png",
     alt: "Square Lower Left",
     grid: { col: 0, row: 3, w: 1, h: 1 },
     scale: 8, // Fast (Side edge)
@@ -108,7 +106,7 @@ const pictures = [
   },
   // 9. Bottom Left Square
   { 
-    src: "/portrait-bottom-left.webp", 
+    src: "https://placehold.co/768x768/EEE/31343C.png",
     alt: "Square Bottom Left",
     grid: { col: 0, row: 4, w: 1, h: 1 },
     scale: 9, // Fast (Corner)
@@ -116,7 +114,7 @@ const pictures = [
   },
   // 10. Mid Bottom Landscape
   { 
-    src: "/landscape-mid-bottom.webp", 
+    src: "https://placehold.co/1024x473/EEE/31343C.png",
     alt: "Landscape Mid Bottom",
     grid: { col: 1, row: 3, w: 2, h: 1 },
     scale: 5, // Slow (Inner ring)
@@ -124,12 +122,12 @@ const pictures = [
   },
   // 11. Bottom Right Landscape
   { 
-    src: "/landscape-bottom-right.webp", 
+    src: "https://placehold.co/1024x577/EEE/31343C.png",
     alt: "Landscape Bottom Right",
     grid: { col: 1, row: 4, w: 2, h: 1 },
     scale: 7, // Medium-Fast (Bottom edge)
     iw: 1024, ih: 577
-  }
+  },
 ];
 
 const COL_W = 33.333; // 33.333vw
@@ -142,7 +140,7 @@ const COL_W = 33.333; // 33.333vw
 // a `sizes` derived from the layout box alone would serve these images from
 // their smallest candidate. The centre slot ends the sequence covering the whole
 // stage — `centerScaleFactor` exists precisely to make it do that. In portrait
-// (mobile), covering the full height means its 1.50 landscape ratio spans 150vh;
+// (mobile), covering the full height means its 1.21 landscape ratio spans ~121vh;
 // in landscape it covers the viewport width (100vw).
 //
 // The nine outer slots are underserved DELIBERATELY, and this is a perceptual
@@ -153,7 +151,7 @@ const COL_W = 33.333; // 33.333vw
 // the config comments call them "Fast (Outer edge)", "Fast (Side edge)", "Fast
 // (Corner)" — and motion masks resolution loss. 33vw is the grid column. Do not
 // "correct" these values upward on geometric grounds alone.
-const SIZES_CENTER = "2592px";
+const SIZES_CENTER = "2176px";
 const SIZES_OUTER = "min(33vw, 390px)";
 
 /**
@@ -165,7 +163,7 @@ const SIZES_OUTER = "min(33vw, 390px)";
  * value) drive candidate selection from a media query. Both switches are known
  * only at runtime, so the one claim that genuinely differs has to be swapped in
  * JS — and swapped FIRST, because candidate selection runs the instant a
- * `srcset` goes live. Promoting under the 2592px claim and downgrading
+ * `srcset` goes live. Promoting under the 2176px claim and downgrading
  * afterwards would leave the master downloaded AND a second fetch in flight,
  * i.e. strictly worse than either claim alone.
  *
@@ -174,7 +172,7 @@ const SIZES_OUTER = "min(33vw, 390px)";
  * one-viewport grid via CSS. No pin, no scrub, no transform, so the centre cell
  * is exactly one 33vw column and is never magnified. Claiming that lands
  * selection on `-w390` for a phone (~30 KB) and at most `-w1280` for a wide
- * viewport, instead of the 2592px master (~570 KB of AVIF, the single largest
+ * viewport, instead of the 2176px master (~536 KB of AVIF, the single largest
  * asset in the entry sequence). Master resolution there would buy bytes, not
  * sharpness.
  *
@@ -192,8 +190,9 @@ const SIZES_CENTER_COLLAPSED = SIZES_OUTER;
     <!-- Items Wrapper -->
     {
       pictures.map((picture, slotIndex) => {
+        const isExternal = picture.src.startsWith("http://") || picture.src.startsWith("https://");
         // Base name drives the generated candidate URLs; `sizes` is per slot.
-        const base = baseOf(picture.src);
+        const base = isExternal ? "" : baseOf(picture.src);
         const sizes = picture.isCenter ? SIZES_CENTER : SIZES_OUTER;
         // Only the centre slot's claim differs between a scrubbed and a static
         // collage, so only it carries the override: `undefined` omits the
@@ -242,7 +241,7 @@ const SIZES_CENTER_COLLAPSED = SIZES_OUTER;
                THE CENTRE SLOT is deferred like the others yet keeps the
                sharpness treatment the zoom needs: `loading="eager"` and
                `decoding="sync"`, because a scrubbed image must never paint
-               half-decoded, plus a 2592px `sizes` claim on `full` — the master
+               half-decoded, plus a 2176px `sizes` claim on `full` — the master
                is the ladder's top candidate, so that claim selects it at every
                DPR. index.astro preloads the same master URL in the head, but
                only while the collage is actually scrubbed. When it is not —
@@ -266,28 +265,41 @@ const SIZES_CENTER_COLLAPSED = SIZES_OUTER;
                width at or above it, and markup derives its candidate list from
                the same rule, so a mismatch here names a file that was never
                emitted. */}
-          <picture>
-            <source
-              srcset={placeholderSrc(base, "avif")}
-              data-srcset={variantSrcset(base, "avif", picture.iw, picture.version)}
-              sizes={sizes}
-              data-sizes-collapsed={collapsedSizes}
-              type="image/avif"
-            />
+          {isExternal ? (
             <img
-              src={placeholderSrc(base, "webp")}
-              data-src={masterSrc(picture.src, "webp", picture.version)}
-              data-srcset={variantSrcset(base, "webp", picture.iw, picture.version)}
-              sizes={sizes}
-              data-sizes-collapsed={collapsedSizes}
+              src={picture.src}
               alt={picture.alt}
               width={picture.iw}
               height={picture.ih}
-              class="zoom-image"
+              class="zoom-image bg-[#eeeeee]"
               loading={picture.isCenter ? "eager" : undefined}
               decoding={picture.isCenter ? "sync" : "async"}
+              onerror={`this.onerror=null;this.src='data:image/svg+xml;charset=utf-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="${picture.iw}" height="${picture.ih}" viewBox="0 0 ${picture.iw} ${picture.ih}"><rect width="100%" height="100%" fill="#eeeeee"/><text x="50%" y="50%" font-family="sans-serif" font-size="${Math.round(Math.min(picture.iw, picture.ih) * 0.1)}" font-weight="700" fill="#31343c" text-anchor="middle" dominant-baseline="central">${picture.iw} × ${picture.ih}</text></svg>`)}';`}
             />
-          </picture>
+          ) : (
+            <picture>
+              <source
+                srcset={placeholderSrc(base, "avif")}
+                data-srcset={variantSrcset(base, "avif", picture.iw, picture.version)}
+                sizes={sizes}
+                data-sizes-collapsed={collapsedSizes}
+                type="image/avif"
+              />
+              <img
+                src={placeholderSrc(base, "webp")}
+                data-src={masterSrc(picture.src, "webp", picture.version)}
+                data-srcset={variantSrcset(base, "webp", picture.iw, picture.version)}
+                sizes={sizes}
+                data-sizes-collapsed={collapsedSizes}
+                alt={picture.alt}
+                width={picture.iw}
+                height={picture.ih}
+                class="zoom-image"
+                loading={picture.isCenter ? "eager" : undefined}
+                decoding={picture.isCenter ? "sync" : "async"}
+              />
+            </picture>
+          )}
         </div>
       </div>
         );
@@ -380,7 +392,7 @@ const SIZES_CENTER_COLLAPSED = SIZES_OUTER;
 
   // Is the collage SCRUBBED — will a scroll-driven transform magnify these
   // slots? That, and only that, turns an under-resolved image into a visible
-  // blur mid-scroll, so it is also the only thing that makes the 2592px centre
+  // blur mid-scroll, so it is also the only thing that makes the 2176px centre
   // claim (and the entry loader's wait on those bytes) worth its cost.
   //
   // Two independent switches produce the identical static one-viewport bento

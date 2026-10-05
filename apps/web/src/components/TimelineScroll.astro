@@ -5,13 +5,17 @@ import { variantSrcset } from "../lib/media-candidates";
 // from a transform: unlike the collage, these photos come to rest at scale(1),
 // so the layout box IS the presentation box.
 //
-// The portrait is height-driven — `h-[360px] sm:h-[400px] w-auto aspect-[591/1280]` —
-// so its rendered width is that height times 591/1280: 166 / 185 px.
+// The portrait is height-driven — `h-[360px] sm:h-[400px] w-auto aspect-[1536/2560]` —
+// so its rendered width is that height times 1536/2560: 216 / 240 px.
 // The `max-w-[calc(100vw-32px)]` clamp never bites at those numbers on any viewport
 // this site supports.
-const SIZES_PORTRAIT = "(min-width: 640px) 185px, 166px";
+const SIZES_PORTRAIT = "(min-width: 640px) 240px, 216px";
 
-// The two landscape cards are width-driven — `w-[340px] sm:w-[400px] max-w-[calc(100vw-32px)]` —
+// Node 3 portrait: `h-[280px] sm:h-[340px] w-auto aspect-[1664/2304]` —
+// rendered width is that height times 1664/2304: 202 / 245 px.
+const SIZES_NODE3 = "(min-width: 640px) 245px, 202px";
+
+// The landscape card is width-driven — `w-[340px] sm:w-[400px] max-w-[calc(100vw-32px)]` —
 // and here the clamp does bite on a narrow phone, so it stays in the expression.
 const SIZES_CARD =
   "(min-width: 640px) min(calc(100vw - 32px), 400px), min(calc(100vw - 32px), 340px)";
@@ -28,9 +32,9 @@ const SIZES_CARD =
        motion on any tier.
 
        The photos DO carry device-matched candidate sets (responsive-media):
-       `keluarga-acik` is a 2048px master, but its card is capped at `sm:w-[400px]`,
+       `keluarga-acik` is a 2688px master, but its card is capped at `sm:w-[400px]`,
        so its candidate ladder is capped at 768w to prevent high-DPI phones from
-       downloading heavy 1280w/2048w assets for small display cards. Timeline
+       downloading heavy 1280w/2688w assets for small display cards. Timeline
        variants are encoded at optimized quality (webp q70 / avif q45) to ensure
        fast download and decode on approach. Delivered
        server markup retains `loading="lazy"` so initial page load and hero LCP
@@ -115,7 +119,7 @@ const SIZES_CARD =
           <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+16px)] flex flex-col items-center w-[320px] max-w-[calc(100vw-32px)] text-center">
             <div data-node2-desc class="mb-2 text-center" style="opacity: 0; transform: scale(0.6); transform-origin: 50% 100%;">
               <p class="text-sm leading-relaxed text-[color:var(--timeline-muted)] text-center text-pretty">
-                Perkenalan. Pertemuan yang awalnya hanya saling bertegur sapa, menjadi saling bertukar kabar dan cerita.
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
               </p>
             </div>
             <div data-node2-date style="opacity: 0; transform: scale(0.6); transform-origin: 50% 100%;">
@@ -126,20 +130,20 @@ const SIZES_CARD =
           <!-- Photo below the node -->
           <div class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+24px)] flex flex-col items-center">
             <div data-node2-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
-              <div class="h-[360px] sm:h-[400px] w-auto max-w-[calc(100vw-32px)] aspect-[591/1280] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
+              <div class="h-[360px] sm:h-[400px] w-auto max-w-[calc(100vw-32px)] aspect-[1536/2560] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
                 <picture>
                   <source
-                    srcset={variantSrcset("awal-perkenalan", "avif", 591)}
+                    srcset={variantSrcset("awal-perkenalan", "avif", 1536, undefined, 768)}
                     sizes={SIZES_PORTRAIT}
                     type="image/avif"
                   />
                   <img
                     src="/awal-perkenalan.webp"
-                    srcset={variantSrcset("awal-perkenalan", "webp", 591)}
+                    srcset={variantSrcset("awal-perkenalan", "webp", 1536, undefined, 768)}
                     sizes={SIZES_PORTRAIT}
                     alt="Awal perkenalan"
-                    width="591"
-                    height="1280"
+                    width="1536"
+                    height="2560"
                     loading="lazy"
                     decoding="async"
                     onload="this.dataset.loaded='true'"
@@ -166,20 +170,20 @@ const SIZES_CARD =
           <!-- Photo and Date above the node -->
           <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)] flex flex-col items-center">
             <div data-node3-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
-              <div class="w-[340px] sm:w-[400px] max-w-[calc(100vw-32px)] h-auto aspect-[1280/591] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl mb-4 ring-1 ring-[color:var(--timeline-photo-ring)]">
+              <div class="h-[280px] sm:h-[340px] w-auto max-w-[calc(100vw-32px)] aspect-[1664/2304] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl mb-4 ring-1 ring-[color:var(--timeline-photo-ring)]">
                 <picture>
                   <source
-                    srcset={variantSrcset("keluarga-yofri", "avif", 1280, undefined, 768)}
-                    sizes={SIZES_CARD}
+                    srcset={variantSrcset("keluarga-yofri", "avif", 1664, undefined, 768)}
+                    sizes={SIZES_NODE3}
                     type="image/avif"
                   />
                   <img
                     src="/keluarga-yofri.webp"
-                    srcset={variantSrcset("keluarga-yofri", "webp", 1280, undefined, 768)}
-                    sizes={SIZES_CARD}
+                    srcset={variantSrcset("keluarga-yofri", "webp", 1664, undefined, 768)}
+                    sizes={SIZES_NODE3}
                     alt="Aisha diperkenalkan ke keluarga Yofri"
-                    width="1280"
-                    height="591"
+                    width="1664"
+                    height="2304"
                     loading="lazy"
                     decoding="async"
                     onload="this.dataset.loaded='true'"
@@ -199,7 +203,7 @@ const SIZES_CARD =
           <!-- Text below the node -->
           <div data-node3-desc class="absolute left-1/2 -translate-x-1/2 top-[calc(100%+24px)] w-[320px] max-w-[calc(100vw-32px)] text-center" style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
             <p class="text-sm leading-relaxed text-[color:var(--timeline-muted)] text-center text-pretty">
-              Setelah saling mengenal lebih jauh, tanpa banyak kata, Yofri membawa Aisha ke rumah. Aisha diperkenalkan ke keluarga Yofri sebagai "calon" yang selama ini ditunggu-tunggu kedatangannya. Kabar ini membawa kebahagiaan bagi keluarga Yofri.
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
             </p>
           </div>
         </div>
@@ -218,20 +222,20 @@ const SIZES_CARD =
         <div data-node4-pin class="absolute inset-0">
           <div class="absolute left-1/2 -translate-x-1/2 bottom-[calc(100%+24px)]">
             <div data-node4-photo style="opacity: 0; transform: scale(0.6); transform-origin: 100% 100%;">
-              <div class="w-[340px] sm:w-[400px] max-w-[calc(100vw-32px)] h-auto aspect-[2048/945] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
+              <div class="w-[340px] sm:w-[400px] max-w-[calc(100vw-32px)] h-auto aspect-[2688/1408] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl ring-1 ring-[color:var(--timeline-photo-ring)]">
                 <picture>
                   <source
-                    srcset={variantSrcset("keluarga-acik", "avif", 2048, undefined, 768)}
+                    srcset={variantSrcset("keluarga-acik", "avif", 2688, undefined, 768)}
                     sizes={SIZES_CARD}
                     type="image/avif"
                   />
                   <img
                     src="/keluarga-acik.webp"
-                    srcset={variantSrcset("keluarga-acik", "webp", 2048, undefined, 768)}
+                    srcset={variantSrcset("keluarga-acik", "webp", 2688, undefined, 768)}
                     sizes={SIZES_CARD}
                     alt="Yofri bertemu keluarga Aisha"
-                    width="2048"
-                    height="945"
+                    width="2688"
+                    height="1408"
                     loading="lazy"
                     decoding="async"
                     onload="this.dataset.loaded='true'"
@@ -249,7 +253,7 @@ const SIZES_CARD =
             </div>
             <div data-node4-desc class="text-center" style="opacity: 0; transform: scale(0.6); transform-origin: 100% 0%;">
               <p class="mt-2 text-sm leading-relaxed text-[color:var(--timeline-muted)] text-center text-pretty">
-                Mengenal satu pihak saja rasanya tidak cukup. Kali ini Aisha yang membawa Yofri ke kampung halaman, bertemu dengan keluarga besar Aisha. Kedatangannya disambut hangat.
+                Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.
               </p>
             </div>
           </div>
@@ -272,12 +276,12 @@ const SIZES_CARD =
           <!-- Photo and Text stay on the authored right side of the dot. -->
           <div class="absolute left-[50vw] -translate-x-1/2 -top-8 flex flex-col items-center w-[280px]">
             <div data-node5-photo style="opacity: 0; transform: scale(0.6); transform-origin: 0% 0%;">
-              <div class="h-[320px] w-auto aspect-[2/3] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl mb-4 ring-1 ring-[color:var(--timeline-photo-ring)]">
+              <div class="h-[320px] w-auto aspect-[600/1066] overflow-hidden rounded-xl bg-[color:var(--timeline-photo-frame)] shadow-xl mb-4 ring-1 ring-[color:var(--timeline-photo-ring)]">
                 <!-- No `autoplay`: that attribute defeated preload="none". Playback is
                      tier-driven — see applyVideoTier() at the foot of this
                      component's script. A lightweight poster provides immediate visual
                      display before playback begins. -->
-                <video id="timeline-video" loop muted playsinline preload="none" poster="/lamaran-poster.webp" aria-label="Lamaran" class="h-full w-full object-cover" width="478" height="850"><source src="/lamaran.mp4" type="video/mp4" /></video>
+                <video id="timeline-video" loop muted playsinline preload="none" poster="/lamaran-poster.webp" aria-label="Lamaran" class="h-full w-full object-cover" width="600" height="1066"><source src="/lamaran.mp4" type="video/mp4" /></video>
               </div>
             </div>
             <div data-node5-desc class="text-center" style="opacity: 0; transform: scale(0.6); transform-origin: 0% 0%;">

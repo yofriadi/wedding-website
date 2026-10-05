@@ -2,6 +2,8 @@
 
 A modern, high-performance, and beautifully crafted wedding website with personalized guest invitations, family RSVP management, and a live guest photo wall.
 
+**Live Demo:** [https://wedding-website-uv8p.onrender.com/](https://wedding-website-uv8p.onrender.com/)
+
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![docker-image](https://github.com/yofriadi/wedding-website/actions/workflows/docker-image.yml/badge.svg)](https://github.com/yofriadi/wedding-website/actions/workflows/docker-image.yml)
 [![Built with Astro](https://img.shields.io/badge/Built%20with-Astro-ff5d01.svg)](https://astro.build)
@@ -218,7 +220,9 @@ tools/restore-private-media.sh --undo   # reverts back to placeholders
 
 ### Free Cloud Demo (Render)
 
-You can deploy a free live demo on [Render](https://render.com/) using the included `render.yaml` Blueprint or Docker:
+A live demo is available at [https://wedding-website-uv8p.onrender.com/](https://wedding-website-uv8p.onrender.com/).
+
+You can deploy your own instance on [Render](https://render.com/) using the included `render.yaml` Blueprint or Docker:
 
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy)
 

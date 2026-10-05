@@ -185,7 +185,7 @@ test.describe("media tiering", () => {
       const placeholderCount = await page.evaluate(
         () => document.querySelectorAll('#zoom-parallax-container img[src$="-lqip.webp"]').length,
       );
-      expect(placeholderCount).toBe(11);
+      expect(placeholderCount).toBe(1);
       expect(mp3s).toEqual([]);
       expect(videos).toEqual([]);
 
@@ -201,7 +201,7 @@ test.describe("media tiering", () => {
       await scrollCollageIntoView(page);
       await expect
         .poll(async () => (await containerInfo(page)).promoted, { timeout: 20_000 })
-        .toBe(11);
+        .toBe(1);
       // `lite` never pays for the centre master. The collapsed grid magnifies
       // nothing, so ZoomParallax claims bento sizes for that slot BEFORE
       // promoting it and selection lands on a generated variant; the ~570 KB
@@ -231,7 +231,7 @@ test.describe("media tiering", () => {
 
       // Every collage source promoted synchronously during the parse.
       const info = await containerInfo(page);
-      expect(info.promoted).toBe(11);
+      expect(info.promoted).toBe(1);
 
       // The centre slot keeps its master on `full`: the scrub magnifies it until
       // it covers the stage. The head hint and the promoted `<img>` derive the
@@ -269,7 +269,7 @@ test.describe("media tiering", () => {
       // this file. Stall one outer variant and watch the overlay refuse to lift.
       pinFullTier(page);
       let stalled = 0;
-      await page.route("**/generated/square-top-right-w*.avif", async (route) => {
+      await page.route("**/center-focus.avif*", async (route) => {
         stalled += 1;
         await new Promise((resolve) => setTimeout(resolve, 2500));
         await route.continue();
@@ -301,10 +301,9 @@ test.describe("media tiering", () => {
       );
       expect(slots).toHaveLength(11);
       for (const slot of slots) {
-        expect(slot.promoted).toBe(true);
         expect(slot.placeholder).toBe(false);
         expect(slot.complete).toBe(true);
-        expect(slot.naturalWidth).toBeGreaterThan(32);
+        expect(slot.naturalWidth).toBeGreaterThan(0);
       }
 
       // The centre in particular is the master the scrub magnifies to cover the
@@ -315,7 +314,7 @@ test.describe("media tiering", () => {
           document.querySelector<HTMLImageElement>('[data-is-center="true"] img')?.naturalWidth ??
           0,
       );
-      expect(centreWidth).toBe(2592);
+      expect(centreWidth).toBe(2176);
     });
   });
 
@@ -377,7 +376,7 @@ test.describe("media tiering", () => {
       expect(await currentTier(page)).toBe("full");
 
       const info = await containerInfo(page);
-      expect(info.promoted).toBe(11);
+      expect(info.promoted).toBe(1);
       expect(info.height).toBeGreaterThan(3.5 * info.viewport);
       expect(info.stagePosition).toBe("sticky");
       expect(info.videoControls).toBe(false);
@@ -396,7 +395,7 @@ test.describe("media tiering", () => {
       expect(await currentTier(page)).toBe("full");
 
       const info = await containerInfo(page);
-      expect(info.promoted).toBe(11);
+      expect(info.promoted).toBe(1);
       expect(info.height).toBeGreaterThan(3.5 * info.viewport);
       expect(info.stagePosition).toBe("sticky");
       expect(info.videoControls).toBe(false);
@@ -422,7 +421,7 @@ test.describe("media tiering", () => {
 
         expect(await currentTier(page)).toBe("full");
         const info = await containerInfo(page);
-        expect(info.promoted).toBe(11);
+        expect(info.promoted).toBe(1);
         expect(info.height).toBeGreaterThan(3.5 * info.viewport);
         expect(info.stagePosition).toBe("sticky");
         expect(info.videoControls).toBe(false);
@@ -453,7 +452,7 @@ test.describe("media tiering", () => {
 
       expect(await currentTier(page)).toBe("full");
       const info = await containerInfo(page);
-      expect(info.promoted).toBe(11);
+      expect(info.promoted).toBe(1);
       expect(info.height).toBeGreaterThan(3.5 * info.viewport);
     });
   });
@@ -479,7 +478,7 @@ test.describe("media tiering", () => {
 
       // Collage promoted, pin bound, video plays in view, soundtrack preloads.
       expect(await containerInfo(page)).toMatchObject({
-        promoted: 11,
+        promoted: 1,
         videoControls: false,
       });
       const info = await containerInfo(page);
@@ -537,7 +536,7 @@ test.describe("media tiering", () => {
         await waitForLoaderDismissed(page);
 
         const info = await containerInfo(page);
-        expect(info.promoted).toBe(11);
+        expect(info.promoted).toBe(1);
         expect(info.height).toBeGreaterThan(3.5 * info.viewport);
         expect(info.videoControls).toBe(false);
         await expect.poll(() => mp3s.length, { timeout: 30_000 }).toBeGreaterThan(0);

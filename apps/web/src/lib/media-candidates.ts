@@ -78,7 +78,7 @@ export function baseOf(src: string): string {
  * width — a version suffix here would fingerprint files this module does not
  * control, while the byte-identical masters beside them stayed unversioned.
  */
-export const CENTER_FOCUS_VERSION = "3";
+export const CENTER_FOCUS_VERSION = "4";
 
 /** The `?v=` suffix for a versioned master; "" keeps the URL byte-identical. */
 function versionSuffix(version?: string): string {

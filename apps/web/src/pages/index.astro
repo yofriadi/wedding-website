@@ -156,7 +156,7 @@ const loadingPhrases = shuffleTrail(LOADING_PHRASES);
     any tier. Both render it as a static one-viewport bento grid whose centre
     cell is one 33vw column; ZoomParallax rewrites that slot's `sizes` to the
     bento claim before promoting it, so candidate selection lands on a generated
-    variant (~30 KB) instead of the 2592px master (~570 KB, the single largest
+    variant (~30 KB) instead of the 2176px master (~536 KB, the single largest
     asset in the entry sequence). Preloading the master there would spend a
     Save-Data guest's budget — and its connection, ahead of the hero LCP — on
     bytes the page never displays.
@@ -341,7 +341,7 @@ const loadingPhrases = shuffleTrail(LOADING_PHRASES);
         // `prefers-reduced-motion` defers too, on any tier. The CSS collapses the
         // pin to the same static bento grid, so ZoomParallax claims bento sizes
         // for the centre slot — but it does that in its module, which runs AFTER
-        // this inline pass. Promoting here would select the 2592px master first
+        // this inline pass. Promoting here would select the 2176px master first
         // and re-select the small variant after the swap: two fetches, the larger
         // one wasted. Leaving it to the module costs a few milliseconds of parse
         // time and nothing else, because no gate waits on these bytes while the
@@ -589,7 +589,7 @@ const loadingPhrases = shuffleTrail(LOADING_PHRASES);
   // - a COLLAPSED collage — `lite`, or `prefers-reduced-motion` on any tier —
   //   renders as a static one-viewport bento grid: no pin, no transform, nothing
   //   magnified, and ZoomParallax claims bento sizes for it, so its centre slot
-  //   resolves to a generated variant instead of the 2592px master. There is no
+  //   resolves to a generated variant instead of the 2176px master. There is no
   //   mid-scroll blur to pre-empt, and the grid sits several viewports below the
   //   hero where the component's own path already promotes it. Gating on those
   //   bytes would make the guest who asked to save data — or to stop motion —
